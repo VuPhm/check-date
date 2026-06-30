@@ -531,3 +531,77 @@ body {
 .flatpickr-calendar.arrowTop:before, .flatpickr-calendar.arrowTop:after {
     display: none !important;
 }
+/* Container bọc ngoài cho toàn bộ dòng công tắc */
+.apple-toggle-switch-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--surface);
+    padding: 12px 16px;
+    margin-bottom: 22px;
+    border-radius: var(--radius-item);
+    border: 1px solid rgba(0, 102, 51, 0.06);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.apple-toggle-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Cấu trúc lõi của Switch Apple */
+.apple-switch {
+    position: relative;
+    display: inline-block;
+    width: 51px;
+    height: 31px;
+}
+
+/* Ẩn checkbox mặc định của trình duyệt */
+.apple-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* Lớp nền trượt của công tắc */
+.apple-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #e9e9ea; /* Màu xám khi tắt */
+    transition: .3s cubic-bezier(0.25, 1, 0.5, 1);
+    border-radius: 34px;
+}
+
+/* Hạt tròn di chuyển phía trên */
+.apple-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 27px;
+    width: 27px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .3s cubic-bezier(0.25, 1, 0.5, 1);
+    border-radius: 50%;
+    box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.15), 0px 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Trạng thái hoạt động khi CHECKED (Màu xanh thương hiệu Apple/Primary) */
+input:checked + .apple-switch-slider {
+    background-color: var(--brand-primary);
+}
+
+input:checked + .apple-switch-slider:before {
+    transform: translateX(20px); /* Đẩy hạt tròn sang phải */
+}
+
+/* Định dạng trạng thái khóa của trường nhập liệu */
+.form-group__input[readonly] {
+    background-color: #f2f2f7 !important;
+    color: var(--text-sub) !important;
+    cursor: not-allowed;
+    border-color: #d1d1d6 !important;
+}
