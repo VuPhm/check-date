@@ -326,26 +326,55 @@ body {
     transform: translateY(0);
 }
 
-/* Phân lớp màu sắc phản hồi (Đồng bộ Lịch sử & Kết quả) */
+/* --- HỆ THỐNG PHẢN HỒI TRỰC QUAN ĐỒNG BỘ TUYỆT ĐỐI KHỐI KẾT QUẢ & LỊCH SỬ --- */
+
+/* 1. Trạng thái An Toàn (Màu xanh thương hiệu) */
 .state-safe {
     background-color: var(--status-green-bg) !important;
     border-color: var(--status-green-border) !important;
     color: var(--status-green-text) !important;
 }
+.state-safe .history-item__meta,
+.state-safe .history-item__status-line {
+    color: var(--brand-primary) !important;
+    opacity: 0.75;
+}
+
+/* 2. Trạng thái Cảnh Báo (Sắp tới hạn lùi - Màu cam) */
 .state-warning {
     background-color: var(--status-yellow-bg) !important;
     border-color: var(--status-yellow-border) !important;
     color: var(--status-yellow-text) !important;
 }
+.state-warning .history-item__meta,
+.state-warning .history-item__status-line {
+    color: var(--brand-accent-orange) !important;
+    opacity: 0.75;
+}
+
+/* 3. Trạng thái Nguy Hiểm (Quá hạn lùi / Lỗi validate - Màu đỏ) */
 .state-danger {
     background-color: var(--status-red-bg) !important;
     border-color: var(--status-red-border) !important;
     color: var(--status-red-text) !important;
 }
+.state-danger .history-item__meta,
+.state-danger .history-item__status-line,
+.state-danger div {
+    color: var(--brand-accent-red) !important;
+    opacity: 0.75;
+}
+
+/* 4. Trạng thái Hết Hạn Sử Dụng (Màu xám tối giản Apple) */
 .state-expired {
-    background-color: #f5f5f5 !important;
-    border-color: rgba(85, 85, 85, 0.15) !important;
+    background-color: #f2f2f7 !important;
+    border-color: rgba(142, 142, 147, 0.2) !important;
     color: #555555 !important;
+}
+.state-expired .history-item__meta,
+.state-expired .history-item__status-line {
+    color: #555555 !important;
+    opacity: 0.7;
 }
 
 /* Thanh điều khiển lọc và sắp xếp */
@@ -419,33 +448,55 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 320px;
+    max-height: 390px;
     overflow-y: auto;
+    overflow-x: hidden; /* Chặn cứng tuyệt đối luồng cuộn ngang */
+    padding-right: 4px; /* Tạo khoảng trống an toàn cho thanh cuộn hệ thống */
+}
+
+.history-list::-webkit-scrollbar {
+    width: 5px;
+}
+.history-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+.history-list::-webkit-scrollbar-thumb {
+    background: #d1d1d6;
+    border-radius: 10px;
 }
 
 .history-item {
-    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    margin-bottom: 8px;
     border-radius: var(--radius-item);
-    margin-bottom: 10px;
     cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
+    border: 1px solid transparent; /* Sẽ được đè bởi border-color của state */
+    transition: filter 0.2s ease, box-shadow 0.2s ease;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .history-item:hover {
-    opacity: 0.85;
-    transform: translateX(2px);
+    filter: brightness(0.97); /* Làm sẫm nhẹ hộp nền thay vì đổi màu opacity */
+    box-shadow: 0 4px 12px rgba(0, 66, 33, 0.04);
 }
 
 .history-item__meta {
-    font-size: 12px;
-    opacity: 0.85;
-    margin-bottom: 4px;
+    font-size: 11px;
+    color: var(--text-sub);
+    font-weight: 500;
+    letter-spacing: -0.1px;
 }
 
 .history-item__result {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
+    line-height: 1.4;
 }
 
 .history-empty {
@@ -453,6 +504,14 @@ body {
     color: var(--text-sub);
     text-align: center;
     padding: 40px 0;
+}
+
+.history-item__status-line {
+    display: block; 
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.8;
+    margin-top: 2px;
 }
 
 /* Thành phần cấu trúc phụ trợ Apple HIG */

@@ -1,6 +1,6 @@
 // --- HỆ THỐNG KIỂM SOÁT PHIÊN BẢN VÀ GIAO THỨC CHUYỂN GIAO PWA ---
 const APP_VERSION_CONFIG = { 
-    currentVersion: "2.1.7",       
+    currentVersion: "2.1.8",       
     lastUpdated: "02/07/2026"     
 };
 
@@ -17,6 +17,14 @@ function getCleanToday() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
 }
+
+function updateVersionUI(version, date, status) {
+    const noteEl = document.getElementById('appVersionNote');
+    if (noteEl) { 
+        noteEl.innerText = `v${version} (${date}) | ${status}`; 
+    }
+}
+
 function checkAppVersionLocal() {
     const localSaved = localStorage.getItem('app_local_version');
     
@@ -421,26 +429,31 @@ function togglePrioritySort() {
     updateHistoryUI(); 
 } 
 
-function updateHistoryUI() { 
-    const container = document.getElementById('historyList'); 
-    let displayData = [...historyData]; 
-    if (currentFilter !== 'all') displayData = displayData.filter(item => item.alertType === currentFilter); 
-    if (isPrioritySort) displayData.sort((a, b) => a.alertWeight - b.alertWeight); 
-    if (displayData.length === 0) { 
-        container.innerHTML = '<li class="history-empty">Không có dữ liệu phù hợp</li>'; 
-        return; 
-    } 
-    container.innerHTML = displayData.map(item => { 
-        const labelPrefix = item.isShortProduct ? 'HSD' : 'Ngày lùi'; 
-        const remainingText = item.isExpiredProduct ? 'Đã hết HSD' : formatRemainingText(item.daysRemaining); 
-        const alertLabelText = item.isExpiredProduct ? 'Đã qua hạn lùi' : item.alertLabel; 
-        return ` 
+function updateHistoryUI() {
+    const container = document.getElementById('historyList');
+    let displayData = [...historyData];
+    if (currentFilter !== 'all') displayData = displayData.filter(item => item.alertType === currentFilter);
+    if (isPrioritySort) displayData.sort((a, b) => a.alertWeight - b.alertWeight);
+    if (displayData.length === 0) {
+        container.innerHTML = '<li class="history-empty">Không có dữ liệu phù hợp</li>';
+        return;
+    }
+    container.innerHTML = displayData.map(item => {
+        const labelPrefix = item.isShortProduct ? 'HSD' : 'Ngày lùi';
+        const remainingText = item.isExpiredProduct ? 'Đã hết HSD' : formatRemainingText(item.daysRemaining);
+        const alertLabelText = item.isExpiredProduct ? 'Đã qua hạn lùi' : item.alertLabel;
+        
+        // ĐÃ SỬA: Loại bỏ dấu '|', bọc phần chuỗi phía sau thành một dòng độc lập xuống dưới
+        return `
             <li class="history-item ${item.alertClass}" onclick="loadHistoryItem('${item.nsx}', '${item.formattedHsd}', '${item.rawHsdDays}')">
-                <div class="history-item__meta">NSX: ${item.nsx} | HSD: ${item.formattedHsd}</div>
-                <div class="history-item__result">${labelPrefix}: ${item.result} (${alertLabelText}) | ${remainingText}</div>
-            </li> 
-        `; 
-    }).join(''); 
+                <div class="history-item__meta">NSX: ${item.nsx} &bull; HSD: ${item.formattedHsd}</div>
+                <div class="history-item__result">
+                    ${labelPrefix}: ${item.result} (${alertLabelText})
+                    <span class="history-item__status-line">${remainingText}</span>
+                </div>
+            </li>
+        `;
+    }).join('');
 } 
 
 function loadHistoryItem(nsx, hsdDate, hsdDays) { 
