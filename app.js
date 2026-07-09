@@ -25,91 +25,28 @@ function updateVersionUI(version, date, status) {
     }
 }
 
-function checkAppVersionLocal() {
-    const localSaved = localStorage.getItem('app_local_version');
-    
-    if (!navigator.onLine) {
-        // Nếu mất mạng, hiển thị phiên bản lưu trong máy hoặc bản cứng config nếu chưa có
-        const displayVer = localSaved || APP_VERSION_CONFIG.currentVersion;
-        updateVersionUI(displayVer, APP_VERSION_CONFIG.lastUpdated, "Ngoại tuyến");
-        return;
-    }
-
-    // Trường hợp 1: Người dùng mới hoặc lần đầu tiếp cận hệ thống mới
-    if (!localSaved) {
-        localStorage.setItem('app_local_version', APP_VERSION_CONFIG.currentVersion);
-        updateVersionUI(APP_VERSION_CONFIG.currentVersion, APP_VERSION_CONFIG.lastUpdated, "Mới nhất");
-        registerServiceWorker();
-        return;
-    }
-
-    // Trường hợp 2: PHÁT HIỆN LỆCH PHIÊN BẢN (Hiển thị bản cũ + thông báo)
-    if (localSaved !== APP_VERSION_CONFIG.currentVersion) {
-        // ĐÃ SỬA: Hiển thị đúng số phiên bản thực tế máy đang chạy (localSaved) để tránh loạn thông tin
-        updateVersionUI(localSaved, APP_VERSION_CONFIG.lastUpdated, "Có bản cập nhật mới");
-        showUpdateModal();
-        return;
-    }
-
-    // Trường hợp 3: Trạng thái bình thường, tiếp tục duy trì đăng ký SW
-    updateVersionUI(APP_VERSION_CONFIG.currentVersion, APP_VERSION_CONFIG.lastUpdated, "Mới nhất");
-    registerServiceWorker();
-}
-
 function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js')
-            .then((reg) => {
-                // Đón đầu luồng cập nhật ngầm của phiên bản kế tiếp trong tương lai
-                reg.addEventListener('updatefound', () => {
-                    const newWorker = reg.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            showUpdateModal();
-                        }
-                    });
-                });
-            })
             .catch((err) => console.error("SW Register Error:", err));
     }
 }
 
-function showUpdateModal() {
-    if (document.getElementById('updateVersionModal')) return;
-
-    const modal = document.createElement('div');
-    modal.id = 'updateVersionModal';
-    modal.className = 'apple-update-modal'; // Gọi trực tiếp class CSS ngoại vi
+function initAppVersion() {
+    const updateUI = () => {
+        const status = navigator.onLine ? "Trực tuyến" : "Ngoại tuyến";
+        updateVersionUI(APP_VERSION_CONFIG.currentVersion, APP_VERSION_CONFIG.lastUpdated, status);
+    };
     
-    modal.innerHTML = `
-        <div class="apple-update-modal__title">Hiệu năng được tối ưu</div>
-        <div class="apple-update-modal__desc">Phiên bản mới v${APP_VERSION_CONFIG.currentVersion} đã sẵn sàng hoạt động ổn định.</div>
-        <div class="apple-update-modal__actions">
-            <button class="apple-update-btn apple-update-btn--cancel" onclick="document.getElementById('updateVersionModal').remove()">Để sau</button>
-            <button class="apple-update-btn apple-update-btn--confirm" onclick="forceRefreshApp()">Làm mới ngay</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-function forceRefreshApp() {
-    localStorage.setItem('app_local_version', APP_VERSION_CONFIG.currentVersion);
+    updateUI();
+    registerServiceWorker();
     
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then((registrations) => {
-            for (let registration of registrations) {
-                if (registration.waiting) {
-                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                }
-            }
-        });
-    }
-    // Bẻ gãy cache bằng chuỗi thời gian, ép trình duyệt nạp tài nguyên thực tế
-    window.location.href = window.location.origin + window.location.pathname + '?v=' + new Date().getTime();
+    window.addEventListener('online', updateUI);
+    window.addEventListener('offline', updateUI);
 }
 
 // Lắng nghe duy nhất tại thời điểm cấu trúc DOM đã sẵn sàng
-window.addEventListener('DOMContentLoaded', checkAppVersionLocal);
+window.addEventListener('DOMContentLoaded', initAppVersion);
 
 // --- MASK ĐỊNH DẠNG TEXT INPUT CHO DI ĐỘNG --- 
 document.querySelectorAll('.auto-date').forEach(input => { 
