@@ -1,14 +1,8 @@
-const CACHE_NAME = 'app-cache-v2.13.0';
+const CACHE_NAME = 'app-cache-v2.16.0';
 const ASSETS = [
     './',
     './index.html',
     './style.css',
-    './css/variables.css',
-    './css/layout.css',
-    './css/components.css',
-    './css/tracuu.css',
-    './css/kph.css',
-    './css/responsive.css',
     './js/helpers.js',
     './js/scanner.js',
     './js/business.js',
