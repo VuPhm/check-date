@@ -167,6 +167,7 @@ export function saveStoreSettings() {
     const store = document.getElementById('kphStore').value.trim();
     localStorage.setItem('kph_coop_food', cf);
     localStorage.setItem('kph_store', store);
+    updateStoreSettingsLabels(cf, store);
 }
 
 export function saveNguoiPhatHien() {
@@ -183,6 +184,7 @@ export function loadStoreSettings() {
     document.getElementById('kphCoopFood').value = cf;
     document.getElementById('kphStore').value = store;
     document.getElementById('kphNguoiPhatHien').value = name;
+    updateStoreSettingsLabels(cf, store);
 }
 
 // Xử lý nén ảnh minh chứng trên Canvas
@@ -367,6 +369,7 @@ export async function addKphLog() {
         showAppleToast("Đã lưu phiếu khai báo KPH thành công.", "success");
         updateKphLogsUI();
         clearKphForm();
+        closeKphCreateModal();
     } catch (e) {
         console.error("Failed to add log to IndexedDB", e);
         showAppleToast("⚠️ Có lỗi xảy ra khi lưu dữ liệu vào IndexedDB.", "error");
@@ -1137,4 +1140,47 @@ export async function exportKphToExcel() {
         console.error("Export to Excel error:", err);
         showAppleToast("⚠️ Đã xảy ra lỗi khi tạo file Excel. Hãy thử lại.", "error");
     }
+}
+
+// --- HÀM TIỆN ÍCH CHO DIALOG TẠO PHIẾU & CẤU HÌNH CỬA HÀNG COMPACT ---
+
+export function openKphCreateModal() {
+    const modal = document.getElementById('kphCreateModal');
+    if (modal) {
+        modal.classList.add('active');
+        // Tự động cập nhật ngày phát hiện mặc định là hôm nay nếu chưa nhập
+        const dateInput = document.getElementById('kphNgayPhatHien');
+        if (dateInput && !dateInput.value) {
+            dateInput.value = formatLocalDate(new Date());
+            if (kphNgayPicker) kphNgayPicker.setDate(new Date(), false);
+        }
+    }
+}
+
+export function closeKphCreateModal() {
+    const modal = document.getElementById('kphCreateModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+export function toggleStoreSettingsEdit(editMode) {
+    const compact = document.getElementById('kphStoreSettingsCompact');
+    const expanded = document.getElementById('kphStoreSettingsExpanded');
+    if (compact && expanded) {
+        if (editMode) {
+            compact.classList.add('hidden');
+            expanded.classList.remove('hidden');
+        } else {
+            compact.classList.remove('hidden');
+            expanded.classList.add('hidden');
+        }
+    }
+}
+
+export function updateStoreSettingsLabels(cf, store) {
+    const lblCf = document.getElementById('lblCoopFood');
+    const lblStore = document.getElementById('lblStore');
+    if (lblCf) lblCf.textContent = cf || 'Chưa thiết lập';
+    if (lblStore) lblStore.textContent = store || 'Chưa thiết lập';
 }

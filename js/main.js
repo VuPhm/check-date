@@ -66,7 +66,10 @@ import {
     zoomImage, 
     closeImageModal, 
     exportKphToExcel,
-    initKphFlatpickrs
+    initKphFlatpickrs,
+    openKphCreateModal,
+    closeKphCreateModal,
+    toggleStoreSettingsEdit
 } from './kph.js';
 
 // State của màn hình chính
@@ -546,6 +549,9 @@ window.toggleKphSort = toggleKphSort;
 window.deleteSelectedKphLogs = deleteSelectedKphLogs;
 window.showAppleToast = showAppleToast;
 window.showAppleConfirm = showAppleConfirm;
+window.openKphCreateModal = openKphCreateModal;
+window.closeKphCreateModal = closeKphCreateModal;
+window.toggleStoreSettingsEdit = toggleStoreSettingsEdit;
 
 export function toggleBarcodeFormats() {
     const container = document.getElementById('barcodeFormatsContainer');
