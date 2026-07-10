@@ -106,13 +106,18 @@ export function updateHistoryUI() {
         const labelPrefix = item.isShortProduct ? 'HSD' : 'Ngày lùi';
         const remainingText = item.isExpiredProduct ? 'Đã hết HSD' : formatRemainingText(item.daysRemaining);
         const alertLabelText = item.isExpiredProduct ? 'Đã qua hạn lùi' : item.alertLabel;
+        const dvtLabel = item.dvt || 'EA';
+        const qtyLabel = item.quantity !== undefined ? item.quantity : 1;
+        const displayTitle = item.barcode 
+            ? `${item.barcode} (x${qtyLabel} ${dvtLabel})` 
+            : `Tra cứu (x${qtyLabel} ${dvtLabel})`;
         
         return `
-            <li class="history-item ${item.alertClass}" onclick="window.loadHistoryItem('${item.nsx}', '${item.formattedHsd}', '${item.rawHsdDays}', '${item.barcode || ''}', ${item.quantity || 1})">
+            <li class="history-item ${item.alertClass}" onclick="window.loadHistoryItem('${item.nsx}', '${item.formattedHsd}', '${item.rawHsdDays}', '${item.barcode || ''}', ${qtyLabel}, '${dvtLabel}')">
                 <div class="history-item__indicator"></div>
                 <div class="history-item__content">
                     <div class="history-item__main-row">
-                        <span class="history-item__title">${item.barcode ? `${item.barcode} (x${item.quantity})` : 'Tra cứu'}</span>
+                        <span class="history-item__title">${displayTitle}</span>
                         <span class="history-item__result-val">${labelPrefix}: ${item.result}</span>
                     </div>
                     <div class="history-item__sub-row">
@@ -137,7 +142,7 @@ export function updateHistoryUI() {
     }).join('');
 } 
 
-export function loadHistoryItem(nsx, hsdDate, hsdDays, barcode = "", quantity = 1) { 
+export function loadHistoryItem(nsx, hsdDate, hsdDays, barcode = "", quantity = 1, dvt = "EA") { 
     const toggleSwitch = document.getElementById('calcModeToggle');
     if (toggleSwitch && toggleSwitch.checked) {
         toggleSwitch.checked = false;
@@ -157,6 +162,10 @@ export function loadHistoryItem(nsx, hsdDate, hsdDays, barcode = "", quantity = 
             if (module.hsdFlatpickr) module.hsdFlatpickr.setDate(hsdDate, false); 
             document.getElementById('hsdDays').value = hsdDays; 
             document.getElementById('barcode').value = barcode;
+            
+            const calcDvtRadio = document.querySelector(`input[name="calcDvt"][value="${dvt}"]`);
+            if (calcDvtRadio) calcDvtRadio.checked = true;
+            
             document.getElementById('quantity').value = quantity;
             module.executeCalculation(false); 
         });

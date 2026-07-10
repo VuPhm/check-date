@@ -43,6 +43,9 @@ import {
     openFilterDenNgayPicker, 
     toggleTinhTrangKhac, 
     toggleBienPhapKhac, 
+    toggleTinhTrangRadio,
+    toggleBienPhapRadio,
+    updateCharCount,
     saveStoreSettings, 
     saveNguoiPhatHien, 
     handleKphImageUpload, 
@@ -223,7 +226,10 @@ export function executeCalculation(saveToHistory = true) {
     const hsdDaysVal = document.getElementById('hsdDays').value.trim();
     const hsdMonthsVal = document.getElementById('hsdMonths').value.trim();
     const barcodeVal = document.getElementById('barcode').value.trim();
-    const quantityVal = parseInt(document.getElementById('quantity').value.trim() || "1", 10);
+    const quantityRawVal = document.getElementById('quantity').value.trim();
+    let quantityVal = parseFloat(quantityRawVal || "1");
+    if (isNaN(quantityVal)) quantityVal = 1;
+    const calcDvtVal = document.querySelector('input[name="calcDvt"]:checked').value;
     
     const wrapper = document.getElementById('resultWrapper');
     const text = document.getElementById('resultText');
@@ -286,6 +292,7 @@ export function executeCalculation(saveToHistory = true) {
                     isExpiredProduct: output.isExpiredProduct,
                     barcode: barcodeVal,
                     quantity: quantityVal,
+                    dvt: calcDvtVal,
                     checkedAt: new Date().toISOString()
                 });
                 saveHistoryToStorage();
@@ -487,6 +494,9 @@ window.saveNguoiPhatHien = saveNguoiPhatHien;
 window.openScannerForKPH = openScannerForKPH;
 window.toggleTinhTrangKhac = toggleTinhTrangKhac;
 window.toggleBienPhapKhac = toggleBienPhapKhac;
+window.toggleTinhTrangRadio = toggleTinhTrangRadio;
+window.toggleBienPhapRadio = toggleBienPhapRadio;
+window.updateCharCount = updateCharCount;
 window.openKphNgayXuLyPicker = openKphNgayXuLyPicker;
 window.handleKphImageUpload = handleKphImageUpload;
 window.clearKphImage = clearKphImage;
@@ -509,12 +519,8 @@ window.zoomImage = zoomImage;
 
 export function toggleBarcodeFormats() {
     const container = document.getElementById('barcodeFormatsContainer');
-    const btn = document.getElementById('btnToggleFormats');
     if (container) {
-        const isHidden = container.classList.toggle('hidden');
-        if (btn) {
-            btn.textContent = isHidden ? 'Thiết lập' : 'Đóng';
-        }
+        container.classList.toggle('hidden');
     }
 }
 window.toggleBarcodeFormats = toggleBarcodeFormats;

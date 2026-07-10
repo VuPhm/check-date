@@ -474,41 +474,22 @@
         transform: translateX(20px);
     }
 
-    .barcode-formats-wrapper {
-        width: 100%;
-        margin-top: 6px;
-    }
-    .barcode-formats-note {
-        display: flex;
-        justify-content: space-between;
+    .barcode-formats-badge {
+        display: inline-flex;
         align-items: center;
-        background: #f2f2f7;
-        padding: 6px 12px;
-        border-radius: var(--radius-item);
-        font-size: 11px;
-        border: 1px solid rgba(0, 102, 51, 0.04);
-        box-sizing: border-box;
-        width: 100%;
-    }
-    .barcode-formats-note .note-text {
-        color: var(--text-sub);
-    }
-    .barcode-formats-note .note-text strong {
+        font-size: 10px;
         color: var(--brand-primary);
-    }
-    .btn-toggle-formats {
-        background: transparent;
-        border: none;
-        color: var(--brand-primary);
-        font-weight: 700;
-        font-size: 11px;
         cursor: pointer;
-        padding: 2px 6px;
-        border-radius: 4px;
-        transition: background-color 0.2s;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        opacity: 0.7;
+        transition: opacity 0.2s;
     }
-    .btn-toggle-formats:hover {
-        background-color: rgba(0, 102, 51, 0.08);
+    .barcode-formats-badge:hover {
+        opacity: 1;
+    }
+    .barcode-formats-badge strong {
+        font-weight: 600;
     }
     .barcode-formats-container {
         display: flex;
@@ -580,6 +561,46 @@
         -webkit-appearance: none;
         padding-right: 36px !important;
         cursor: pointer;
+    }
+
+    /* --- Component: Apple Segmented Radio Pills (DVT) --- */
+    .dvt-radio-group {
+        display: inline-flex;
+        background: #f2f2f7;
+        border-radius: 12px;
+        padding: 2px;
+        gap: 0;
+        height: 24px;
+        box-sizing: border-box;
+        flex-shrink: 0;
+    }
+    .dvt-radio-group input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+    .dvt-radio-group label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 10px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-sub);
+        border-radius: 10px;
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+        white-space: nowrap;
+        line-height: 1;
+    }
+    .dvt-radio-group input[type="radio"]:checked + label {
+        background: var(--brand-primary);
+        color: #fff;
+        box-shadow: 0 1px 4px rgba(0, 102, 51, 0.2);
     }
 
     /* --- Component: Apple Modal System --- */
@@ -1187,127 +1208,313 @@
     }
 
     /* --- Component: KPH Logs (Hàng không phù hợp) --- */
-    .kph-fieldset {
+    .kph-section-group {
+        background: var(--surface);
         border: 1.5px solid rgba(0, 102, 51, 0.08);
         border-radius: var(--radius-item);
         padding: 20px;
         margin-bottom: 20px;
-        background-color: #fafafa;
         box-sizing: border-box;
         min-width: 0;
+        box-shadow: 0 1px 4px rgba(0, 102, 51, 0.01);
     }
-    .kph-fieldset:last-of-type {
+    .kph-section-group:last-of-type {
         margin-bottom: 24px;
     }
-    .kph-fieldset .apple-input-row:last-child {
-        margin-bottom: 0;
+    
+    .store-settings-group {
+        background-color: var(--status-green-bg);
+        border-color: rgba(0, 102, 51, 0.15);
     }
-    .kph-legend {
-        font-size: 15px;
+
+    .kph-section-title {
+        font-size: 13px;
         font-weight: 700;
         color: var(--brand-primary);
-        padding: 0 10px;
-        margin-bottom: 12px;
+        margin-top: 0;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1.5px solid rgba(0, 102, 51, 0.08);
+        padding-bottom: 6px;
         display: flex;
         align-items: center;
         gap: 6px;
-        background: transparent;
-    }
-    .kph-legend svg {
-        width: 18px;
-        height: 18px;
     }
 
-    .kph-image-upload-wrapper {
+    .kph-section-title-sub {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--brand-primary);
+        margin-top: 0;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         display: flex;
         align-items: center;
-        gap: 12px;
-        min-height: 48px;
-        box-sizing: border-box;
-        flex-wrap: wrap;
+        gap: 6px;
     }
-    .kph-upload-card {
+
+    /* Card Radio Component */
+    .kph-card-radio-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .kph-card-radio-label {
+        flex: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        padding: 14px 8px;
+        border: 1.5px solid #e5e5ea;
+        border-radius: var(--radius-item);
+        cursor: pointer;
+        background-color: var(--surface);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: center;
+        user-select: none;
+        min-height: 80px;
+        box-sizing: border-box;
+    }
+
+    .kph-card-radio-label span {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-sub);
+        margin-top: 8px;
+        transition: color 0.2s ease;
+    }
+
+    .kph-card-radio-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .kph-card-radio-icon svg {
+        width: 22px;
+        height: 22px;
+        color: #8e8e93;
+        transition: color 0.2s ease;
+    }
+
+    /* Hide native inputs */
+    .kph-card-radio-group input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        width: 0; height: 0;
+        pointer-events: none;
+    }
+
+    /* Hover states */
+    .kph-card-radio-label:hover {
+        border-color: #d1d1d6;
+        background-color: #f9f9fb;
+    }
+
+    /* Active states for Tình trạng */
+    #kphTinhTrangHuHong:checked + .hu-hong {
+        border-color: #ff3b30;
+        background-color: #ffeef0;
+    }
+    #kphTinhTrangHuHong:checked + .hu-hong span,
+    #kphTinhTrangHuHong:checked + .hu-hong .kph-card-radio-icon svg {
+        color: #ff3b30;
+    }
+
+    #kphTinhTrangMuaTang:checked + .mua-tang {
+        border-color: #ff9500;
+        background-color: #fff4e6;
+    }
+    #kphTinhTrangMuaTang:checked + .mua-tang span,
+    #kphTinhTrangMuaTang:checked + .mua-tang .kph-card-radio-icon svg {
+        color: #ff9500;
+    }
+
+    #kphTinhTrangKhac:checked + .khac {
+        border-color: #8e8e93;
+        background-color: #f2f2f7;
+    }
+    #kphTinhTrangKhac:checked + .khac span,
+    #kphTinhTrangKhac:checked + .khac .kph-card-radio-icon svg {
+        color: #1c261c;
+    }
+
+    /* Active states for Biện pháp */
+    #kphBienPhapHuy:checked + .huy {
+        border-color: #ff3b30;
+        background-color: #ffeef0;
+    }
+    #kphBienPhapHuy:checked + .huy span,
+    #kphBienPhapHuy:checked + .huy .kph-card-radio-icon svg {
+        color: #ff3b30;
+    }
+
+    #kphBienPhapDoi:checked + .doi {
+        border-color: #34c759;
+        background-color: #eafaf1;
+    }
+    #kphBienPhapDoi:checked + .doi span,
+    #kphBienPhapDoi:checked + .doi .kph-card-radio-icon svg {
+        color: #34c759;
+    }
+
+    #kphBienPhapXuatTra:checked + .xuat-tra {
+        border-color: #007aff;
+        background-color: #eef7ff;
+    }
+    #kphBienPhapXuatTra:checked + .xuat-tra span,
+    #kphBienPhapXuatTra:checked + .xuat-tra .kph-card-radio-icon svg {
+        color: #007aff;
+    }
+
+    #kphBienPhapKhac:checked + .khac-bp {
+        border-color: #8e8e93;
+        background-color: #f2f2f7;
+    }
+    #kphBienPhapKhac:checked + .khac-bp span,
+    #kphBienPhapKhac:checked + .khac-bp .kph-card-radio-icon svg {
+        color: #1c261c;
+    }
+
+    /* Profile user icon right */
+    .input-icon-right {
+        position: absolute;
+        right: 14px;
+        display: flex;
+        align-items: center;
+        pointer-events: none;
+    }
+    .form-input-wrapper:has(.input-icon-right) .form-input {
+        padding-right: 42px;
+    }
+
+    /* Textarea and Counters */
+    .form-textarea {
+        height: auto !important;
+        resize: vertical;
+        min-height: 80px;
+    }
+    .char-count-wrapper {
+        text-align: right;
+        font-size: 11px;
+        color: var(--text-sub);
+        margin-top: 4px;
+        font-weight: 600;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Split Camera/Gallery upload row */
+    .kph-upload-cards-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .kph-upload-card-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
         border: 1.5px dashed rgba(0, 102, 51, 0.2);
         background-color: var(--status-green-bg);
         border-radius: var(--radius-item);
-        padding: 16px;
         cursor: pointer;
         transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-        box-sizing: border-box;
-        width: 100%;
         min-height: 90px;
+        box-sizing: border-box;
         text-align: center;
         user-select: none;
     }
-    .kph-upload-card:hover {
+
+    .kph-upload-card-btn:hover {
         background-color: #e3efe7;
         border-color: var(--brand-primary);
         transform: translateY(-1px);
     }
-    .kph-upload-card:active {
+    .kph-upload-card-btn:active {
         transform: translateY(0);
     }
-    .kph-upload-card-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-    }
-    .kph-upload-card-icon {
+
+    .kph-upload-btn-icon {
+        width: 24px;
+        height: 24px;
         color: var(--brand-primary);
-    }
-    .kph-upload-card-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--brand-primary);
-    }
-    .kph-upload-card-sub {
-        font-size: 11px;
-        color: var(--text-sub);
+        margin-bottom: 6px;
     }
 
-    .kph-image-preview-container {
-        position: relative;
-        width: 48px;
-        height: 48px;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #e5e5ea;
-        box-sizing: border-box;
-        flex-shrink: 0;
+    .kph-upload-card-btn span {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--brand-primary);
     }
-    .kph-image-preview-container img {
+
+    /* Image Previews Layout */
+    .kph-image-preview-container-new {
+        display: flex;
+        gap: 10px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+
+    .kph-preview-item {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        border: 1.5px solid #e5e5ea;
+        box-sizing: border-box;
+    }
+
+    .kph-preview-item img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        border-radius: 6px;
     }
-    .kph-delete-image-btn {
+
+    .kph-delete-image-btn-new {
         position: absolute;
-        top: 0px;
-        right: 0px;
-        background: rgba(226, 5, 20, 0.85);
+        top: -6px;
+        right: -6px;
+        background: #3a3a3c;
         color: white;
         border: none;
         border-radius: 50%;
-        width: 16px;
-        height: 16px;
+        width: 20px;
+        height: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 11px;
         cursor: pointer;
-        font-weight: bold;
-        line-height: 1;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        padding: 0;
+        z-index: 10;
+        transition: background-color 0.2s;
+    }
+    .kph-delete-image-btn-new:hover {
+        background: #ff3b30;
+    }
+
+    .kph-delete-image-btn-new svg {
+        width: 10px;
+        height: 10px;
     }
 
     .kph-form-actions {
         display: flex;
         gap: 12px;
-        margin-top: 12px;
+        margin-top: 20px;
         width: 100%;
         box-sizing: border-box;
     }
@@ -2091,6 +2298,14 @@
     .apple-input-row {
         flex-direction: column;
         gap: 12px;
+    }
+    
+    #hsdDuoRow.apple-input-row {
+        flex-direction: row !important;
+    }
+    #hsdDuoRow.apple-input-row .form-field {
+        width: auto !important;
+        flex: 1 1 0% !important;
     }
     
     .form-field {

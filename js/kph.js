@@ -126,16 +126,32 @@ export function openFilterDenNgayPicker() { if (kphFilterDenNgayPicker) kphFilte
 
 // Đóng mở trường nhập "Khác"
 export function toggleTinhTrangKhac(val) {
+    toggleTinhTrangRadio(val);
+}
+
+export function toggleBienPhapKhac(val) {
+    toggleBienPhapRadio(val);
+}
+
+export function toggleTinhTrangRadio(val) {
     const col = document.getElementById('colTinhTrangKhac');
     if (col) {
         col.style.display = (val === 'Khác') ? '' : 'none';
     }
 }
 
-export function toggleBienPhapKhac(val) {
+export function toggleBienPhapRadio(val) {
     const col = document.getElementById('colBienPhapKhac');
     if (col) {
         col.style.display = (val === 'KHÁC') ? '' : 'none';
+    }
+}
+
+export function updateCharCount(inputId, countId) {
+    const input = document.getElementById(inputId);
+    const count = document.getElementById(countId);
+    if (input && count) {
+        count.textContent = input.value.length;
     }
 }
 
@@ -288,16 +304,18 @@ export async function addKphLog() {
     const sku = document.getElementById('kphSku').value.trim();
     const tenHang = document.getElementById('kphTenHang').value.trim();
     const ncc = document.getElementById('kphNcc').value.trim();
-    const dvt = document.getElementById('kphDvt').value;
+    const dvt = document.querySelector('input[name="kphDvt"]:checked').value;
     const soLuong = parseFloat(document.getElementById('kphSoLuong').value.trim() || '1');
     
-    let tinhTrang = document.getElementById('kphTinhTrang').value;
+    const tinhTrangRadio = document.querySelector('input[name="kphTinhTrangRadio"]:checked');
+    let tinhTrang = tinhTrangRadio ? tinhTrangRadio.value : 'Hư Hỏng';
     if (tinhTrang === 'Khác') {
         tinhTrang = document.getElementById('kphTinhTrangKhac').value.trim();
         if (!tinhTrang) tinhTrang = 'Khác';
     }
     
-    let bienPhap = document.getElementById('kphBienPhap').value;
+    const bienPhapRadio = document.querySelector('input[name="kphBienPhapRadio"]:checked');
+    let bienPhap = bienPhapRadio ? bienPhapRadio.value : 'HỦY';
     let bienPhapText = bienPhap;
     if (bienPhap === 'KHÁC') {
         bienPhapText = document.getElementById('kphBienPhapKhac').value.trim();
@@ -305,9 +323,10 @@ export async function addKphLog() {
     }
     
     const ngayXuLy = document.getElementById('kphNgayXuLy').value.trim();
+    const ghiChu = document.getElementById('kphGhiChu').value.trim();
     
-    if (!ngayPhatHien || !sku || !tenHang || isNaN(soLuong)) {
-        alert("⚠️ Vui lòng điền các trường bắt buộc: Ngày phát hiện, Mã SKU/UPC, Tên hàng hóa, Số lượng.");
+    if (!ngayPhatHien || !sku || !tenHang || isNaN(soLuong) || !nguoiPhatHien || !ncc) {
+        alert("⚠️ Vui lòng điền các trường bắt buộc: Ngày phát hiện, Mã SKU/UPC, Tên hàng hóa, Nhà cung cấp, Số lượng, Người phát hiện.");
         return;
     }
     
@@ -324,6 +343,7 @@ export async function addKphLog() {
         bienPhap,
         bienPhapText,
         ngayXuLy,
+        ghiChu,
         image: kphImageBlob // Lưu trữ binary Blob trực tiếp
     };
     
@@ -378,17 +398,36 @@ export function clearKphForm() {
     document.getElementById('kphTenHang').value = '';
     document.getElementById('kphNcc').value = '';
     document.getElementById('kphSoLuong').value = '1';
-    document.getElementById('kphTinhTrang').value = 'Hư Hỏng';
+    
+    // Reset radios
+    const radHuHong = document.getElementById('kphTinhTrangHuHong');
+    if (radHuHong) radHuHong.checked = true;
     document.getElementById('kphTinhTrangKhac').value = '';
-    document.getElementById('kphBienPhap').value = 'HỦY';
+    
+    const radHuy = document.getElementById('kphBienPhapHuy');
+    if (radHuy) radHuy.checked = true;
     document.getElementById('kphBienPhapKhac').value = '';
-    toggleTinhTrangKhac('Hư Hỏng');
-    toggleBienPhapKhac('HỦY');
+    
+    const kphDvtEA = document.getElementById('kphDvtEA');
+    if (kphDvtEA) kphDvtEA.checked = true;
+    
+    toggleTinhTrangRadio('Hư Hỏng');
+    toggleBienPhapRadio('HỦY');
     clearKphImage();
     
     // Clear Ngày xử lý
     document.getElementById('kphNgayXuLy').value = '';
     if (kphNgayXuLyPicker) kphNgayXuLyPicker.clear();
+    
+    // Clear Ghi chú
+    const kphGhiChu = document.getElementById('kphGhiChu');
+    if (kphGhiChu) kphGhiChu.value = '';
+    
+    // Reset character counts
+    const bpKhacCharCount = document.getElementById('bpKhacCharCount');
+    if (bpKhacCharCount) bpKhacCharCount.textContent = '0';
+    const gcCharCount = document.getElementById('gcCharCount');
+    if (gcCharCount) gcCharCount.textContent = '0';
 }
 
 // BỘ LỌC KHOẢNG NGÀY & SẮP XẾP CỘT
@@ -620,7 +659,10 @@ export function updateKphLogsUI() {
                     </td>
                     <td data-label="Ngày PH" style="text-align: center;">${item.ngayPhatHien}</td>
                     <td data-label="SKU" style="font-weight: 600; font-family: monospace; text-align: center;">${item.sku}</td>
-                    <td data-label="Tên hàng" style="font-weight: 500;">${item.tenHang}</td>
+                    <td data-label="Tên hàng" style="font-weight: 500;">
+                        ${item.tenHang}
+                        ${item.ghiChu ? `<div style="font-size: 11px; color: var(--text-sub); font-style: italic; margin-top: 4px;">💬 ${item.ghiChu}</div>` : ''}
+                    </td>
                     <td data-label="NCC">${item.ncc || '-'}</td>
                     <td data-label="ĐVT" style="text-align: center;">${item.dvt}</td>
                     <td data-label="Số lượng" style="text-align: center; font-weight: 600;">${item.soLuong}</td>
@@ -704,6 +746,12 @@ export function updateKphLogsUI() {
                                 <span class="detail-label font-light">Người PH:</span>
                                 <span class="detail-val font-light">${item.nguoiPhatHien || '-'}</span>
                             </div>
+                            ${item.ghiChu ? `
+                            <div class="kph-card-detail-row">
+                                <span class="detail-label">Ghi chú:</span>
+                                <span class="detail-val" style="font-style: italic; font-size: 12px; color: var(--text-sub);">💬 ${item.ghiChu}</span>
+                            </div>
+                            ` : ''}
                         </div>
                         
                         ${imgHtml}
