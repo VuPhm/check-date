@@ -112,27 +112,29 @@ export function updateHistoryUI() {
         const alertLabelText = item.isExpiredProduct ? 'Đã qua hạn lùi' : item.alertLabel;
         const dvtLabel = item.dvt || 'EA';
         const qtyLabel = item.quantity !== undefined ? item.quantity : 1;
-        const displayTitle = item.barcode 
-            ? `${item.barcode} (x${qtyLabel} ${dvtLabel})` 
-            : `Tra cứu (x${qtyLabel} ${dvtLabel})`;
+        const displayBarcode = item.barcode || 'Tra cứu không mã';
         
         return `
             <li class="history-item ${item.alertClass}" onclick="window.loadHistoryItem('${item.nsx}', '${item.formattedHsd}', '${item.rawHsdDays}', '${item.barcode || ''}', ${qtyLabel}, '${dvtLabel}')">
                 <div class="history-item__indicator"></div>
                 <div class="history-item__content">
-                    <div class="history-item__main-row">
-                        <span class="history-item__title">${displayTitle}</span>
-                        <span class="history-item__result-val">${labelPrefix}: ${item.result}</span>
+                    <div class="history-item__header-row">
+                        <span class="history-item__barcode">${displayBarcode}</span>
+                        <span class="history-item__qty-badge">x${qtyLabel} ${dvtLabel}</span>
                     </div>
-                    <div class="history-item__sub-row">
-                        <span class="history-item__dates">
-                            <div>NSX: ${item.nsx}</div>
-                            <div style="margin-top: 1px;">HSD: ${item.formattedHsd}</div>
-                        </span>
-                        <span class="history-item__status-desc">
-                            <div>${alertLabelText}</div>
-                            <div style="margin-top: 1px; font-weight: 600;">${remainingText}</div>
-                        </span>
+                    <div class="history-item__detail-row">
+                        <div class="history-item__dates-col">
+                            <span class="history-item__date-label">NSX: <strong>${item.nsx}</strong></span>
+                            <span class="history-item__date-label">HSD: <strong>${item.formattedHsd}</strong></span>
+                        </div>
+                        <div class="history-item__result-col">
+                            <span class="history-item__result-label">${labelPrefix}</span>
+                            <span class="history-item__result-value">${item.result}</span>
+                        </div>
+                    </div>
+                    <div class="history-item__footer-row">
+                        <span class="history-item__status-badge">${alertLabelText}</span>
+                        <span class="history-item__countdown">${remainingText}</span>
                     </div>
                 </div>
                 <button class="history-item__delete-btn" onclick="event.stopPropagation(); window.removeHistoryItem('${item.id}')" aria-label="Xóa">

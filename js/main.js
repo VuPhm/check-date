@@ -183,6 +183,11 @@ export function syncFromMonthsToDate() {
 export function handleToggleMode(toggleElement) {
     calcMode = toggleElement.checked ? 'forward' : 'backward';
     
+    const label = document.getElementById('nsxToggleLabel') || document.querySelector('.nsx-toggle-label');
+    if (label) {
+        label.textContent = toggleElement.checked ? 'Đã biết' : 'Chưa biết';
+    }
+    
     document.getElementById('nsx').value = "";
     document.getElementById('hsdDate').value = "";
     document.getElementById('hsdDays').value = "";
@@ -408,6 +413,35 @@ export function executeCalculation(saveToHistory = true) {
 
 // Khởi chạy khi DOM sẵn sàng
 document.addEventListener('DOMContentLoaded', () => {
+    // 0. Đồng bộ hóa trạng thái công tắc gạt và chế độ tính
+    (function syncToggleMode() {
+        const toggle = document.getElementById('calcModeToggle');
+        if (toggle) {
+            calcMode = toggle.checked ? 'forward' : 'backward';
+            const label = document.getElementById('nsxToggleLabel') || document.querySelector('.nsx-toggle-label');
+            if (label) {
+                label.textContent = toggle.checked ? 'Đã biết' : 'Chưa biết';
+            }
+            const nsxInput = document.getElementById('nsx');
+            const btnNsx = document.getElementById('btnNsxPicker');
+            if (nsxInput) {
+                if (calcMode === 'backward') {
+                    nsxInput.setAttribute('readonly', 'true');
+                    if (btnNsx) {
+                        btnNsx.style.pointerEvents = 'none';
+                        btnNsx.style.opacity = '0.4';
+                    }
+                } else {
+                    nsxInput.removeAttribute('readonly');
+                    if (btnNsx) {
+                        btnNsx.style.pointerEvents = 'auto';
+                        btnNsx.style.opacity = '1';
+                    }
+                }
+            }
+        }
+    })();
+
     // 1. Khởi tạo Flatpickr cho Tra cứu
     nsxFlatpickr = flatpickr("#nsxHidden", { 
         dateFormat: "d/m/Y", 
