@@ -213,179 +213,215 @@
 
       <!-- Tab 2: Hàng Không Phù Hợp (KPH) -->
       <div id="tab-kph" class="tab-content">
-        <!-- Card Cấu hình Store -->
-        <div class="kph-store-settings">
-          <div class="apple-input-row" style="margin-bottom: 0;">
-            <div class="apple-input-col">
-              <label class="apple-col-label" for="kphCoopFood">CO.OP FOOD (Đơn vị)</label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="text" id="kphCoopFood" placeholder="Ví dụ: CO.OP FOOD NGUYỄN KIỆM" onchange="saveStoreSettings()">
-              </div>
-            </div>
-            <div class="apple-input-col">
-              <label class="apple-col-label" for="kphStore">STORE (Cửa hàng)</label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="text" id="kphStore" placeholder="Ví dụ: STORE NGUYỄN KIỆM" onchange="saveStoreSettings()">
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Form Khai Báo KPH -->
-        <main class="calc-board kph-form-board">
-          <h2 class="calc-board__title" style="margin-bottom: 16px;">Khai Báo Hàng Không Phù Hợp</h2>
+        <form id="kphForm" class="calc-board kph-form-board" onsubmit="event.preventDefault(); addKphLog();">
+          <h2 class="calc-board__title" style="margin-bottom: 20px;">Khai Báo Hàng Không Phù Hợp</h2>
           
-          <div class="apple-input-row">
-            <div class="apple-input-col">
-              <label class="apple-col-label" for="kphNgayPhatHien">Ngày phát hiện <span class="required-star">*</span></label>
-              <div class="input-wrapper">
-                <input class="form-group__input auto-date" type="text" id="kphNgayPhatHien" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
-                <button type="button" class="btn-picker-trigger" id="btnKphNgayPicker" onclick="openKphNgayPicker()" aria-label="Chọn ngày">
-                  <svg viewBox="0 0 24 24">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
-                </button>
-                <input type="text" id="kphNgayPhatHienHidden" class="hidden-picker">
+          <!-- Nhóm 1: Thông tin phát hiện & Cửa hàng -->
+          <fieldset class="kph-fieldset">
+            <legend class="kph-legend">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              Thông tin phát hiện & Cửa hàng
+            </legend>
+            
+            <div class="apple-input-row">
+              <div class="apple-input-col">
+                <label class="apple-col-label" for="kphCoopFood">CO.OP FOOD (Đơn vị)</label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="text" id="kphCoopFood" placeholder="Ví dụ: CO.OP FOOD NGUYỄN KIỆM" onchange="saveStoreSettings()">
+                </div>
               </div>
-            </div>
-            <div class="apple-input-col">
-              <label class="apple-col-label" for="kphNguoiPhatHien">Người phát hiện</label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="text" id="kphNguoiPhatHien" placeholder="Họ và tên người lập biểu" onchange="saveNguoiPhatHien()">
-              </div>
-            </div>
-          </div>
-
-          <div class="apple-input-row">
-            <div class="apple-input-col" style="flex: 1.5;">
-              <label class="apple-col-label" for="kphSku">Mã SKU / UPC <span class="required-star">*</span></label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="text" id="kphSku" placeholder="Nhập hoặc quét mã" inputmode="numeric">
-                <button type="button" class="btn-picker-trigger" onclick="openScannerForKPH()" aria-label="Quét mã barcode" style="position: absolute; right: 0; top: 0; height: 100%;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div class="apple-input-col" style="flex: 2;">
-              <label class="apple-col-label" for="kphTenHang">Tên hàng hóa <span class="required-star">*</span></label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="text" id="kphTenHang" placeholder="Điền tay tên hàng hóa">
-              </div>
-            </div>
-          </div>
-
-          <div class="apple-input-row">
-            <div class="apple-input-col" style="flex: 2;">
-              <label class="apple-col-label" for="kphNcc">Nhà cung cấp (NCC)</label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="text" id="kphNcc" placeholder="Điền tên NCC">
-              </div>
-            </div>
-            <div class="apple-input-col" style="flex: 1;">
-              <label class="apple-col-label" for="kphDvt">Đơn vị tính</label>
-              <div class="apple-field-wrapper select-field-wrapper">
-                <select class="apple-core-input apple-select" id="kphDvt">
-                  <option value="EA">EA (Cái/Bịch)</option>
-                  <option value="kg">kg (Ký)</option>
-                </select>
-              </div>
-            </div>
-            <div class="apple-input-col" style="flex: 1;">
-              <label class="apple-col-label" for="kphSoLuong">Số lượng <span class="required-star">*</span></label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="number" id="kphSoLuong" value="1" min="1" step="any" placeholder="1" inputmode="numeric">
-              </div>
-            </div>
-          </div>
-
-          <div class="apple-input-row">
-            <div class="apple-input-col">
-              <label class="apple-col-label" for="kphTinhTrang">Mô tả tình trạng hàng KPH</label>
-              <div class="apple-field-wrapper select-field-wrapper">
-                <select class="apple-core-input apple-select" id="kphTinhTrang" onchange="toggleTinhTrangKhac(this.value)">
-                  <option value="Hư Hỏng">Hư Hỏng</option>
-                  <option value="Hết Hạn Sử Dụng">Hết Hạn Sử Dụng</option>
-                  <option value="Mua X tặng Y">Mua X tặng Y</option>
-                  <option value="Bao bì móp méo / Rách">Bao bì móp méo / Rách</option>
-                  <option value="Khác">Khác (Tự nhập nội dung)...</option>
-                </select>
-              </div>
-            </div>
-            <div class="apple-input-col" id="colTinhTrangKhac" style="display: none;">
-              <label class="apple-col-label" for="kphTinhTrangKhac">Nội dung tình trạng khác</label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="text" id="kphTinhTrangKhac" placeholder="Nhập tình trạng hàng">
-              </div>
-            </div>
-          </div>
-
-          <div class="apple-input-row">
-            <div class="apple-input-col">
-              <label class="apple-col-label" for="kphBienPhap">Biện pháp xử lý</label>
-              <div class="apple-field-wrapper select-field-wrapper">
-                <select class="apple-core-input apple-select" id="kphBienPhap" onchange="toggleBienPhapKhac(this.value)">
-                  <option value="HỦY">HỦY</option>
-                  <option value="ĐỔI">ĐỔI</option>
-                  <option value="XUẤT TRẢ">XUẤT TRẢ</option>
-                  <option value="KHÁC">KHÁC (Ghi rõ nội dung)...</option>
-                </select>
-              </div>
-            </div>
-            <div class="apple-input-col" id="colBienPhapKhac" style="display: none;">
-              <label class="apple-col-label" for="kphBienPhapKhac">Nội dung xử lý khác</label>
-              <div class="apple-field-wrapper">
-                <input class="apple-core-input" type="text" id="kphBienPhapKhac" placeholder="Ví dụ: Chuyển đổi công năng, giảm giá...">
-              </div>
-            </div>
-          </div>
-
-          <div class="apple-input-row">
-            <div class="apple-input-col">
-              <label class="apple-col-label" for="kphNgayXuLy">Ngày xử lý</label>
-              <div class="input-wrapper">
-                <input class="form-group__input auto-date" type="text" id="kphNgayXuLy" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
-                <button type="button" class="btn-picker-trigger" id="btnKphNgayXuLyPicker" onclick="openKphNgayXuLyPicker()" aria-label="Chọn ngày">
-                  <svg viewBox="0 0 24 24">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="16" y1="2" x2="16" y2="6"></line>
-                    <line x1="8" y1="2" x2="8" y2="6"></line>
-                    <line x1="3" y1="10" x2="21" y2="10"></line>
-                  </svg>
-                </button>
-                <input type="text" id="kphNgayXuLyHidden" class="hidden-picker">
-              </div>
-            </div>
-            <div class="apple-input-col">
-              <label class="apple-col-label">Ảnh minh chứng</label>
-              <div class="kph-image-upload-wrapper">
-                <label class="kph-upload-btn" for="kphImageInput">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; margin-right: 6px;">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
-                  </svg>
-                  <span>Chụp hoặc Chọn ảnh</span>
-                </label>
-                <input type="file" id="kphImageInput" accept="image/*" capture="environment" style="display: none;" onchange="handleKphImageUpload(this)">
-                
-                <div class="kph-image-preview-container" id="kphPreviewContainer" style="display: none;">
-                  <img id="kphImagePreview" src="" alt="Preview">
-                  <button type="button" class="kph-delete-image-btn" onclick="clearKphImage()" aria-label="Xóa ảnh">&times;</button>
+              <div class="apple-input-col">
+                <label class="apple-col-label" for="kphStore">STORE (Cửa hàng)</label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="text" id="kphStore" placeholder="Ví dụ: STORE NGUYỄN KIỆM" onchange="saveStoreSettings()">
                 </div>
               </div>
             </div>
-          </div>
+            
+            <div class="apple-input-row">
+              <div class="apple-input-col">
+                <label class="apple-col-label" for="kphNgayPhatHien">Ngày phát hiện <span class="required-star">*</span></label>
+                <div class="input-wrapper">
+                  <input class="form-group__input auto-date" type="text" id="kphNgayPhatHien" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10" required>
+                  <div class="input-suffix-icon" style="padding-right: 14px; pointer-events: none; display: flex; align-items: center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="apple-input-col">
+                <label class="apple-col-label" for="kphNguoiPhatHien">Người phát hiện</label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="text" id="kphNguoiPhatHien" placeholder="Họ và tên người lập biểu" onchange="saveNguoiPhatHien()">
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Nhóm 2: Thông tin hàng hóa -->
+          <fieldset class="kph-fieldset">
+            <legend class="kph-legend">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+              Thông tin hàng hóa KPH
+            </legend>
+            
+            <div class="apple-input-row">
+              <div class="apple-input-col" style="flex: 1.5;">
+                <label class="apple-col-label" for="kphSku">Mã SKU / UPC <span class="required-star">*</span></label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="text" id="kphSku" placeholder="Nhập hoặc quét mã" required>
+                  <button type="button" class="btn-picker-trigger" onclick="openScannerForKPH()" aria-label="Quét mã barcode" style="position: absolute; right: 0; top: 0; height: 100%;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="apple-input-col" style="flex: 2;">
+                <label class="apple-col-label" for="kphTenHang">Tên hàng hóa <span class="required-star">*</span></label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="text" id="kphTenHang" placeholder="Điền tay tên hàng hóa" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="apple-input-row">
+              <div class="apple-input-col" style="flex: 2;">
+                <label class="apple-col-label" for="kphNcc">Nhà cung cấp (NCC)</label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="text" id="kphNcc" placeholder="Điền tên NCC">
+                </div>
+              </div>
+              <div class="apple-input-col" style="flex: 1;">
+                <label class="apple-col-label" for="kphDvt">Đơn vị tính</label>
+                <div class="apple-field-wrapper select-field-wrapper">
+                  <select class="apple-core-input apple-select" id="kphDvt">
+                    <option value="EA">EA (Cái/Bịch)</option>
+                    <option value="kg">kg (Ký)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="apple-input-col" style="flex: 1;">
+                <label class="apple-col-label" for="kphSoLuong">Số lượng <span class="required-star">*</span></label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="number" id="kphSoLuong" value="1" min="0.001" step="any" placeholder="1" inputmode="decimal" required>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Nhóm 3: Tình trạng & Xử lý -->
+          <fieldset class="kph-fieldset">
+            <legend class="kph-legend">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              Tình trạng hàng & Biện pháp xử lý
+            </legend>
+            
+            <div class="apple-input-row">
+              <div class="apple-input-col">
+                <label class="apple-col-label" for="kphTinhTrang">Mô tả tình trạng hàng KPH</label>
+                <div class="apple-field-wrapper select-field-wrapper">
+                  <select class="apple-core-input apple-select" id="kphTinhTrang" onchange="toggleTinhTrangKhac(this.value)">
+                    <option value="Hư Hỏng">Hư Hỏng</option>
+                    <option value="Hết Hạn Sử Dụng">Hết Hạn Sử Dụng</option>
+                    <option value="Mua X tặng Y">Mua X tặng Y</option>
+                    <option value="Bao bì móp méo / Rách">Bao bì móp méo / Rách</option>
+                    <option value="Khác">Khác (Tự nhập nội dung)...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="apple-input-col" id="colTinhTrangKhac" style="display: none;">
+                <label class="apple-col-label" for="kphTinhTrangKhac">Nội dung tình trạng khác</label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="text" id="kphTinhTrangKhac" placeholder="Nhập tình trạng hàng">
+                </div>
+              </div>
+            </div>
+
+            <div class="apple-input-row">
+              <div class="apple-input-col">
+                <label class="apple-col-label" for="kphBienPhap">Biện pháp xử lý</label>
+                <div class="apple-field-wrapper select-field-wrapper">
+                  <select class="apple-core-input apple-select" id="kphBienPhap" onchange="toggleBienPhapKhac(this.value)">
+                    <option value="HỦY">HỦY</option>
+                    <option value="ĐỔI">ĐỔI</option>
+                    <option value="XUẤT TRẢ">XUẤT TRẢ</option>
+                    <option value="KHÁC">KHÁC (Ghi rõ nội dung)...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="apple-input-col" id="colBienPhapKhac" style="display: none;">
+                <label class="apple-col-label" for="kphBienPhapKhac">Nội dung xử lý khác</label>
+                <div class="apple-field-wrapper">
+                  <input class="apple-core-input" type="text" id="kphBienPhapKhac" placeholder="Ví dụ: Chuyển đổi công năng, giảm giá...">
+                </div>
+              </div>
+            </div>
+
+            <div class="apple-input-row">
+              <div class="apple-input-col">
+                <label class="apple-col-label" for="kphNgayXuLy">Ngày xử lý (nếu có)</label>
+                <div class="input-wrapper">
+                  <input class="form-group__input auto-date" type="text" id="kphNgayXuLy" placeholder="dd/mm/yyyy (để trống nếu chưa xử lý)" inputmode="numeric" maxlength="10">
+                  <div class="input-suffix-icon" style="padding-right: 14px; pointer-events: none; display: flex; align-items: center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                      <line x1="16" y1="2" x2="16" y2="6"></line>
+                      <line x1="8" y1="2" x2="8" y2="6"></line>
+                      <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="apple-input-col">
+                <label class="apple-col-label">Ảnh minh chứng</label>
+                <div class="kph-image-upload-wrapper">
+                  <label class="kph-upload-card" for="kphImageInput">
+                    <div class="kph-upload-card-content">
+                      <svg class="kph-upload-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px; margin-bottom: 4px;">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                      </svg>
+                      <span class="kph-upload-card-title">Ảnh Minh Chứng KPH</span>
+                      <span class="kph-upload-card-sub">Chụp camera hoặc Chọn tệp ảnh</span>
+                    </div>
+                  </label>
+                  <input type="file" id="kphImageInput" accept="image/*" capture="environment" style="display: none;" onchange="handleKphImageUpload(this)">
+                  
+                  <div class="kph-image-preview-container" id="kphPreviewContainer" style="display: none;">
+                    <img id="kphImagePreview" src="" alt="Preview">
+                    <button type="button" class="kph-delete-image-btn" onclick="clearKphImage()" aria-label="Xóa ảnh">&times;</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </fieldset>
 
           <div class="kph-form-actions">
-            <button class="btn-action" onclick="addKphLog()">Thêm phiếu khai báo</button>
-            <button class="btn-secondary" onclick="clearKphForm()">Nhập lại</button>
+            <button type="submit" class="btn-action">Thêm phiếu khai báo</button>
+            <button type="button" class="btn-secondary" onclick="clearKphForm()">Nhập lại</button>
           </div>
-        </main>
+        </form>
 
         <!-- Danh sách phiếu KPH đã lưu -->
         <section class="history-board kph-list-board">
@@ -417,18 +453,10 @@
             <span class="kph-filter-text">Lọc từ:</span>
             <div class="input-wrapper filter-input-wrapper compact-wrapper">
               <input class="form-group__input auto-date compact-input" type="text" id="kphFilterTuNgay" placeholder="Từ ngày" inputmode="numeric" maxlength="10">
-              <button type="button" class="btn-picker-trigger compact-trigger" id="btnFilterTuNgayPicker" onclick="openFilterTuNgayPicker()" aria-label="Chọn ngày">
-                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              </button>
-              <input type="text" id="kphFilterTuNgayHidden" class="hidden-picker">
             </div>
             <span class="kph-filter-text">đến:</span>
             <div class="input-wrapper filter-input-wrapper compact-wrapper">
               <input class="form-group__input auto-date compact-input" type="text" id="kphFilterDenNgay" placeholder="Đến ngày" inputmode="numeric" maxlength="10">
-              <button type="button" class="btn-picker-trigger compact-trigger" id="btnFilterDenNgayPicker" onclick="openFilterDenNgayPicker()" aria-label="Chọn ngày">
-                <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-              </button>
-              <input type="text" id="kphFilterDenNgayHidden" class="hidden-picker">
             </div>
             <button class="kph-filter-btn compact-btn" onclick="applyKphDateFilter()" title="Lọc dữ liệu">Lọc</button>
             <button class="kph-filter-btn kph-filter-btn--clear compact-btn" onclick="clearKphDateFilter()" title="Xóa bộ lọc">Xóa lọc</button>

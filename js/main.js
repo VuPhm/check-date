@@ -350,7 +350,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Lắng nghe mask tự động date nhập tay
     document.querySelectorAll('.auto-date').forEach(input => { 
         input.addEventListener('keydown', (e) => { 
-            if (e.key === 'Enter') { e.preventDefault(); executeCalculation(); return; } 
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                const form = input.closest('form');
+                if (form && form.id === 'kphForm') {
+                    addKphLog();
+                } else {
+                    executeCalculation(); 
+                }
+                return; 
+            } 
             if (['Backspace', 'Tab', 'ArrowLeft', 'ArrowRight', 'Delete'].includes(e.key)) return; 
             if (!/[0-9]/.test(e.key)) e.preventDefault(); 
         }); 

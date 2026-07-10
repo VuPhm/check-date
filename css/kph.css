@@ -353,3 +353,336 @@
 .kph-table tbody tr.selected-row:hover td {
     background-color: rgba(0, 102, 51, 0.07) !important;
 }
+
+/* --- Fieldset & Legend Styling --- */
+.kph-fieldset {
+    border: 1.5px solid rgba(0, 102, 51, 0.08);
+    border-radius: var(--radius-item);
+    padding: 20px;
+    margin-bottom: 20px;
+    background-color: #fafafa;
+    box-sizing: border-box;
+}
+
+.kph-fieldset:last-of-type {
+    margin-bottom: 24px;
+}
+
+.kph-legend {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--brand-primary);
+    padding: 0 10px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+}
+
+.kph-legend svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* --- Modern Photo Upload Card --- */
+.kph-upload-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px dashed rgba(0, 102, 51, 0.2);
+    background-color: var(--status-green-bg);
+    border-radius: var(--radius-item);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 90px;
+    text-align: center;
+    user-select: none;
+}
+
+.kph-upload-card:hover {
+    background-color: #e3efe7;
+    border-color: var(--brand-primary);
+    transform: translateY(-1px);
+}
+
+.kph-upload-card:active {
+    transform: translateY(0);
+}
+
+.kph-upload-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.kph-upload-card-icon {
+    color: var(--brand-primary);
+}
+
+.kph-upload-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--brand-primary);
+}
+
+.kph-upload-card-sub {
+    font-size: 11px;
+    color: var(--text-sub);
+}
+
+/* --- Badges --- */
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.badge-danger {
+    background-color: var(--status-red-bg);
+    color: var(--brand-accent-red);
+    border: 1px solid var(--status-red-border);
+}
+
+.badge-warning {
+    background-color: var(--status-yellow-bg);
+    color: var(--brand-accent-orange);
+    border: 1px solid var(--status-yellow-border);
+}
+
+.badge-info {
+    background-color: #ebf5fe;
+    color: #007aff;
+    border: 1px solid rgba(0, 122, 255, 0.15);
+}
+
+.badge-secondary {
+    background-color: #f2f2f7;
+    color: #8e8e93;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.badge-unprocessed {
+    background-color: #f2f2f7;
+    color: #8e8e93;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    font-style: italic;
+    text-transform: none;
+}
+
+.xl-badge-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.xl-desc {
+    font-size: 12px;
+    color: var(--text-sub);
+}
+
+/* --- Mobile Card List Container --- */
+.kph-mobile-list-container {
+    display: none; /* Hiển thị điều khiển bằng Media Query trong responsive.css */
+    margin-top: 16px;
+}
+
+.kph-empty-mobile {
+    text-align: center;
+    padding: 32px;
+    color: var(--text-sub);
+    font-style: italic;
+    background-color: var(--surface);
+    border-radius: var(--radius-item);
+    border: 1.5px solid #e5e5ea;
+}
+
+.kph-mobile-card {
+    background: var(--surface);
+    border: 1.5px solid #e5e5ea;
+    border-radius: var(--radius-item);
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 66, 33, 0.01);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-sizing: border-box;
+}
+
+.kph-mobile-card:hover {
+    border-color: #d1d1d6;
+    box-shadow: 0 4px 12px rgba(0, 66, 33, 0.03);
+}
+
+.kph-mobile-card.selected-card {
+    border-color: var(--brand-primary);
+    background-color: rgba(0, 102, 51, 0.01);
+    box-shadow: 0 4px 14px rgba(0, 102, 51, 0.04);
+}
+
+.kph-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f2f2f7;
+    padding-bottom: 8px;
+}
+
+.kph-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.kph-card-date {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+}
+
+.kph-card-sku {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--brand-primary);
+    background: var(--status-green-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.kph-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.kph-card-main-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.kph-card-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-main);
+    line-height: 1.4;
+    flex: 1;
+}
+
+.kph-card-qty {
+    font-size: 15px;
+    font-weight: 750;
+    color: var(--text-main);
+    white-space: nowrap;
+    text-align: right;
+}
+
+.qty-unit {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-sub);
+}
+
+.kph-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background-color: #fafafa;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.02);
+}
+
+.kph-card-detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: var(--text-sub);
+    flex-shrink: 0;
+}
+
+.detail-val {
+    color: var(--text-main);
+    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.xl-text {
+    font-weight: 500;
+}
+
+.font-light {
+    color: #8e8e93;
+    font-weight: 400;
+}
+
+.kph-card-img-wrapper {
+    width: 100%;
+    max-height: 180px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #e5e5ea;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.kph-card-img-wrapper:hover {
+    transform: scale(1.02);
+}
+
+.kph-card-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.kph-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    border-top: 1px solid #f2f2f7;
+    padding-top: 8px;
+}
+
+.kph-card-btn-delete {
+    background: transparent;
+    border: none;
+    color: var(--brand-accent-red);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.kph-card-btn-delete:hover {
+    background-color: var(--status-red-bg);
+}

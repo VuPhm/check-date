@@ -44,10 +44,27 @@
         align-items: center;
         justify-content: space-between;
     }
+
+    .kph-table-container {
+        display: block !important;
+    }
+    .kph-mobile-list-container {
+        display: none !important;
+    }
 }
 
 /* 2. Màn hình nhỏ (Mobile & Portrait Tablet): max-width: 767px */
 @media (max-width: 767px) {
+    .kph-table-container {
+        display: none !important;
+    }
+    .kph-mobile-list-container {
+        display: flex !important;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+
     /* Form Nhập & Row chung */
     .apple-input-row {
         flex-direction: column;
