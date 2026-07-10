@@ -47,7 +47,7 @@ export function initKphFlatpickrs() {
         kphNgayPicker = flatpickr("#kphNgayPhatHienHidden", {
             dateFormat: "d/m/Y",
             position: "below",
-            positionElement: document.getElementById('kphNgayPhatHien'),
+            appendTo: document.getElementById('kphNgayPhatHien').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphNgayPhatHien').value = dateStr;
             }
@@ -67,7 +67,7 @@ export function initKphFlatpickrs() {
         kphNgayXuLyPicker = flatpickr("#kphNgayXuLyHidden", {
             dateFormat: "d/m/Y",
             position: "below",
-            positionElement: document.getElementById('kphNgayXuLy'),
+            appendTo: document.getElementById('kphNgayXuLy').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphNgayXuLy').value = dateStr;
             }
@@ -85,7 +85,7 @@ export function initKphFlatpickrs() {
         kphFilterTuNgayPicker = flatpickr("#kphFilterTuNgayHidden", {
             dateFormat: "d/m/Y",
             position: "below",
-            positionElement: document.getElementById('kphFilterTuNgay'),
+            appendTo: document.getElementById('kphFilterTuNgay').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphFilterTuNgay').value = dateStr;
             }
@@ -103,7 +103,7 @@ export function initKphFlatpickrs() {
         kphFilterDenNgayPicker = flatpickr("#kphFilterDenNgayHidden", {
             dateFormat: "d/m/Y",
             position: "below",
-            positionElement: document.getElementById('kphFilterDenNgay'),
+            appendTo: document.getElementById('kphFilterDenNgay').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphFilterDenNgay').value = dateStr;
             }

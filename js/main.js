@@ -62,7 +62,8 @@ import {
     toggleSelectRowKph, 
     zoomImage, 
     closeImageModal, 
-    exportKphToExcel 
+    exportKphToExcel,
+    initKphFlatpickrs
 } from './kph.js';
 
 // State của màn hình chính
@@ -335,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     nsxFlatpickr = flatpickr("#nsxHidden", { 
         dateFormat: "d/m/Y", 
         position: "below", 
-        appendTo: document.getElementById('nsxGroup'), 
+        appendTo: document.getElementById('nsx').parentNode, 
         onChange: function (selectedDates, dateStr) { 
             document.getElementById('nsx').value = dateStr; 
             document.getElementById('hsdMonths').value = ""; 
@@ -346,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hsdFlatpickr = flatpickr("#hsdHidden", { 
         dateFormat: "d/m/Y", 
         position: "below", 
-        appendTo: document.getElementById('hsdGroup'), 
+        appendTo: document.getElementById('hsdDate').parentNode, 
         onChange: function (selectedDates, dateStr) { 
             document.getElementById('hsdDate').value = dateStr; 
             document.getElementById('hsdMonths').value = ""; 
@@ -372,6 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Nạp lịch sử & KPH
     loadHistoryFromStorage();
     loadKphLogs();
+    initKphFlatpickrs();
 
     // Fallback cho header compact khi cuộn trang (nếu trình duyệt không hỗ trợ scroll-driven animations)
     if (!CSS.supports('(animation-timeline: scroll()) and (animation-range: 0% 100%)')) {
