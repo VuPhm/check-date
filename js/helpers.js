@@ -58,11 +58,18 @@ export function initAppVersion() {
 }
 
 export function parseLocalDate(dateString) { 
-    const [day, month, year] = dateString.split('/'); 
-    return new Date(year, month - 1, day, 0, 0, 0, 0); 
+    if (!dateString) return new Date(NaN);
+    const parts = dateString.split('/'); 
+    if (parts.length !== 3) return new Date(NaN); 
+    const d = parseInt(parts[0], 10); 
+    const m = parseInt(parts[1], 10); 
+    const y = parseInt(parts[2], 10); 
+    if (isNaN(d) || isNaN(m) || isNaN(y)) return new Date(NaN); 
+    return new Date(y, m - 1, d, 0, 0, 0, 0); 
 } 
 
 export function formatLocalDate(dateObj) { 
+    if (!dateObj || isNaN(dateObj.getTime())) return ""; 
     const d = String(dateObj.getDate()).padStart(2, '0'); 
     const m = String(dateObj.getMonth() + 1).padStart(2, '0'); 
     const y = dateObj.getFullYear(); 

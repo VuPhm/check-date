@@ -14,6 +14,29 @@
 
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon_io/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="./favicon_io/favicon-16x16.png">
+  <script>
+    // Safeguard to prevent SecurityError when Flatpickr accesses cross-origin stylesheet rules
+    try {
+      const patchGetter = (proto, prop) => {
+        const desc = Object.getOwnPropertyDescriptor(proto, prop);
+        if (desc && desc.get) {
+          Object.defineProperty(proto, prop, {
+            get() {
+              try {
+                return desc.get.call(this);
+              } catch (e) {
+                return [];
+              }
+            }
+          });
+        }
+      };
+      patchGetter(CSSStyleSheet.prototype, 'cssRules');
+      patchGetter(CSSStyleSheet.prototype, 'rules');
+    } catch (e) {
+      console.warn("Failed to patch CSSStyleSheet rules", e);
+    }
+  </script>
   <link rel="apple-touch-icon" sizes="180x180" href="./favicon_io/apple-touch-icon.png">
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">

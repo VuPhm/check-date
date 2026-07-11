@@ -58,6 +58,7 @@ export function initKphFlatpickrs() {
         kphNgayPicker = flatpickr("#kphNgayPhatHienHidden", {
             dateFormat: "d/m/Y",
             position: "below",
+            disableMobile: true,
             appendTo: document.getElementById('kphNgayPhatHien').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphNgayPhatHien').value = dateStr;
@@ -71,6 +72,8 @@ export function initKphFlatpickrs() {
             const val = document.getElementById('kphNgayPhatHien').value.trim();
             if (isValidDateStr(val)) {
                 kphNgayPicker.setDate(parseLocalDate(val), false);
+            } else if (val === '') {
+                kphNgayPicker.clear();
             }
         });
     }
@@ -78,6 +81,7 @@ export function initKphFlatpickrs() {
         kphNgayXuLyPicker = flatpickr("#kphNgayXuLyHidden", {
             dateFormat: "d/m/Y",
             position: "below",
+            disableMobile: true,
             appendTo: document.getElementById('kphNgayXuLy').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphNgayXuLy').value = dateStr;
@@ -96,6 +100,7 @@ export function initKphFlatpickrs() {
         kphFilterTuNgayPicker = flatpickr("#kphFilterTuNgayHidden", {
             dateFormat: "d/m/Y",
             position: "below",
+            disableMobile: true,
             appendTo: document.getElementById('kphFilterTuNgay').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphFilterTuNgay').value = dateStr;
@@ -117,6 +122,7 @@ export function initKphFlatpickrs() {
         kphFilterDenNgayPicker = flatpickr("#kphFilterDenNgayHidden", {
             dateFormat: "d/m/Y",
             position: "below",
+            disableMobile: true,
             appendTo: document.getElementById('kphFilterDenNgay').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphFilterDenNgay').value = dateStr;
@@ -138,6 +144,7 @@ export function initKphFlatpickrs() {
         kphApproveNgayXuLyPicker = flatpickr("#kphApproveNgayXuLyHidden", {
             dateFormat: "d/m/Y",
             position: "below",
+            disableMobile: true,
             appendTo: document.getElementById('kphApproveNgayXuLy').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphApproveNgayXuLy').value = dateStr;

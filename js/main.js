@@ -171,7 +171,7 @@ export function syncFromMonthsToDate() {
             hsdDateInput.value = formatLocalDate(finalHsdDate);
             if (hsdFlatpickr) hsdFlatpickr.setDate(finalHsdDate, false);
             hsdDaysInput.value = Math.round((finalHsdDate - nsxDate) / MS_PER_DAY) + 1;
-        } else { hsdDateInput.value = ""; hsdDaysInput.value = ""; }
+        } else { hsdDateInput.value = ""; hsdDaysInput.value = ""; if (hsdFlatpickr) hsdFlatpickr.clear(); }
     } else {
         const hsdDateVal = hsdDateInput.value.trim();
         if (isValidDateStr(hsdDateVal) && months > 0) {
@@ -183,7 +183,7 @@ export function syncFromMonthsToDate() {
             nsxInput.value = formatLocalDate(finalNsxDate);
             if (nsxFlatpickr) nsxFlatpickr.setDate(finalNsxDate, false);
             hsdDaysInput.value = Math.round((hsdDate - finalNsxDate) / MS_PER_DAY) + 1;
-        } else { nsxInput.value = ""; hsdDaysInput.value = ""; }
+        } else { nsxInput.value = ""; hsdDaysInput.value = ""; if (nsxFlatpickr) nsxFlatpickr.clear(); }
     }
     isSyncing = false;
 }
@@ -490,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
     nsxFlatpickr = flatpickr("#nsxHidden", {
         dateFormat: "d/m/Y",
         position: "below",
+        disableMobile: true,
         appendTo: document.getElementById('nsx').parentNode,
         onChange: function (selectedDates, dateStr) {
             document.getElementById('nsx').value = dateStr;
@@ -501,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hsdFlatpickr = flatpickr("#hsdHidden", {
         dateFormat: "d/m/Y",
         position: "below",
+        disableMobile: true,
         appendTo: document.getElementById('hsdDate').parentNode,
         onChange: function (selectedDates, dateStr) {
             document.getElementById('hsdDate').value = dateStr;
@@ -534,6 +536,15 @@ document.addEventListener('DOMContentLoaded', () => {
     loadHistoryFromStorage();
     loadKphLogs();
     initKphFlatpickrs();
+
+    // 3.5. Chặn nổi bọt sự kiện cho các nút picker để tránh đóng Flatpickr lập tức
+    document.querySelectorAll('.btn-picker-trigger').forEach(btn => {
+        const stopPropagationHandler = (e) => {
+            e.stopPropagation();
+        };
+        btn.addEventListener('click', stopPropagationHandler);
+        btn.addEventListener('touchstart', stopPropagationHandler, { passive: true });
+    });
 
     // Fallback cho header compact khi cuộn trang (nếu trình duyệt không hỗ trợ scroll-driven animations)
     if (!CSS.supports('(animation-timeline: scroll()) and (animation-range: 0% 100%)')) {
@@ -644,6 +655,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 5. Đồng bộ input listeners
+    const nsxInput = document.getElementById('nsx');
+    if (nsxInput) {
+        nsxInput.addEventListener('input', () => {
+            document.getElementById('hsdMonths').value = "";
+            const nsxVal = nsxInput.value.trim();
+            if (isValidDateStr(nsxVal) && nsxFlatpickr) {
+                nsxFlatpickr.setDate(parseLocalDate(nsxVal), false);
+            } else if (nsxVal === "" && nsxFlatpickr) {
+                nsxFlatpickr.clear();
+            }
+            if (calcMode === 'forward') {
+                const hsdDaysVal = document.getElementById('hsdDays').value.trim();
+                if (hsdDaysVal !== "") { syncFromDaysToDate(); } else { syncFromDateToDays(); }
+            } else {
+                syncFromDateToDays();
+            }
+        });
+    }
+
     const hsdDateInput = document.getElementById('hsdDate');
     if (hsdDateInput) {
         hsdDateInput.addEventListener('input', () => {
@@ -651,6 +681,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const hsdDateVal = hsdDateInput.value.trim();
             if (isValidDateStr(hsdDateVal) && hsdFlatpickr) {
                 hsdFlatpickr.setDate(parseLocalDate(hsdDateVal), false);
+            } else if (hsdDateVal === "" && hsdFlatpickr) {
+                hsdFlatpickr.clear();
             }
             if (calcMode === 'forward') {
                 syncFromDateToDays();
