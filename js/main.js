@@ -76,7 +76,9 @@ import {
     openKphApproveNgayXuLyPicker,
     saveKphApproval,
     toggleApproveBienPhapRadio,
-    toggleApproveNguoiDuyetEdit
+    toggleApproveNguoiDuyetEdit,
+    loadStoreSettings,
+    saveSidebarSettings
 } from './kph.js';
 
 // State của màn hình chính
@@ -495,8 +497,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const dayOfMonthStr = String(now.getDate()).padStart(2, '0');
         const monthStr = String(now.getMonth() + 1).padStart(2, '0');
         const yearStr = now.getFullYear();
+        
         const fullContainer = document.getElementById('widgetFullDate');
         if (fullContainer) { fullContainer.innerText = `${dayOfWeekStr}, Ngày ${dayOfMonthStr}/${monthStr}/${yearStr}`; }
+        
+        const shortDaysOfWeek = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const shortDayOfWeekStr = shortDaysOfWeek[now.getDay()];
+        const shortContainer = document.getElementById('widgetShortDate');
+        if (shortContainer) { shortContainer.innerText = `${shortDayOfWeekStr}, ${dayOfMonthStr}/${monthStr}/${yearStr}`; }
     })();
 
     // 3. Nạp lịch sử & KPH
@@ -671,6 +679,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Khởi tạo app versioning & offline
     initAppVersion();
+
+    // 5. Khởi tạo Sidebar Cấu hình & Cá nhân
+    (function initSidebar() {
+        const sidebar = document.getElementById('appSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const btnOpen = document.getElementById('btnOpenSidebar');
+        const btnClose = document.getElementById('btnCloseSidebar');
+        
+        if (sidebar && overlay && btnOpen && btnClose) {
+            const openSidebar = () => {
+                sidebar.classList.add('active');
+                overlay.classList.add('active');
+            };
+            
+            const closeSidebar = () => {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+            };
+            
+            btnOpen.addEventListener('click', openSidebar);
+            btnClose.addEventListener('click', closeSidebar);
+            overlay.addEventListener('click', closeSidebar);
+        }
+        
+        // Tải cấu hình khi khởi động app
+        loadStoreSettings();
+        
+        // Đăng ký lưu cấu hình tự động khi thay đổi trên sidebar
+        const sidebarCf = document.getElementById('sidebarCoopFood');
+        const sidebarStore = document.getElementById('sidebarStore');
+        const sidebarCht = document.getElementById('sidebarCht');
+        
+        if (sidebarCf) sidebarCf.addEventListener('input', saveSidebarSettings);
+        if (sidebarStore) sidebarStore.addEventListener('input', saveSidebarSettings);
+        if (sidebarCht) sidebarCht.addEventListener('input', saveSidebarSettings);
+    })();
 });
 
 // --- EXPOSE HANDLERS TO GLOBAL WINDOW SCOPE ---
