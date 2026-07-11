@@ -1,6 +1,7 @@
 const DB_NAME = 'coop_kph_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'kph_logs';
+const HISTORY_STORE_NAME = 'history_logs';
 
 let db = null;
 
@@ -18,6 +19,9 @@ export function initDB() {
             const database = event.target.result;
             if (!database.objectStoreNames.contains(STORE_NAME)) {
                 database.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+            if (!database.objectStoreNames.contains(HISTORY_STORE_NAME)) {
+                database.createObjectStore(HISTORY_STORE_NAME, { keyPath: 'id' });
             }
         };
 
@@ -110,6 +114,96 @@ export function clearAllLogs() {
         return new Promise((resolve, reject) => {
             const transaction = database.transaction(STORE_NAME, 'readwrite');
             const store = transaction.objectStore(STORE_NAME);
+            const request = store.clear();
+
+            request.onsuccess = () => {
+                resolve();
+            };
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
+        });
+    });
+}
+
+/**
+ * Lấy toàn bộ danh sách lịch sử tra cứu từ IndexedDB
+ * @returns {Promise<Array>}
+ */
+export function getAllHistoryLogs() {
+    return initDB().then((database) => {
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(HISTORY_STORE_NAME, 'readonly');
+            const store = transaction.objectStore(HISTORY_STORE_NAME);
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                resolve(request.result || []);
+            };
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
+        });
+    });
+}
+
+/**
+ * Lưu hoặc cập nhật một bản ghi lịch sử vào IndexedDB
+ * @param {Object} log 
+ * @returns {Promise<void>}
+ */
+export function addHistoryLog(log) {
+    return initDB().then((database) => {
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(HISTORY_STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(HISTORY_STORE_NAME);
+            const request = store.put(log);
+
+            request.onsuccess = () => {
+                resolve();
+            };
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
+        });
+    });
+}
+
+/**
+ * Xóa một bản ghi lịch sử khỏi IndexedDB
+ * @param {string} id 
+ * @returns {Promise<void>}
+ */
+export function deleteHistoryLog(id) {
+    return initDB().then((database) => {
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(HISTORY_STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(HISTORY_STORE_NAME);
+            const request = store.delete(id);
+
+            request.onsuccess = () => {
+                resolve();
+            };
+
+            request.onerror = (event) => {
+                reject(event.target.error);
+            };
+        });
+    });
+}
+
+/**
+ * Xóa toàn bộ danh sách lịch sử trong IndexedDB
+ * @returns {Promise<void>}
+ */
+export function clearAllHistoryLogs() {
+    return initDB().then((database) => {
+        return new Promise((resolve, reject) => {
+            const transaction = database.transaction(HISTORY_STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(HISTORY_STORE_NAME);
             const request = store.clear();
 
             request.onsuccess = () => {

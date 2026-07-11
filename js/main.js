@@ -34,7 +34,8 @@ import {
     updateHistoryUI,
     setFilter,
     togglePrioritySort,
-    loadHistoryItem
+    loadHistoryItem,
+    exportHistoryToExcel
 } from './history.js';
 
 import {
@@ -274,6 +275,7 @@ export function executeCalculation(saveToHistory = true) {
     const hsdDaysVal = document.getElementById('hsdDays').value.trim();
     const hsdMonthsVal = document.getElementById('hsdMonths').value.trim();
     const barcodeVal = document.getElementById('barcode').value.trim();
+    const tenHangVal = document.getElementById('tenHang') ? document.getElementById('tenHang').value.trim() : '';
     const quantityRawVal = document.getElementById('quantity').value.trim();
     let quantityVal = parseFloat(quantityRawVal || "1");
     if (isNaN(quantityVal)) quantityVal = 1;
@@ -352,9 +354,18 @@ export function executeCalculation(saveToHistory = true) {
 
             if (saveToHistory) {
                 const existingIndex = historyData.findIndex(h => h.nsx === nsxVal && h.formattedHsd === output.formattedHsd && h.barcode === barcodeVal);
-                if (existingIndex !== -1) historyData.splice(existingIndex, 1);
+                if (existingIndex !== -1) {
+                    const existingItem = historyData[existingIndex];
+                    historyData.splice(existingIndex, 1);
+                    // Also delete from storage to avoid duplicate keys in IndexedDB
+                    if (existingItem.id) {
+                        import('./history.js').then(module => {
+                            module.removeHistoryItemFromDB(existingItem.id);
+                        });
+                    }
+                }
 
-                historyData.unshift({
+                const newItem = {
                     id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
                     nsx: nsxVal,
                     rawHsdDate: hsdDateVal,
@@ -369,11 +380,13 @@ export function executeCalculation(saveToHistory = true) {
                     isShortProduct: output.isShortProduct,
                     isExpiredProduct: output.isExpiredProduct,
                     barcode: barcodeVal,
+                    tenHang: tenHangVal,
                     quantity: quantityVal,
                     dvt: calcDvtVal,
                     checkedAt: new Date().toISOString()
-                });
-                saveHistoryToStorage();
+                };
+                historyData.unshift(newItem);
+                saveHistoryToStorage(newItem);
                 updateHistoryUI();
             }
         } catch (error) {
@@ -698,6 +711,7 @@ window.switchCamera = switchCamera;
 window.toggleTorch = toggleTorch;
 window.loadHistoryItem = loadHistoryItem;
 window.removeHistoryItem = removeHistoryItem;
+window.exportHistoryToExcel = exportHistoryToExcel;
 window.toggleSelectRowKph = toggleSelectRowKph;
 window.removeKphLog = removeKphLog;
 window.zoomImage = zoomImage;

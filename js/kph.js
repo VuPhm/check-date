@@ -1,4 +1,4 @@
-import { isValidDateStr, parseLocalDate, formatLocalDate, showAppleConfirm, showAppleToast } from './helpers.js';
+import { isValidDateStr, parseLocalDate, formatLocalDate, showAppleConfirm, showAppleToast, loadExcelJS } from './helpers.js';
 import { addLog, deleteLog, clearAllLogs, getAllLogs } from './db.js';
 
 export let activeTab = 'tracuu';
@@ -963,17 +963,6 @@ export function closeImageModal() {
 }
 
 // XUẤT FILE EXCEL ĐÚNG MẪU BM-331.CF CỦA SAIGON CO.OP
-// Hàm tải động thư viện ExcelJS từ CDN nếu chưa được định nghĩa
-async function loadExcelJS() {
-    if (window.ExcelJS) return window.ExcelJS;
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js';
-        script.onload = () => resolve(window.ExcelJS);
-        script.onerror = () => reject(new Error('Không thể tải thư viện ExcelJS. Vui lòng kiểm tra kết nối mạng.'));
-        document.head.appendChild(script);
-    });
-}
 
 export async function exportKphToExcel() {
     const selectedLogs = kphLogs.filter(item => kphSelectedIds.has(item.id));

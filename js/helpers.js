@@ -201,3 +201,15 @@ export function showAppleToast(message, type = 'info', duration = 3000) {
         }, 300);
     }, duration);
 }
+
+// Hàm tải động thư viện ExcelJS từ CDN nếu chưa được định nghĩa
+export async function loadExcelJS() {
+    if (window.ExcelJS) return window.ExcelJS;
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js';
+        script.onload = () => resolve(window.ExcelJS);
+        script.onerror = () => reject(new Error('Không thể tải thư viện ExcelJS. Vui lòng kiểm tra kết nối mạng.'));
+        document.head.appendChild(script);
+    });
+}
