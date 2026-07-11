@@ -499,6 +499,52 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Scroll listener for sticky actions in kphCreateModal
+    (function initKphModalScroll() {
+        const modalContent = document.querySelector('#kphCreateModal .apple-modal-content');
+        const actions = document.querySelector('#kphCreateModal .kph-form-actions');
+        if (modalContent && actions) {
+            let lastScrollTop = 0;
+            modalContent.addEventListener('scroll', () => {
+                const scrollTop = modalContent.scrollTop;
+                const scrollHeight = modalContent.scrollHeight;
+                const clientHeight = modalContent.clientHeight;
+                
+                const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+                const isNearTop = scrollTop < 50;
+                
+                const hasSticky = actions.classList.contains('sticky-compact');
+                
+                if (hasSticky) {
+                    // Currently sticky: check if we should remove sticky (near top or near bottom)
+                    // We remove sticky when we scroll very close to the bottom (< 50px)
+                    if (isNearTop || distanceToBottom < 50) {
+                        actions.classList.remove('sticky-compact', 'sticky-hidden');
+                    } else {
+                        // Keep sticky, handle scroll direction
+                        if (scrollTop > lastScrollTop) {
+                            // Scroll down: show sticky compact
+                            actions.classList.remove('sticky-hidden');
+                        } else {
+                            // Scroll up: hide
+                            actions.classList.add('sticky-hidden');
+                        }
+                    }
+                } else {
+                    // Currently normal: check if we should make it sticky
+                    // Must be away from top (scrollTop >= 50), away from bottom (distanceToBottom >= 130), and scrolling down
+                    // This gap (50px to 130px) creates a hysteresis zone preventing infinite loops.
+                    if (!isNearTop && distanceToBottom >= 130 && scrollTop > lastScrollTop) {
+                        actions.classList.add('sticky-compact');
+                        actions.classList.remove('sticky-hidden');
+                    }
+                }
+                
+                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+            }, { passive: true });
+        }
+    })();
+
     // 4. Lắng nghe mask tự động date nhập tay
     document.querySelectorAll('.auto-date').forEach(input => {
         input.addEventListener('keydown', (e) => {

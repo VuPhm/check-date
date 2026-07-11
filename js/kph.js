@@ -1154,6 +1154,16 @@ export function openKphCreateModal() {
             dateInput.value = formatLocalDate(new Date());
             if (kphNgayPicker) kphNgayPicker.setDate(new Date(), false);
         }
+
+        // Reset scroll position and remove sticky classes
+        const modalContent = modal.querySelector('.apple-modal-content');
+        if (modalContent) {
+            modalContent.scrollTop = 0;
+        }
+        const actions = modal.querySelector('.kph-form-actions');
+        if (actions) {
+            actions.classList.remove('sticky-compact', 'sticky-hidden');
+        }
     }
 }
 
