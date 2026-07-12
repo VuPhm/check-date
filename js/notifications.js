@@ -1,4 +1,4 @@
-import { kphLogs, switchTab, switchKphSubTab } from './kph.js';
+import { kphLogs, switchTab, switchKphSubTab, kphFilterChoDuyet, toggleKphFilterChoDuyet } from './kph.js';
 import { historyData, loadHistoryItem } from './history.js';
 import { formatRemainingText } from './helpers.js';
 
@@ -98,6 +98,10 @@ export function handleNotificationKphClick(subTabId) {
     closeNotificationModal();
     switchTab('kph');
     switchKphSubTab(subTabId);
+    // Bật bộ lọc "Chờ duyệt" nếu chưa bật
+    if (!kphFilterChoDuyet) {
+        toggleKphFilterChoDuyet();
+    }
 }
 
 function updateNotificationContent(pendingTpcn, pendingTpts, warningCount, dangerCount, expiredCount, urgentHistoryItems) {
