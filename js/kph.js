@@ -1000,9 +1000,10 @@ export function updateKphLogsUI() {
             if (item.image instanceof Blob) {
                 imgUrl = URL.createObjectURL(item.image);
                 activeImageUrls.push(imgUrl);
-            } else if (typeof item.image === 'string') {
-                imgUrl = item.image; // fallback cho Base64 nếu có
+            } else if (typeof item.image === 'string' && item.image.startsWith('data:')) {
+                imgUrl = item.image; // fallback cho Base64 data URI
             }
+            // Bỏ qua blob URL cũ đã hết hạn (từ phiên trước)
         }
         return { ...item, imgUrl };
     });
