@@ -1119,6 +1119,17 @@ export async function exportKphToExcel() {
             views: [{ showGridLines: true }]
         });
 
+        // Thiết lập trang in và footer của Excel
+        worksheet.pageSetup = {
+            orientation: 'landscape',
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0
+        };
+        worksheet.headerFooter = {
+            oddFooter: '&L&IBM-331.CF&C&ILần ban hành: 01&R&ITrang &P / &N'
+        };
+
         worksheet.columns = [
             { key: 'stt', width: 6 },
             { key: 'ngayPhatHien', width: 14 },
@@ -1299,21 +1310,6 @@ export async function exportKphToExcel() {
                 };
             });
         }
-
-        const footerRow = startRow + sortedSelectedLogs.length + 1;
-        worksheet.getRow(footerRow).height = 20;
-
-        worksheet.getCell(`A${footerRow}`).value = 'BM-331.CF';
-        worksheet.getCell(`A${footerRow}`).font = { name: 'Times New Roman', italic: true, size: 8.5 };
-        worksheet.getCell(`A${footerRow}`).alignment = { vertical: 'middle', horizontal: 'left', wrapText: false };
-
-        worksheet.getCell(`G${footerRow}`).value = 'Lần ban hành: 01';
-        worksheet.getCell(`G${footerRow}`).font = { name: 'Times New Roman', italic: true, size: 8.5 };
-        worksheet.getCell(`G${footerRow}`).alignment = { vertical: 'middle', horizontal: 'center', wrapText: false };
-
-        worksheet.getCell(`P${footerRow}`).value = 'Trang 1 / 1';
-        worksheet.getCell(`P${footerRow}`).font = { name: 'Times New Roman', italic: true, size: 8.5 };
-        worksheet.getCell(`P${footerRow}`).alignment = { vertical: 'middle', horizontal: 'right', wrapText: false };
 
         // Viết Buffer và xuất file thông qua thẻ download bản địa để giải phóng bộ nhớ
         const buffer = await workbook.xlsx.writeBuffer();
