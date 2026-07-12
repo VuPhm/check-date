@@ -26,6 +26,7 @@ export let kphSortField = null;
 export let kphSortDirection = 'desc'; // 'asc' hoặc 'desc'
 export let kphFilterTuNgay = '';
 export let kphFilterDenNgay = '';
+export let kphFilterChoDuyet = false;
 export const kphSelectedIds = new Set();
 
 export function setKphImageBlob(val) {
@@ -143,7 +144,6 @@ export function initKphFlatpickrs() {
             dateFormat: "d/m/Y",
             position: "below",
             disableMobile: true,
-            appendTo: document.getElementById('kphFilterTuNgay').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphFilterTuNgay').value = dateStr;
                 applyKphDateFilter();
@@ -165,7 +165,6 @@ export function initKphFlatpickrs() {
             dateFormat: "d/m/Y",
             position: "below",
             disableMobile: true,
-            appendTo: document.getElementById('kphFilterDenNgay').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphFilterDenNgay').value = dateStr;
                 applyKphDateFilter();
@@ -716,6 +715,13 @@ export function getFilteredKphLogs() {
             const denDate = parseLocalDate(denStr);
             if (itemDate > denDate) return false;
         }
+
+        // Tag lọc Chờ duyệt
+        if (kphFilterChoDuyet) {
+            const status = item.trangThaiDuyet || 'cho_duyet';
+            if (status !== 'cho_duyet') return false;
+        }
+
         return true;
     });
 }
@@ -736,6 +742,30 @@ export function clearKphDateFilter() {
     if (kphFilterTuNgayPicker) kphFilterTuNgayPicker.clear();
     if (kphFilterDenNgayPicker) kphFilterDenNgayPicker.clear();
 
+    // Reset bộ lọc Chờ duyệt
+    kphFilterChoDuyet = false;
+    const btn = document.getElementById('btnFilterChoDuyet');
+    if (btn) btn.classList.remove('active');
+
+    kphSelectedIds.clear();
+    const selectAllCheckbox = document.getElementById('kphSelectAll');
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    const selectAllCheckboxMobile = document.getElementById('kphSelectAllMobile');
+    if (selectAllCheckboxMobile) selectAllCheckboxMobile.checked = false;
+
+    updateKphLogsUI();
+}
+
+export function toggleKphFilterChoDuyet() {
+    kphFilterChoDuyet = !kphFilterChoDuyet;
+    const btn = document.getElementById('btnFilterChoDuyet');
+    if (btn) {
+        if (kphFilterChoDuyet) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    }
     kphSelectedIds.clear();
     const selectAllCheckbox = document.getElementById('kphSelectAll');
     if (selectAllCheckbox) selectAllCheckbox.checked = false;
@@ -753,7 +783,7 @@ export function toggleKphSort(field) {
         kphSortDirection = 'desc';
     }
 
-    const fields = ['ngayPhatHien', 'soLuong', 'ngayXuLy'];
+    const fields = ['ngayPhatHien', 'soLuong', 'ngayXuLy', 'trangThaiDuyet'];
     fields.forEach(f => {
         const icon = document.getElementById(`sort-icon-${f}`);
         if (icon) {
@@ -788,6 +818,9 @@ export function sortKphLogs(logs) {
         } else if (kphSortField === 'soLuong') {
             valA = parseFloat(a.soLuong) || 0;
             valB = parseFloat(b.soLuong) || 0;
+        } else if (kphSortField === 'trangThaiDuyet') {
+            valA = a.trangThaiDuyet || 'cho_duyet';
+            valB = b.trangThaiDuyet || 'cho_duyet';
         } else {
             valA = a[kphSortField] || '';
             valB = b[kphSortField] || '';
@@ -865,6 +898,12 @@ export function updateKphLogsUI() {
                 const denDate = parseLocalDate(denStr);
                 if (itemDate > denDate) return false;
             }
+            // Tag lọc Chờ duyệt
+            if (kphFilterChoDuyet) {
+                const status = item.trangThaiDuyet || 'cho_duyet';
+                if (status !== 'cho_duyet') return false;
+            }
+
             return true;
         }).length;
     };

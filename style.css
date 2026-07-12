@@ -1718,15 +1718,18 @@
 
     /* --- Flatpickr Override --- */
     .flatpickr-calendar {
-        position: absolute !important;
-        top: 100% !important;
-        left: 0 !important;
-        transform: none !important;
         border-radius: 12px !important;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
         border: 1px solid #e5e5ea !important;
         margin-top: 6px !important;
         z-index: 9999 !important;
+    }
+
+    .form-input-wrapper > .flatpickr-calendar {
+        position: absolute !important;
+        top: 100% !important;
+        left: 0 !important;
+        transform: none !important;
     }
 
     .flatpickr-calendar.arrowTop:before,
@@ -4020,7 +4023,7 @@
 
 @media (max-width: 600px) {
     .kph-main-actions-group {
-        flex-direction: column;
+        flex-direction: row;
         gap: 10px;
         padding: 0 16px;
     }
@@ -4298,4 +4301,37 @@
 }
 #notificationModal .notif-stat-card__label {
     font-size: 9.5px;
+}
+
+/* KPH Filter Tag Badge Styles */
+.kph-filter-tag-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: var(--radius-item, 8px);
+    border: 1.5px solid #e5e5ea;
+    background-color: var(--surface, #ffffff);
+    color: var(--text-sub, #8e8e93);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+.kph-filter-tag-btn:hover {
+    background-color: #f2f2f7;
+}
+
+.kph-filter-tag-btn.active {
+    background-color: var(--status-yellow-bg, rgba(242, 146, 0, 0.1)) !important;
+    color: var(--status-yellow-text, #b26a00) !important;
+    border-color: var(--brand-accent-orange, #f29200) !important;
+}
+
+.kph-filter-row.compact-filter .kph-filter-tag-btn {
+    flex: 0 0 auto !important;
+    white-space: nowrap;
 }

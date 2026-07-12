@@ -82,7 +82,8 @@ import {
     loadStoreSettings,
     saveSidebarSettings,
     switchKphSubTab,
-    kphActiveSubTab
+    kphActiveSubTab,
+    toggleKphFilterChoDuyet
 } from './kph.js';
 
 // State của màn hình chính
@@ -854,6 +855,7 @@ window.saveKphApproval = saveKphApproval;
 window.toggleApproveBienPhapRadio = toggleApproveBienPhapRadio;
 window.toggleApproveNguoiDuyetEdit = toggleApproveNguoiDuyetEdit;
 window.switchKphSubTab = switchKphSubTab;
+window.toggleKphFilterChoDuyet = toggleKphFilterChoDuyet;
 
 export function toggleBarcodeFormats() {
     const container = document.getElementById('barcodeFormatsContainer');

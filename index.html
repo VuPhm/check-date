@@ -371,7 +371,8 @@
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            TẠO PHIẾU TPCN
+            <span class="desktop-only">TẠO PHIẾU TPCN</span>
+            <span class="mobile-only">TPCN</span>
           </button>
           <button type="button" class="btn-action" onclick="openKphCreateModal('TPTS')"
             style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(242, 146, 0, 0.25); background-color: var(--brand-accent-orange); border: none;">
@@ -380,7 +381,8 @@
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            TẠO PHIẾU TPTS
+            <span class="desktop-only">TẠO PHIẾU TPTS</span>
+            <span class="mobile-only">TPTS</span>
           </button>
         </div>
 
@@ -481,6 +483,11 @@
               </div>
             </div>
 
+            <!-- Tag lọc Chờ duyệt -->
+            <button type="button" id="btnFilterChoDuyet" class="kph-filter-tag-btn compact-btn" onclick="toggleKphFilterChoDuyet()">
+              Chờ duyệt
+            </button>
+
             <button class="kph-filter-btn kph-filter-btn--clear compact-btn" onclick="clearKphDateFilter()"
               title="Xóa bộ lọc">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
@@ -502,7 +509,8 @@
                   <th style="width: 120px; cursor: pointer;" onclick="toggleKphSort('ngayPhatHien')"
                     class="sortable-header">Ngày phát hiện <span id="sort-icon-ngayPhatHien" class="sort-icon">↕</span>
                   </th>
-                  <th style="width: 115px; text-align: center;">Duyệt</th>
+                  <th style="width: 115px; text-align: center; cursor: pointer;" onclick="toggleKphSort('trangThaiDuyet')"
+                    class="sortable-header">Duyệt <span id="sort-icon-trangThaiDuyet" class="sort-icon">↕</span></th>
                   <th style="width: 110px;">SKU/UPC</th>
                   <th>Tên hàng hóa</th>
                   <th>NCC</th>
