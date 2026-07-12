@@ -3692,11 +3692,10 @@
     }
 
     .kph-filter-row.compact-filter {
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch;
+        flex-wrap: wrap !important;
+        overflow-x: visible !important;
         padding: 10px 12px !important;
-        gap: 6px !important;
+        gap: 8px !important;
     }
 
     .kph-filter-row.compact-filter::-webkit-scrollbar {
@@ -3708,14 +3707,27 @@
         display: none;
     }
 
+    .kph-filter-row.compact-filter .kph-filter-label {
+        display: none;
+    }
+
+    .kph-filter-row.compact-filter .kph-filter-range {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
     .kph-filter-row.compact-filter .compact-wrapper {
-        flex: 1 1 100px !important;
-        min-width: 90px !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
     }
 
     .kph-filter-row.compact-filter .compact-btn {
         flex: 0 0 auto !important;
         white-space: nowrap;
+    }
+
+    .kph-filter-row.compact-filter .kph-filter-tag-btn {
+        flex: 1 1 auto !important;
     }
 
     .kph-filter-btn--clear .kph-btn-text {
@@ -4308,6 +4320,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
     padding: 6px 12px;
     font-size: 13px;
     font-weight: 600;
@@ -4319,6 +4332,7 @@
     transition: all 0.2s ease;
     height: 36px;
     box-sizing: border-box;
+    white-space: nowrap;
 }
 
 .kph-filter-tag-btn:hover {
@@ -4329,6 +4343,26 @@
     background-color: var(--status-yellow-bg, rgba(242, 146, 0, 0.1)) !important;
     color: var(--status-yellow-text, #b26a00) !important;
     border-color: var(--brand-accent-orange, #f29200) !important;
+}
+
+.kph-filter-tag-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    background-color: rgba(0, 0, 0, 0.06);
+    color: inherit;
+    line-height: 1;
+}
+
+.kph-filter-tag-btn.active .kph-filter-tag-count {
+    background-color: var(--brand-accent-orange, #f29200);
+    color: white;
 }
 
 .kph-filter-row.compact-filter .kph-filter-tag-btn {

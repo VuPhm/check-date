@@ -916,6 +916,23 @@ export function updateKphLogsUI() {
     if (btnTpcn) btnTpcn.innerText = `TPCN (${tpcnCount})`;
     if (btnTpts) btnTpts.innerText = `TPTS (${tptsCount})`;
 
+    // Cập nhật số lượng Chờ duyệt (không phụ thuộc bộ lọc chờ duyệt, chỉ phụ thuộc sub-tab + ngày)
+    const choDuyetCount = kphLogs.filter(item => {
+        const itemType = item.loaiKph || 'TPCN';
+        if (itemType !== kphActiveSubTab) return false;
+        if (tuStr && isValidDateStr(tuStr)) {
+            const itemDate = parseLocalDate(item.ngayPhatHien);
+            if (itemDate < parseLocalDate(tuStr)) return false;
+        }
+        if (denStr && isValidDateStr(denStr)) {
+            const itemDate = parseLocalDate(item.ngayPhatHien);
+            if (itemDate > parseLocalDate(denStr)) return false;
+        }
+        return (item.trangThaiDuyet || 'cho_duyet') === 'cho_duyet';
+    }).length;
+    const choDuyetCountEl = document.getElementById('kphChoDuyetCount');
+    if (choDuyetCountEl) choDuyetCountEl.innerText = choDuyetCount;
+
     // Cập nhật số lượng hiển thị bộ lọc
     const countText = document.getElementById('kphCountText');
     if (countText) countText.innerText = filteredLogs.length;
