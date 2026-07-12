@@ -78,7 +78,9 @@ import {
     toggleApproveBienPhapRadio,
     toggleApproveNguoiDuyetEdit,
     loadStoreSettings,
-    saveSidebarSettings
+    saveSidebarSettings,
+    switchKphSubTab,
+    kphActiveSubTab
 } from './kph.js';
 
 // State của màn hình chính
@@ -271,7 +273,26 @@ export function openResultModal(theme, title, mainText, subText, iconHtml) {
             btnClose.style.width = '100%';
         }
     } else {
-        if (btnCreateKph) btnCreateKph.style.display = 'flex';
+        if (btnCreateKph) {
+            btnCreateKph.style.display = 'flex';
+            // Tính toán hạn sử dụng (shelf life) để tự động quyết định loại hàng
+            let shelfLife = 0;
+            const isModeHsdDate = document.getElementById('calcModeToggle') ? document.getElementById('calcModeToggle').checked : true;
+            if (isModeHsdDate) {
+                const nsxStr = document.getElementById('nsx') ? document.getElementById('nsx').value.trim() : '';
+                const hsdStr = document.getElementById('hsdDate') ? document.getElementById('hsdDate').value.trim() : '';
+                if (isValidDateStr(nsxStr) && isValidDateStr(hsdStr)) {
+                    const nsxDate = parseLocalDate(nsxStr);
+                    const hsdDate = parseLocalDate(hsdStr);
+                    shelfLife = Math.round((hsdDate - nsxDate) / MS_PER_DAY) + 1;
+                }
+            } else {
+                const daysVal = document.getElementById('hsdDays') ? document.getElementById('hsdDays').value.trim() : '';
+                shelfLife = parseInt(daysVal, 10) || 0;
+            }
+            const isTpts = (shelfLife > 0 && shelfLife < 10);
+            btnCreateKph.textContent = `Tạo phiếu KPH (${isTpts ? 'TPTS' : 'TPCN'})`;
+        }
         if (btnClose) {
             btnClose.className = 'btn-secondary';
             btnClose.style.width = 'auto';
@@ -830,6 +851,7 @@ window.openKphApproveNgayXuLyPicker = openKphApproveNgayXuLyPicker;
 window.saveKphApproval = saveKphApproval;
 window.toggleApproveBienPhapRadio = toggleApproveBienPhapRadio;
 window.toggleApproveNguoiDuyetEdit = toggleApproveNguoiDuyetEdit;
+window.switchKphSubTab = switchKphSubTab;
 
 export function toggleBarcodeFormats() {
     const container = document.getElementById('barcodeFormatsContainer');
@@ -851,11 +873,31 @@ export function createKphFromCalculation() {
     // Close result modal
     closeResultModal();
 
+    // Tính toán hạn sử dụng (shelf life) để tự động quyết định loại hàng
+    let shelfLife = 0;
+    const isModeHsdDate = document.getElementById('calcModeToggle') ? document.getElementById('calcModeToggle').checked : true;
+    
+    if (isModeHsdDate) {
+        const nsxStr = document.getElementById('nsx') ? document.getElementById('nsx').value.trim() : '';
+        const hsdStr = document.getElementById('hsdDate') ? document.getElementById('hsdDate').value.trim() : '';
+        if (isValidDateStr(nsxStr) && isValidDateStr(hsdStr)) {
+            const nsxDate = parseLocalDate(nsxStr);
+            const hsdDate = parseLocalDate(hsdStr);
+            shelfLife = Math.round((hsdDate - nsxDate) / MS_PER_DAY) + 1;
+        }
+    } else {
+        const daysVal = document.getElementById('hsdDays') ? document.getElementById('hsdDays').value.trim() : '';
+        shelfLife = parseInt(daysVal, 10) || 0;
+    }
+
+    // TPTS dưới 10 ngày, trên hoặc bằng 10 ngày là TPCN
+    const type = (shelfLife > 0 && shelfLife < 10) ? 'TPTS' : 'TPCN';
+
     // Switch to KPH tab
     switchTab('kph');
 
     // Open KPH Create Modal
-    openKphCreateModal();
+    openKphCreateModal(type);
 
     // Fill values into KPH form
     const kphTenHang = document.getElementById('kphTenHang');

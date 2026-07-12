@@ -2,6 +2,8 @@ import { isValidDateStr, parseLocalDate, formatLocalDate, showAppleConfirm, show
 import { addLog, deleteLog, clearAllLogs, getAllLogs } from './db.js';
 
 export let activeTab = 'tracuu';
+export let kphActiveSubTab = 'TPCN';
+export let kphCurrentType = 'TPCN';
 export const kphLogs = [];
 export let kphImageBlob = null;
 export let kphImagePreviewUrl = null;
@@ -52,6 +54,24 @@ export function switchTab(tabId) {
     }
 }
 
+// Điều hướng Sub-Tab của KPH
+export function switchKphSubTab(subTabId) {
+    kphActiveSubTab = subTabId;
+    document.querySelectorAll('.kph-sub-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const activeBtn = document.getElementById(`sub-tab-btn-${subTabId.toLowerCase()}`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    kphSelectedIds.clear();
+    const selectAllCheckbox = document.getElementById('kphSelectAll');
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    const selectAllCheckboxMobile = document.getElementById('kphSelectAllMobile');
+    if (selectAllCheckboxMobile) selectAllCheckboxMobile.checked = false;
+
+    updateKphLogsUI();
+}
+
 // Khởi tạo lịch cho tab KPH (form và filter)
 export function initKphFlatpickrs() {
     if (!kphNgayPicker) {
@@ -62,6 +82,13 @@ export function initKphFlatpickrs() {
             appendTo: document.getElementById('kphNgayPhatHien').parentNode,
             onChange: function (selectedDates, dateStr) {
                 document.getElementById('kphNgayPhatHien').value = dateStr;
+                if (kphCurrentType === 'TPTS') {
+                    const dateXuLyInput = document.getElementById('kphNgayXuLy');
+                    if (dateXuLyInput) {
+                        dateXuLyInput.value = dateStr;
+                        if (kphNgayXuLyPicker) kphNgayXuLyPicker.setDate(selectedDates[0], false);
+                    }
+                }
             }
         });
         if (!document.getElementById('kphNgayPhatHien').value) {
@@ -71,9 +98,24 @@ export function initKphFlatpickrs() {
         document.getElementById('kphNgayPhatHien').addEventListener('input', () => {
             const val = document.getElementById('kphNgayPhatHien').value.trim();
             if (isValidDateStr(val)) {
-                kphNgayPicker.setDate(parseLocalDate(val), false);
+                const parsedDate = parseLocalDate(val);
+                kphNgayPicker.setDate(parsedDate, false);
+                if (kphCurrentType === 'TPTS') {
+                    const dateXuLyInput = document.getElementById('kphNgayXuLy');
+                    if (dateXuLyInput) {
+                        dateXuLyInput.value = val;
+                        if (kphNgayXuLyPicker) kphNgayXuLyPicker.setDate(parsedDate, false);
+                    }
+                }
             } else if (val === '') {
                 kphNgayPicker.clear();
+                if (kphCurrentType === 'TPTS') {
+                    const dateXuLyInput = document.getElementById('kphNgayXuLy');
+                    if (dateXuLyInput) {
+                        dateXuLyInput.value = '';
+                        if (kphNgayXuLyPicker) kphNgayXuLyPicker.clear();
+                    }
+                }
             }
         });
     }
@@ -382,7 +424,12 @@ export async function loadKphLogs() {
 
         const logs = await getAllLogs();
         kphLogs.length = 0;
-        kphLogs.push(...logs);
+        kphLogs.push(...logs.map(log => {
+            if (!log.loaiKph) {
+                log.loaiKph = 'TPCN';
+            }
+            return log;
+        }));
         updateKphLogsUI();
     } catch (e) {
         console.error("Failed to load KPH logs from IndexedDB", e);
@@ -459,6 +506,7 @@ export async function addKphLog() {
         ghiChu,
         trangThaiDuyet: 'cho_duyet',
         thoiGianDuyet: '',
+        loaiKph: kphCurrentType,
         image: kphImageBlob // Lưu trữ binary Blob trực tiếp
     };
 
@@ -520,7 +568,9 @@ export async function removeKphLog(id) {
 }
 
 export async function clearAllKphLogs() {
-    if (kphLogs.length === 0) return;
+    const logsInTab = kphLogs.filter(item => (item.loaiKph || 'TPCN') === kphActiveSubTab);
+    if (logsInTab.length === 0) return;
+    const tabNameText = kphActiveSubTab === 'TPTS' ? 'TP Tươi sống (TPTS)' : 'TP Công nghệ (TPCN)';
     const confirmClear = await showAppleConfirm({
         title: "Xóa toàn bộ danh sách phiếu",
         htmlContent: `
@@ -528,12 +578,12 @@ export async function clearAllKphLogs() {
                 <div style="width: 52px; height: 52px; border-radius: 50%; background-color: var(--status-red-bg); color: var(--brand-accent-red); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                 </div>
-                <p style="font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Cảnh báo: Xóa toàn bộ phiếu đã khai báo?</p>
-                <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px;">Tất cả dữ liệu trong danh sách hiện tại sẽ bị xóa sạch hoàn toàn.</p>
+                <p style="font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Cảnh báo: Xóa toàn bộ phiếu ${tabNameText} đã khai báo?</p>
+                <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px;">Tất cả dữ liệu trong danh sách ${tabNameText} sẽ bị xóa sạch hoàn toàn.</p>
                 
                 <div style="background-color: var(--bg-base); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid var(--status-red-border);">
-                    <div style="font-size: 28px; font-weight: 800; color: var(--brand-accent-red);">${kphLogs.length}</div>
-                    <div style="font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Phiếu KPH sẽ bị xóa vĩnh viễn</div>
+                    <div style="font-size: 28px; font-weight: 800; color: var(--brand-accent-red);">${logsInTab.length}</div>
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Phiếu ${kphActiveSubTab} sẽ bị xóa vĩnh viễn</div>
                 </div>
             </div>
         `,
@@ -543,14 +593,17 @@ export async function clearAllKphLogs() {
     });
     if (confirmClear) {
         try {
-            await clearAllLogs();
-            kphLogs.length = 0;
-            kphSelectedIds.clear();
-            showAppleToast("Đã xóa toàn bộ danh sách thành công.", "success");
+            for (const item of logsInTab) {
+                await deleteLog(item.id);
+                kphSelectedIds.delete(item.id);
+                const idx = kphLogs.findIndex(l => l.id === item.id);
+                if (idx !== -1) kphLogs.splice(idx, 1);
+            }
+            showAppleToast(`Đã xóa toàn bộ danh sách phiếu ${kphActiveSubTab} thành công.`, "success");
             updateKphLogsUI();
         } catch (e) {
-            console.error("Failed to clear IndexedDB", e);
-            showAppleToast("⚠️ Có lỗi xảy ra khi xóa toàn bộ dữ liệu.", "error");
+            console.error("Failed to clear logs for sub-tab", e);
+            showAppleToast("⚠️ Có lỗi xảy ra khi xóa dữ liệu.", "error");
         }
     }
 }
@@ -649,6 +702,10 @@ export function getFilteredKphLogs() {
     const denStr = document.getElementById('kphFilterDenNgay').value.trim();
 
     return kphLogs.filter(item => {
+        // Phân loại sub-tab: mặc định cũ là TPCN
+        const itemType = item.loaiKph || 'TPCN';
+        if (itemType !== kphActiveSubTab) return false;
+
         if (tuStr && isValidDateStr(tuStr)) {
             const itemDate = parseLocalDate(item.ngayPhatHien);
             const tuDate = parseLocalDate(tuStr);
@@ -1114,8 +1171,11 @@ export async function exportKphToExcel() {
         // Tải động ExcelJS
         await loadExcelJS();
 
+        const isTpts = kphActiveSubTab === 'TPTS';
+        const sheetTitle = isTpts ? 'Khai báo KPH TPTS' : 'Khai báo KPH TPCN';
+
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Khai báo KPH', {
+        const worksheet = workbook.addWorksheet(sheetTitle, {
             views: [{ showGridLines: true }]
         });
 
@@ -1165,7 +1225,7 @@ export async function exportKphToExcel() {
         worksheet.getCell('A3').alignment = { horizontal: 'left', wrapText: false };
 
         worksheet.mergeCells('A5:P5');
-        worksheet.getCell('A5').value = 'PHIẾU THEO DÕI HÀNG KHÔNG PHÙ HỢP';
+        worksheet.getCell('A5').value = `PHIẾU THEO DÕI HÀNG KHÔNG PHÙ HỢP (${isTpts ? 'TPTS' : 'TPCN'})`;
         worksheet.getCell('A5').font = { name: 'Times New Roman', bold: true, size: 15 };
         worksheet.getCell('A5').alignment = { vertical: 'middle', horizontal: 'center' };
         worksheet.getRow(5).height = 25;
@@ -1319,7 +1379,7 @@ export async function exportKphToExcel() {
 
         const downloadAnchor = document.createElement('a');
         downloadAnchor.href = downloadUrl;
-        downloadAnchor.download = `Phieu_Theo_Doi_Hang_KPH_${dateStr}.xlsx`;
+        downloadAnchor.download = `Phieu_Theo_Doi_Hang_KPH_${isTpts ? 'TPTS' : 'TPCN'}_${dateStr}.xlsx`;
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
 
@@ -1335,7 +1395,59 @@ export async function exportKphToExcel() {
 
 // --- HÀM TIỆN ÍCH CHO DIALOG TẠO PHIẾU & CẤU HÌNH CỬA HÀNG COMPACT ---
 
-export function openKphCreateModal() {
+export function openKphCreateModal(type = 'TPCN') {
+    kphCurrentType = type;
+
+    // Cập nhật tiêu đề modal theo loại hàng
+    const titleEl = document.querySelector('#kphCreateModal .apple-modal-title');
+    if (titleEl) {
+        titleEl.innerText = type === 'TPTS' ? 'Tạo Phiếu KPH Mới (TPTS)' : 'Tạo Phiếu KPH Mới (TPCN)';
+    }
+
+    // Thêm nhẹ màu chủ đề cho header modal
+    const headerEl = document.querySelector('#kphCreateModal .apple-modal-header');
+    if (headerEl) {
+        if (type === 'TPTS') {
+            headerEl.style.borderBottom = '3px solid var(--brand-accent-orange)';
+            headerEl.style.background = 'linear-gradient(to bottom, #fdf8f0, var(--surface))';
+        } else {
+            headerEl.style.borderBottom = '3px solid var(--brand-primary)';
+            headerEl.style.background = 'linear-gradient(to bottom, #eff7f2, var(--surface))';
+        }
+    }
+
+    // Ẩn/hiện biện pháp xử lý đối với Thực phẩm tươi sống (TPTS)
+    const doiRadio = document.getElementById('kphBienPhapDoi');
+    const xuatTraRadio = document.getElementById('kphBienPhapXuatTra');
+    const doiLabel = document.querySelector('label[for="kphBienPhapDoi"]');
+    const xuatTraLabel = document.querySelector('label[for="kphBienPhapXuatTra"]');
+
+    if (type === 'TPTS') {
+        if (doiRadio) doiRadio.style.display = 'none';
+        if (xuatTraRadio) xuatTraRadio.style.display = 'none';
+        if (doiLabel) doiLabel.style.display = 'none';
+        if (xuatTraLabel) xuatTraLabel.style.display = 'none';
+
+        // Nếu đang chọn "Đổi" hoặc "Xuất trả" thì reset về "Hủy"
+        const currentSelected = document.querySelector('input[name="kphBienPhapRadio"]:checked');
+        if (currentSelected && (currentSelected.value === 'ĐỔI' || currentSelected.value === 'XUẤT TRẢ')) {
+            const huyRadio = document.getElementById('kphBienPhapHuy');
+            if (huyRadio) {
+                huyRadio.checked = true;
+                if (typeof window.toggleBienPhapRadio === 'function') {
+                    window.toggleBienPhapRadio('HỦY');
+                } else if (typeof toggleBienPhapRadio === 'function') {
+                    toggleBienPhapRadio('HỦY');
+                }
+            }
+        }
+    } else {
+        if (doiRadio) doiRadio.style.display = '';
+        if (xuatTraRadio) xuatTraRadio.style.display = '';
+        if (doiLabel) doiLabel.style.display = '';
+        if (xuatTraLabel) xuatTraLabel.style.display = '';
+    }
+
     const modal = document.getElementById('kphCreateModal');
     if (modal) {
         modal.classList.add('active');
@@ -1344,6 +1456,17 @@ export function openKphCreateModal() {
         if (dateInput && !dateInput.value) {
             dateInput.value = formatLocalDate(new Date());
             if (kphNgayPicker) kphNgayPicker.setDate(new Date(), false);
+        }
+
+        const dateXuLyInput = document.getElementById('kphNgayXuLy');
+        if (type === 'TPTS' && dateInput && dateXuLyInput) {
+            dateXuLyInput.value = dateInput.value;
+            if (kphNgayXuLyPicker && dateInput.value) {
+                kphNgayXuLyPicker.setDate(parseLocalDate(dateInput.value), false);
+            }
+        } else if (type === 'TPCN' && dateXuLyInput) {
+            dateXuLyInput.value = '';
+            if (kphNgayXuLyPicker) kphNgayXuLyPicker.clear();
         }
 
         // Reset scroll position and remove sticky classes
@@ -1394,13 +1517,48 @@ export function openKphApproveModal(id) {
 
     document.getElementById('kphApproveId').value = id;
 
+    // Thêm nhẹ màu chủ đề cho header modal duyệt
+    const isTpts = log.loaiKph === 'TPTS';
+    const approveHeaderEl = document.querySelector('#kphApproveModal .apple-modal-header');
+    if (approveHeaderEl) {
+        if (isTpts) {
+            approveHeaderEl.style.borderBottom = '3px solid var(--brand-accent-orange)';
+            approveHeaderEl.style.background = 'linear-gradient(to bottom, #fdf8f0, var(--surface))';
+        } else {
+            approveHeaderEl.style.borderBottom = '3px solid var(--brand-primary)';
+            approveHeaderEl.style.background = 'linear-gradient(to bottom, #eff7f2, var(--surface))';
+        }
+    }
+
     // Set approval status radio
     const status = log.trangThaiDuyet || 'cho_duyet';
     const statusRadio = document.getElementById(`kphApproveStatus${status === 'cho_duyet' ? 'Cho' : status === 'da_duyet' ? 'Da' : 'Khong'}`);
     if (statusRadio) statusRadio.checked = true;
 
     // Set biện pháp xử lý radio
-    const bienPhap = log.bienPhap || 'HỦY';
+    let bienPhap = log.bienPhap || 'HỦY';
+
+    const appDoiRadio = document.getElementById('kphApproveBienPhapDoi');
+    const appXuatTraRadio = document.getElementById('kphApproveBienPhapXuatTra');
+    const appDoiLabel = document.querySelector('label[for="kphApproveBienPhapDoi"]');
+    const appXuatTraLabel = document.querySelector('label[for="kphApproveBienPhapXuatTra"]');
+
+    if (isTpts) {
+        if (appDoiRadio) appDoiRadio.style.display = 'none';
+        if (appXuatTraRadio) appXuatTraRadio.style.display = 'none';
+        if (appDoiLabel) appDoiLabel.style.display = 'none';
+        if (appXuatTraLabel) appXuatTraLabel.style.display = 'none';
+
+        if (bienPhap === 'ĐỔI' || bienPhap === 'XUẤT TRẢ') {
+            bienPhap = 'HỦY';
+        }
+    } else {
+        if (appDoiRadio) appDoiRadio.style.display = '';
+        if (appXuatTraRadio) appXuatTraRadio.style.display = '';
+        if (appDoiLabel) appDoiLabel.style.display = '';
+        if (appXuatTraLabel) appXuatTraLabel.style.display = '';
+    }
+
     let bpRadioId = 'kphApproveBienPhapHuy';
     if (bienPhap === 'ĐỔI') bpRadioId = 'kphApproveBienPhapDoi';
     else if (bienPhap === 'XUẤT TRẢ') bpRadioId = 'kphApproveBienPhapXuatTra';

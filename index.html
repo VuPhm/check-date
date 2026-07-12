@@ -363,15 +363,24 @@
         </div>
 
         <!-- Nút Tạo Phiếu mới -->
-        <div class="kph-main-actions">
-          <button type="button" class="btn-action" onclick="openKphCreateModal()"
-            style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 280px; margin: 0 auto; box-shadow: 0 4px 14px rgba(0, 102, 51, 0.2);">
+        <div class="kph-main-actions-group">
+          <button type="button" class="btn-action" onclick="openKphCreateModal('TPTS')"
+            style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(242, 146, 0, 0.25); background-color: var(--brand-accent-orange); border: none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
               stroke-linejoin="round" style="width: 18px; height: 18px;">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            TẠO PHIẾU KPH MỚI
+            TẠO PHIẾU TPTS
+          </button>
+          <button type="button" class="btn-action" onclick="openKphCreateModal('TPCN')"
+            style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(0, 102, 51, 0.2);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round" style="width: 18px; height: 18px;">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            TẠO PHIẾU TPCN
           </button>
         </div>
 
@@ -412,6 +421,16 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- Phân loại Sub-tabs -->
+          <div class="kph-sub-tabs">
+            <button class="kph-sub-tab active" onclick="switchKphSubTab('TPCN')" id="sub-tab-btn-tpcn">
+              TPCN
+            </button>
+            <button class="kph-sub-tab" onclick="switchKphSubTab('TPTS')" id="sub-tab-btn-tpts">
+              TPTS
+            </button>
           </div>
           <!-- Bộ lọc khoảng ngày tối ưu -->
           <div class="kph-filter-row compact-filter">

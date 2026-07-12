@@ -3992,3 +3992,51 @@
         display: inline !important;
     }
 }
+
+/* Custom styles for KPH product classification */
+.kph-main-actions-group {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    width: 100%;
+    max-width: 580px;
+    margin: 0 auto 20px auto;
+}
+
+@media (max-width: 600px) {
+    .kph-main-actions-group {
+        flex-direction: column;
+        gap: 10px;
+        padding: 0 16px;
+    }
+}
+
+.kph-sub-tabs {
+    display: flex;
+    gap: 4px;
+    background-color: var(--bg-base);
+    padding: 4px;
+    border-radius: var(--radius-item);
+    margin: 0 0 16px 0;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.kph-sub-tab {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-sub);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--radius-item) - 4px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.kph-sub-tab.active {
+    color: var(--brand-primary);
+    background-color: var(--surface);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
