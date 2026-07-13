@@ -3,7 +3,8 @@
 Ứng dụng Progressive Web App (PWA) gọn nhẹ, hoạt động độc lập và tối ưu cho thiết bị di động, giúp nhân viên/quản lý tại các cửa hàng bán lẻ (CoopFood) tra cứu nhanh thời hạn lùi hàng (ngày phải thu hồi hoặc giảm giá sản phẩm) dựa trên Ngày Sản Xuất (NSX) và Hạn Sử Dụng (HSD).
 
 * **Bản chạy trực tuyến (Production Build):** [vuphm.github.io/coop-date](https://vuphm.github.io/coop-date/)
-* **Nền tảng phát triển:** HTML5, Vanilla CSS (Apple HIG Design), Vanilla JavaScript (ES6), Flatpickr.
+* **Nền tảng phát triển:** HTML5, Vanilla CSS (Apple HIG Design), Vanilla JavaScript (ES6 Modules), Flatpickr.
+* **Phiên bản hiện tại:** `2.17.2` (11/07/2026)
 
 ---
 
@@ -35,22 +36,41 @@ Hệ thống hỗ trợ các tính năng nghiệp vụ cốt lõi sau:
 * Phối màu động cho các đoạn trục (Xanh: An toàn, Vàng: Sắp tới hạn, Đỏ: Đã quá hạn lùi) giúp người dùng nhận diện tức thì trạng thái của lô hàng.
 
 ### D. Lịch Sử Tra Cứu (Search History)
-* Lưu trữ danh sách các phiên tra cứu gần nhất trong bộ nhớ tạm (In-memory) và đồng bộ tự động xuống `localStorage` dưới khóa `coop_date_history`.
+* Lưu trữ danh sách các phiên tra cứu gần nhất, đồng bộ xuống **IndexedDB** (store `history_logs`) để tránh giới hạn dung lượng localStorage.
 * Hỗ trợ **Bộ lọc trạng thái (Filter tags):** Tất cả, An toàn, Sắp tới hạn, Quá hạn lùi, Hàng ngắn ngày, Đã hết HSD.
 * Hỗ trợ **Sắp xếp ưu tiên (Priority Sort):** Sắp xếp danh sách lịch sử theo mức độ khẩn cấp của hạn lùi hàng (Danger -> Warning -> Safe).
 * Cho phép click vào một mục trong lịch sử để nạp nhanh (load) lại toàn bộ dữ liệu lên các trường nhập liệu.
+* Hỗ trợ xuất báo cáo lịch sử tra cứu ra file Excel.
 
 ### E. Khai Báo và Quản Lý Hàng Không Phù Hợp (KPH)
+* **Phân loại KPH theo 2 nhóm ngành hàng (Sub-tabs):**
+  * **TPCN (Thực phẩm Công nghệ):** Hàng công nghiệp đóng gói sẵn, áp dụng đầy đủ quy trình khai báo.
+  * **TPTS (Thực phẩm Tươi sống):** Hàng tươi sống, tự động đồng bộ ngày phát hiện = ngày xử lý, giao diện form tùy biến riêng.
 * **Khai báo thông tin chi tiết:** Hỗ trợ nhập liệu Đơn vị (CO.OP FOOD), Cửa hàng (STORE), Người phát hiện, Ngày phát hiện (mặc định hôm nay), SKU/UPC (hỗ trợ quét camera), Tên hàng, Nhà cung cấp (NCC), Đơn vị tính (DVT), Số lượng, Tình trạng (Hư hỏng, Móp méo, Cận hạn, Hết hạn, Khác), Biện pháp xử lý (Hủy, Trả NCC, Giảm giá, Khác), Ngày xử lý thực tế và Ảnh minh chứng.
-* **Nén ảnh tự động (Client-side Compression):** Đọc tệp tin ảnh tải lên, vẽ lại bằng Canvas để giới hạn kích thước tối đa `400x400` pixel và nén định dạng JPEG chất lượng `0.7` trước khi chuyển sang chuỗi Base64. Cơ chế này giúp tối ưu hóa dung lượng lưu trữ trên LocalStorage tránh bị tràn hạn mức (quota) của trình duyệt.
+* **Nén ảnh tự động (Client-side Compression):** Đọc tệp tin ảnh tải lên, vẽ lại bằng Canvas để giới hạn kích thước tối đa `400x400` pixel và nén định dạng JPEG chất lượng `0.7` trước khi chuyển sang chuỗi Base64. Cơ chế này giúp tối ưu hóa dung lượng lưu trữ tránh bị tràn hạn mức (quota).
+* **Quy trình duyệt phiếu KPH (Approval Workflow):**
+  * Mỗi phiếu KPH mới được tạo ra có trạng thái mặc định `cho_duyet` (Chờ duyệt).
+  * Quản lý cửa hàng có thể mở modal duyệt, nhập thông tin Người duyệt, Biện pháp xử lý cuối cùng, Ngày xử lý thực tế, và xác nhận chuyển trạng thái sang `da_duyet` (Đã duyệt).
+  * Hỗ trợ sắp xếp và lọc danh sách phiếu theo trạng thái duyệt.
 * **Quản lý danh sách phiếu KPH:**
-  * Đồng bộ tự động offline xuống `localStorage` dưới khóa `coop_kph_logs`.
-  * Bộ lọc thông minh theo khoảng thời gian phát hiện hàng KPH (Từ ngày - Đến ngày).
-  * Sắp xếp danh sách linh hoạt theo các cột dữ liệu chính: Ngày phát hiện, Số lượng, Ngày xử lý.
+  * Đồng bộ tự động offline xuống **IndexedDB** (store `kph_logs`) thay vì localStorage nhằm mở rộng dung lượng lưu trữ đáng kể.
+  * Bộ lọc thông minh theo khoảng thời gian phát hiện hàng KPH (Từ ngày - Đến ngày) và bộ lọc Chờ duyệt.
+  * Sắp xếp danh sách linh hoạt theo các cột dữ liệu chính: Ngày phát hiện, Số lượng, Ngày xử lý, Trạng thái duyệt.
   * Chọn dòng hàng loạt (Select All / Single check) để thực hiện các thao tác nhóm.
   * Xem ảnh minh chứng phóng to sắc nét thông qua Modal giao diện tối giản.
   * Xóa từng phiếu khai báo lỗi hoặc xóa toàn bộ lịch sử khai báo KPH.
-* **Xuất báo cáo Excel (Excel Export):** Sử dụng các thư viện `exceljs` và `FileSaver.js` để kết xuất danh sách phiếu KPH được chọn (hoặc tất cả nếu không chọn) ra file Excel định dạng chuẩn chỉ với 1 click.
+* **Xuất báo cáo Excel (Excel Export):** Sử dụng các thư viện `exceljs` và `FileSaver.js` để kết xuất danh sách phiếu KPH được chọn (hoặc tất cả nếu không chọn) ra file Excel định dạng chuẩn, phân biệt theo sub-tab TPCN/TPTS.
+
+### F. Trung Tâm Thông Báo (Notification Center)
+* **Badge thông báo trên Header:** Hiển thị tổng số việc cần xử lý (phiếu KPH chờ duyệt + tra cứu có hạn lùi đáng lo ngại) ngay trên nút chuông thông báo.
+* **Modal thông báo chi tiết:** Bao gồm 2 khu vực:
+  * **KPH chờ duyệt:** Thống kê nhanh số phiếu TPCN/TPTS đang chờ duyệt, click để nhảy đến tab KPH tương ứng.
+  * **Tra cứu đã lưu:** Liệt kê các sản phẩm đang ở trạng thái Warning/Danger/Expired, click để nạp nhanh lại dữ liệu tra cứu.
+* **Sidebar thống kê:** Hiển thị tổng quan các chỉ số thông báo trên thanh trượt bên trái.
+
+### G. Thanh Điều Hướng Sidebar
+* **Cài đặt cửa hàng:** Quản lý thông tin Đơn vị (CF), Cửa hàng (Store), Người phụ trách mặc định.
+* **Thống kê nhanh:** Hiển thị số lượng phiếu KPH chờ duyệt (TPCN/TPTS), số tra cứu sắp đến hạn/quá hạn lùi/quá hạn sử dụng.
 
 ---
 
@@ -92,7 +112,13 @@ Thuật toán tính toán hạn lùi hàng tuân thủ quy tắc sau:
   * Nhờ chiến lược Network-First, khi thiết bị có mạng, trình duyệt luôn tải trực tiếp các tệp HTML/JS/CSS mới nhất từ máy chủ để hiển thị tức thì cho người dùng.
   * Đồng thời, Service Worker mới sẽ âm thầm cài đặt dưới nền. Khi người dùng tắt hoàn toàn ứng dụng PWA (hoặc đóng toàn bộ các tab liên quan) và mở lại, Service Worker mới sẽ lập tức kích hoạt, thay thế phiên bản cũ và kích hoạt dọn dẹp cache cũ một cách êm ái mà không gây xung đột hay gián đoạn trải nghiệm của người dùng.
 
-### B. Khả Năng Tương Thích Đa Hệ Điều Hành (Multi-OS Compatibility)
+### B. Lưu Trữ Dữ Liệu (Data Storage)
+* **IndexedDB (Primary Storage):** Ứng dụng sử dụng IndexedDB (`coop_kph_db`, version 2) với 2 object stores:
+  * `kph_logs`: Lưu trữ toàn bộ phiếu KPH (TPCN & TPTS) bao gồm cả ảnh minh chứng dạng Base64.
+  * `history_logs`: Lưu trữ lịch sử tra cứu hạn lùi hàng.
+* **Ưu điểm so với localStorage:** Không bị giới hạn quota 5-10MB, cho phép lưu trữ hàng trăm phiếu KPH kèm ảnh mà không lo tràn dung lượng.
+
+### C. Khả Năng Tương Thích Đa Hệ Điều Hành (Multi-OS Compatibility)
 * **Giao diện chuẩn Apple HIG:** Thiết kế theo ngôn ngữ tối giản, hiện đại của iOS/macOS (nền xám nhẹ, các thẻ bo góc lớn `20px` màu trắng, bóng đổ mịn màng, font chữ hệ thống không chân).
 * **Thiết kế Responsive linh hoạt (CSS Grid & Flexbox):**
   * Trên màn hình di động nhỏ: Giao diện xếp dọc theo 1 cột độc nhất (`calc` -> `diagram` -> `history`).
@@ -102,12 +128,17 @@ Thuật toán tính toán hạn lùi hàng tuân thủ quy tắc sau:
   * Tích hợp công tắc gạt trượt (Apple Switch Toggle) và nút bấm lớn để thao tác bằng ngón cái dễ dàng.
   * Lắng nghe sự kiện bàn phím, tự động thêm dấu phân cách `/` khi gõ ngày tháng (`dd/mm/yyyy`) trên bàn phím số di động (`inputmode="numeric"`).
 
-### C. Dễ Dàng Bảo Trì & Nâng Cấp (Maintainability)
+### D. Hệ Thống Giao Diện Tùy Chỉnh (Custom UI Components)
+* **Apple-style Confirm Dialog (`showAppleConfirm`):** Hộp thoại xác nhận tùy chỉnh với animation scale-up mượt mà, hỗ trợ nội dung HTML tùy ý, nút Danger/Primary.
+* **Apple-style Toast (`showAppleToast`):** Thông báo popup ngắn (info/success/warning/error) tự biến mất sau thời gian cấu hình.
+* **Modal Tạo/Duyệt Phiếu KPH:** Giao diện form slide-up toàn màn hình trên mobile.
+
+### E. Dễ Dàng Bảo Trì & Nâng Cấp (Maintainability)
 * **Kiến trúc tối giản, không phụ thuộc thư viện nặng:** Không sử dụng các framework cồng kềnh như React/Vue hay CSS utility như Tailwind. Toàn bộ mã nguồn nằm gọn trong các tệp vanilla thuần túy giúp ứng dụng tải cực nhanh và an toàn.
 * **Tách biệt rõ rệt trách nhiệm (Separation of Concerns):**
   * Tệp `index.html` chỉ định nghĩa cấu trúc khung.
   * Tệp `style.css` quản lý toàn bộ hệ thống biến CSS màu sắc thương hiệu (Brand Palette 5-3-1-1) và hiệu ứng chuyển động.
-  * Thư mục `js/` chứa mã nguồn JavaScript chia theo mô-đun chức năng riêng biệt.
+  * Thư mục `js/` chứa mã nguồn JavaScript chia theo mô-đun chức năng riêng biệt (ES6 Modules).
 * **Triển khai tự động (CI/CD):** Tích hợp sẵn luồng GitHub Actions (`.github/workflows/static.yml`) tự động deploy ứng dụng lên GitHub Pages mỗi khi nhánh `main` được cập nhật.
 
 ---
@@ -120,45 +151,96 @@ Khi tiếp cận mã nguồn để bảo trì hoặc nâng cấp các tính năn
 ```bash
 coop-date/
 ├── .github/workflows/
-│   └── static.yml          # GitHub Actions tự động deploy lên Github Pages
-├── favicon_io/             # Chứa bộ tài nguyên Icon đa nền tảng
-├── js/                     # Thư mục mã nguồn Javascript modular
-│   ├── business.js         # Xử lý logic nghiệp vụ tính toán hạn lùi
-│   ├── helpers.js          # Các hàm phụ trợ định dạng ngày, playBeep, cấu hình phiên bản
-│   ├── history.js          # Quản lý lưu trữ/hiển thị danh sách lịch sử tra cứu
-│   ├── kph.js              # Nghiệp vụ và giao diện Khai Báo Hàng Không Phù Hợp (KPH)
-│   ├── main.js             # Điểm khởi chạy ứng dụng, lắng nghe DOM, điều hướng tổng
-│   ├── scanner.js          # Điều khiển camera và tích hợp html5-qrcode
-│   └── timeline.js         # Vẽ sơ đồ trực quan SVG động
-├── index.html              # Layout cấu trúc của PWA
-├── style.css               # Hệ thống CSS stylesheet (Apple Design Concept)
-├── sw.js                   # Service Worker phục vụ chế độ offline
-├── manifest.json           # Cấu hình PWA cài đặt ứng dụng trên màn hình chính
-└── version.json            # Tệp lưu vết phiên bản deploy
+│   └── static.yml              # GitHub Actions tự động deploy lên Github Pages
+├── favicon_io/                 # Chứa bộ tài nguyên Icon đa nền tảng
+├── js/                         # Thư mục mã nguồn Javascript modular (ES6 Modules)
+│   ├── business.js             # Xử lý logic nghiệp vụ tính toán hạn lùi
+│   ├── db.js                   # ★ Tầng truy xuất IndexedDB (KPH logs + History logs)
+│   ├── helpers.js              # Các hàm phụ trợ, cấu hình phiên bản, UI components
+│   ├── history.js              # Quản lý lưu trữ/hiển thị danh sách lịch sử tra cứu
+│   ├── kph.js                  # Nghiệp vụ và giao diện KPH (TPCN/TPTS + Approval)
+│   ├── main.js                 # Điểm khởi chạy ứng dụng, lắng nghe DOM, điều hướng
+│   ├── notifications.js        # ★ Trung tâm thông báo (Badge, Modal, Sidebar stats)
+│   ├── scanner.js              # Điều khiển camera và tích hợp html5-qrcode
+│   └── timeline.js             # Vẽ sơ đồ trực quan SVG động
+├── index.html                  # Layout cấu trúc của PWA
+├── style.css                   # Hệ thống CSS stylesheet (Apple Design Concept)
+├── sw.js                       # Service Worker phục vụ chế độ offline
+├── manifest.json               # Cấu hình PWA cài đặt ứng dụng trên màn hình chính
+└── version.json                # Tệp lưu vết phiên bản deploy
+```
+> ★ Tệp mới được bổ sung từ phiên bản 2.15+
+
+### Sơ Đồ Phụ Thuộc Giữa Các Module (Dependency Graph)
+```
+main.js (Entry Point)
+├── helpers.js       (Hàm tiện ích dùng chung)
+├── business.js      (Logic nghiệp vụ thuần túy)
+├── timeline.js      (SVG rendering)
+├── scanner.js       (Camera + QR/Barcode)
+├── history.js       (Lịch sử tra cứu)
+│   └── db.js        (IndexedDB CRUD)
+├── kph.js           (Khai báo KPH TPCN/TPTS + Approval)
+│   ├── db.js        (IndexedDB CRUD)
+│   └── helpers.js   (Hàm tiện ích)
+└── notifications.js (Thông báo)
+    ├── kph.js       (Đọc trạng thái phiếu KPH)
+    └── history.js   (Đọc trạng thái tra cứu)
 ```
 
 ### Các tệp logic và hàm quan trọng
-* **`js/main.js`**: Điểm khởi chạy ứng dụng (`DOMContentLoaded`), cấu hình Flatpickr, thiết lập lắng nghe sự kiện nhập liệu tự động thêm dấu gạch chéo cho ô ngày tháng (`auto-date` mask), điều phối cơ chế đồng bộ có tường ngăn giữa các ô ngày HSD, số ngày HSD, và số tháng HSD.
+
+* **`js/main.js`**: Điểm khởi chạy ứng dụng (`DOMContentLoaded`), cấu hình Flatpickr, thiết lập lắng nghe sự kiện nhập liệu tự động thêm dấu gạch chéo cho ô ngày tháng (`auto-date` mask), điều phối cơ chế đồng bộ có tường ngăn giữa các ô ngày HSD, số ngày HSD, và số tháng HSD. Quản lý mở Scanner cho cả tab Tra cứu lẫn KPH.
+
+* **`js/db.js`** ★: Tầng truy xuất dữ liệu IndexedDB (`coop_kph_db`, version 2) với 2 object stores:
+  * Store `kph_logs`: `initDB()`, `getAllLogs()`, `addLog(log)`, `deleteLog(id)`, `clearAllLogs()`.
+  * Store `history_logs`: `getAllHistoryLogs()`, `addHistoryLog(log)`, `deleteHistoryLog(id)`, `clearAllHistoryLogs()`.
+  * Tất cả các hàm đều trả về `Promise` để xử lý bất đồng bộ. Module này **tuyệt đối không thao túng DOM**.
+
 * **`js/helpers.js`**: Chứa hằng số cấu hình phiên bản `APP_VERSION_CONFIG` và các hàm phụ trợ dùng chung:
-  * `parseLocalDate(str)` / `formatLocalDate(date)`: Chuyển đổi qua lại giữa chuỗi ngày tháng và đối tượng `Date` múi giờ địa phương.
+  * `parseLocalDate(str)` / `formatLocalDate(date)`: Chuyển đổi qua lại giữa chuỗi ngày tháng `dd/mm/yyyy` và đối tượng `Date` múi giờ địa phương.
+  * `getCleanToday()`: Trả về Date ngày hôm nay đã reset giờ phút giây về `00:00:00`.
   * `isValidDateStr(str)`: Kiểm tra chuỗi định dạng ngày có hợp lệ hay không.
+  * `formatRemainingText(days)`: Chuyển đổi số ngày còn lại thành chuỗi trạng thái tiếng Việt.
   * `playBeep()`: Phát âm thanh bíp giả làm từ phần cứng khi quét mã vạch thành công.
   * `initAppVersion()`: Đăng ký Service Worker và theo dõi trạng thái mạng (online/offline).
+  * `showAppleConfirm({...})`: Tạo hộp thoại xác nhận Apple-style (Promise-based).
+  * `showAppleToast(message, type, duration)`: Hiển thị thông báo toast.
+  * `loadExcelJS()`: Lazy-load thư viện ExcelJS từ CDN khi cần xuất file Excel.
+
 * **`js/business.js`**: Chứa hàm `processReturnBusinessLogic(nsxStr, hsdDateStr)` thực thi thuật toán phân loại hàng ngắn ngày/dài ngày, tính ngày lùi hàng theo quy tắc 20%-40% và trả về trạng thái cảnh báo tương ứng. **Tuyệt đối không thao túng DOM trong tệp này.**
+
 * **`js/timeline.js`**: Chứa hàm `drawTimelineDiagram(nsxStr, hsdStr, returnStr)` tính toán vị trí hiển thị và xuất chuỗi template SVG vẽ sơ đồ trục thời gian trực quan.
-* **`js/history.js`**: Quản lý mảng dữ liệu lịch sử tra cứu, lưu trữ vào localStorage dưới khóa `coop_date_history`, áp dụng bộ lọc trạng thái (filter) và sắp xếp ưu tiên (sort), cập nhật giao diện danh sách lịch sử tra cứu.
+
+* **`js/history.js`**: Quản lý mảng dữ liệu lịch sử tra cứu, lưu trữ vào IndexedDB thông qua `db.js`, áp dụng bộ lọc trạng thái (filter) và sắp xếp ưu tiên (sort), cập nhật giao diện danh sách lịch sử tra cứu. Export: `historyData`, `loadHistoryFromStorage()`, `saveHistoryToStorage()`, `removeHistoryItem()`, `clearAllHistory()`, `updateHistoryUI()`, `setFilter()`, `togglePrioritySort()`, `loadHistoryItem()`, `exportHistoryToExcel()`.
+
+* **`js/notifications.js`** ★: Trung tâm thông báo tổng hợp:
+  * `updateNotificationStats()`: Tính toán số liệu KPH chờ duyệt (TPCN/TPTS) + tra cứu warning/danger/expired, cập nhật badge và sidebar.
+  * `openNotificationModal()` / `closeNotificationModal()`: Điều khiển modal thông báo.
+  * `handleNotificationHistoryClick(...)`: Nhảy đến tab Tra cứu và nạp lại dữ liệu khi click mục thông báo.
+  * `handleNotificationKphClick(subTabId)`: Nhảy đến tab KPH sub-tab tương ứng với bộ lọc Chờ duyệt.
+
 * **`js/scanner.js`**: Điều khiển camera qua thư viện `Html5Qrcode`, xử lý bật/tắt đèn pin (flash/torch) nếu thiết bị hỗ trợ, định vị luồng nhận diện mã EAN-13, EAN-8, Code 128, Code 39, UPC-A, tự động điền mã vạch quét được vào ô input tương ứng.
+
 * **`js/kph.js`**: Quản lý nghiệp vụ Khai Báo Hàng Không Phù Hợp (KPH):
-  * Lưu trữ dữ liệu offline dưới khóa `coop_kph_logs`.
-  * Nén ảnh minh chứng bằng Canvas & JPEG 0.7 chất lượng trước khi chuyển sang Base64 để chống tràn hạn mức lưu trữ.
-  * Lọc tìm kiếm theo khoảng ngày phát hiện, sắp xếp danh sách phiếu KPH theo các cột thông tin.
+  * Phân chia theo sub-tab TPCN/TPTS, mỗi loại có giao diện form tùy biến riêng.
+  * Lưu trữ dữ liệu offline qua IndexedDB (`db.js`).
+  * Nén ảnh minh chứng bằng Canvas & JPEG 0.7 chất lượng trước khi chuyển sang Base64.
+  * Quy trình duyệt phiếu: `openKphApproveModal(id)`, `saveKphApproval()`, `closeKphApproveModal()`.
+  * Lọc tìm kiếm theo khoảng ngày phát hiện, lọc theo trạng thái duyệt (`toggleKphFilterChoDuyet`).
+  * Sắp xếp danh sách phiếu KPH theo các cột thông tin (ngày, số lượng, trạng thái duyệt).
+  * Modal tạo phiếu mới: `openKphCreateModal(type)`, `closeKphCreateModal()`.
+  * Quản lý cài đặt cửa hàng/người phát hiện: `saveStoreSettings()`, `loadStoreSettings()`, `saveSidebarSettings()`.
   * Xuất báo cáo ra định dạng file Excel (.xlsx) thông qua thư viện `exceljs` và `FileSaver.js`.
 
 ### Điểm cần lưu ý khi nâng cấp hệ thống (Dành cho AI Agent)
-1. **Thay đổi phiên bản:** Khi cập nhật bất kỳ tính năng hoặc sửa đổi mã nguồn trong thư mục `js/` hoặc tệp `style.css`, bạn bắt buộc phải đồng bộ chuỗi phiên bản (ví dụ: `2.16.0`) tại 3 nơi:
-   * Hằng số `currentVersion` và `lastUpdated` tại [helpers.js](file:///Users/vup/coop-date/js/helpers.js) (dòng 3).
-   * Hằng số `CACHE_NAME` tại [sw.js](file:///Users/vup/coop-date/sw.js) (dòng 1).
-   * Trường `version` và `lastUpdated` tại [version.json](file:///Users/vup/coop-date/version.json) (dòng 2).
+1. **Thay đổi phiên bản:** Khi cập nhật bất kỳ tính năng hoặc sửa đổi mã nguồn trong thư mục `js/` hoặc tệp `style.css`, bạn bắt buộc phải đồng bộ chuỗi phiên bản (ví dụ: `2.17.2`) tại 3 nơi:
+   * Hằng số `currentVersion` và `lastUpdated` tại [helpers.js](js/helpers.js) (dòng 3-4).
+   * Hằng số `CACHE_NAME` tại [sw.js](sw.js) (dòng 1).
+   * Trường `version` và `lastUpdated` tại [version.json](version.json).
    * Điều này đảm bảo cơ chế Version Mismatch Guard hoạt động chính xác và người dùng cuối nhận được bản cập nhật ngay lập tức.
-2. **Giới hạn Thư viện Ngoại vi:** Hạn chế tối đa việc thêm các tệp CDN mới nhằm giữ vững tiêu chí tải trang tức thì dưới 1 giây và tương thích offline tuyệt đối của PWA.
-3. **Màu sắc trạng thái:** Khi thay đổi giao diện cảnh báo, hãy chỉnh sửa các biến CSS tương ứng (`--status-green-bg`, `--status-yellow-bg`, `--status-red-bg`) trong tệp [style.css](file:///Users/vup/coop-date/style.css) để duy trì tính đồng nhất của hệ thống giao diện.
+2. **Thêm tệp JS mới:** Nếu tạo module JS mới trong thư mục `js/`, phải thêm đường dẫn tệp vào mảng `ASSETS` trong [sw.js](sw.js) để Service Worker cache đúng.
+3. **Giới hạn Thư viện Ngoại vi:** Hạn chế tối đa việc thêm các tệp CDN mới nhằm giữ vững tiêu chí tải trang tức thì dưới 1 giây và tương thích offline tuyệt đối của PWA.
+4. **Màu sắc trạng thái:** Khi thay đổi giao diện cảnh báo, hãy chỉnh sửa các biến CSS tương ứng (`--status-green-bg`, `--status-yellow-bg`, `--status-red-bg`) trong tệp [style.css](style.css) để duy trì tính đồng nhất của hệ thống giao diện.
+5. **IndexedDB Schema:** Khi cần thêm object store mới, tăng `DB_VERSION` trong [db.js](js/db.js) và cập nhật logic `onupgradeneeded`.
+6. **Thứ tự import:** Module `notifications.js` phải được import sau `kph.js` và `history.js` trong `main.js` vì nó phụ thuộc vào dữ liệu xuất ra từ 2 module đó.
