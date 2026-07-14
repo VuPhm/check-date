@@ -1796,6 +1796,8 @@ export async function exportKphToExcel() {
 
 export function openKphCreateModal(type = 'TPCN') {
     kphCurrentType = type;
+    const modal = document.getElementById('kphCreateModal');
+    if (modal) modal.classList.toggle('kph-create-modal--tpts', type === 'TPTS');
 
     // Cập nhật tiêu đề modal theo loại hàng
     const titleEl = document.querySelector('#kphCreateModal .apple-modal-title');
@@ -1847,7 +1849,6 @@ export function openKphCreateModal(type = 'TPCN') {
         if (xuatTraLabel) xuatTraLabel.style.display = '';
     }
 
-    const modal = document.getElementById('kphCreateModal');
     if (modal) {
         modal.classList.add('active');
         // Tự động cập nhật ngày phát hiện mặc định là hôm nay nếu chưa nhập

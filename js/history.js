@@ -10,8 +10,7 @@ import {
 import { 
     getAllHistoryLogs, 
     addHistoryLog, 
-    deleteHistoryLog, 
-    clearAllHistoryLogs 
+    deleteHistoryLog
 } from './db.js';
 
 export const historyData = [];
@@ -126,29 +125,56 @@ export function removeHistoryItemFromDB(id) {
 
 export function clearAllHistory() {
     if (historyData.length === 0) return;
+    let displayData = [...historyData];
+    if (!activeFilters.has('all')) {
+        displayData = displayData.filter(item => activeFilters.has(item.alertType));
+    }
+    if (isPrioritySort) displayData.sort((a, b) => a.alertWeight - b.alertWeight);
+    if (displayData.length === 0) return;
+
+    const idsToRemove = new Set(displayData.map(item => item.id));
+    const filterNames = {
+        safe: 'An toàn',
+        warning: 'Sắp tới hạn',
+        danger: 'Quá hạn lùi',
+        other: 'Khác',
+        expired: 'Đã hết HSD'
+    };
+    const isDeletingAll = activeFilters.has('all');
+    const appliedFilters = isDeletingAll
+        ? 'Tất cả lịch sử tra cứu'
+        : [...activeFilters].map(filter => filterNames[filter]).filter(Boolean).join(', ');
+    const retainedCount = historyData.length - displayData.length;
     showAppleConfirm({
-        title: "Xóa toàn bộ lịch sử",
+        title: `Xóa ${displayData.length} lượt tra cứu`,
         htmlContent: `
             <div style="text-align: center; padding: 10px 0;">
                 <div style="width: 52px; height: 52px; border-radius: 50%; background-color: var(--status-red-bg); color: var(--brand-accent-red); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                 </div>
-                <p style="font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Bạn có chắc chắn muốn xóa toàn bộ lịch sử tra cứu?</p>
+                <p style="font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Bạn có chắc chắn muốn xóa các lượt tra cứu này?</p>
                 <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px;">Hành động này không thể hoàn tác.</p>
                 
                 <div style="background-color: var(--bg-base); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid var(--status-red-border);">
-                    <div style="font-size: 28px; font-weight: 800; color: var(--brand-accent-red);">${historyData.length}</div>
-                    <div style="font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Lượt tra cứu sẽ bị xóa sạch</div>
+                    <div style="font-size: 28px; font-weight: 800; color: var(--brand-accent-red);">${displayData.length}</div>
+                    <div style="font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;">Lượt tra cứu sẽ bị xóa</div>
+                </div>
+                <div style="margin-top: 12px; padding: 12px; background: var(--surface); border: 1px solid rgba(0, 0, 0, 0.06); border-radius: 10px; text-align: left; font-size: 12px; line-height: 1.5; color: var(--text-sub);">
+                    <div><strong style="color: var(--text-main);">Phạm vi:</strong> ${appliedFilters}</div>
+                    <div><strong style="color: var(--text-main);">Dữ liệu giữ lại:</strong> ${isDeletingAll ? 'Không có' : `${retainedCount} lượt không thuộc bộ lọc`}</div>
                 </div>
             </div>
         `,
-        confirmText: "Xóa sạch",
+        confirmText: `Xóa ${displayData.length} lượt`,
         cancelText: "Hủy",
         isDanger: true
     }).then(confirmed => {
         if (confirmed) {
-            historyData.length = 0;
-            clearAllHistoryLogs().catch(err => console.error("Lỗi khi dọn dẹp DB:", err));
+            for (let i = historyData.length - 1; i >= 0; i--) {
+                if (idsToRemove.has(historyData[i].id)) historyData.splice(i, 1);
+            }
+            Promise.all([...idsToRemove].map(id => deleteHistoryLog(id)))
+                .catch(err => console.error("Lỗi khi dọn dẹp DB:", err));
             updateHistoryUI();
         }
     });
@@ -185,15 +211,25 @@ export function updateHistoryUI() {
     
     const clearBtn = document.getElementById('btnClearHistory');
     const exportBtn = document.getElementById('btnExportHistoryExcel');
-    const hasHistory = historyData.length > 0;
-    
     let displayData = [...historyData];
     if (!activeFilters.has('all')) {
         displayData = displayData.filter(item => activeFilters.has(item.alertType));
     }
     if (isPrioritySort) displayData.sort((a, b) => a.alertWeight - b.alertWeight);
     
-    if (clearBtn) clearBtn.disabled = !hasHistory;
+    if (clearBtn) {
+        clearBtn.disabled = displayData.length === 0;
+        clearBtn.title = displayData.length ? `Xóa ${displayData.length} lượt tra cứu đang hiển thị` : 'Không có dữ liệu để xóa';
+        clearBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            <span>Xóa (${displayData.length})</span>
+        `;
+    }
     
     if (exportBtn) {
         exportBtn.disabled = displayData.length === 0;
@@ -292,7 +328,7 @@ export function loadHistoryItem(nsx, hsdDate, hsdDays, barcode = "", quantity = 
             if (calcDvtRadio) calcDvtRadio.checked = true;
             
             document.getElementById('quantity').value = quantity;
-            module.executeCalculation(false); 
+            module.executeCalculation(false, id);
         });
     }
 }

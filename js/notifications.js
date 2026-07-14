@@ -158,11 +158,11 @@ function updateNotificationContent(pendingTpcn, pendingTpts, warningCount, dange
         <div class="notif-section">
             <h4 class="notif-section-title">Hàng Không Phù Hợp (KPH) chờ duyệt</h4>
             <div class="kph-notif-stats-grid">
-                <div class="notif-stat-card kph" onclick="window.handleNotificationKphClick('TPCN')">
+                <div class="notif-stat-card kph kph-tpcn" onclick="window.handleNotificationKphClick('TPCN')">
                     <div class="notif-stat-card__val">${pendingTpcn}</div>
                     <div class="notif-stat-card__label">Phiếu TPCN</div>
                 </div>
-                <div class="notif-stat-card kph" onclick="window.handleNotificationKphClick('TPTS')">
+                <div class="notif-stat-card kph kph-tpts" onclick="window.handleNotificationKphClick('TPTS')">
                     <div class="notif-stat-card__val">${pendingTpts}</div>
                     <div class="notif-stat-card__label">Phiếu TPTS</div>
                 </div>

@@ -2,6 +2,7 @@ import {
     isValidDateStr,
     parseLocalDate,
     formatLocalDate,
+    formatRemainingText,
     getCleanToday,
     MS_PER_DAY,
     initAppVersion,
@@ -204,31 +205,10 @@ export function handleToggleMode(toggleElement) {
         label.textContent = toggleElement.checked ? 'Đã biết' : 'Chưa biết';
     }
 
+    // Chuyển chế độ chỉ cần làm trống NSX. Giữ nguyên HSD và các thông tin
+    // người dùng đang điền để có thể tra xuôi/tra ngược liên tục.
     document.getElementById('nsx').value = "";
-    document.getElementById('hsdDate').value = "";
-    document.getElementById('hsdDays').value = "";
-    document.getElementById('hsdMonths').value = "";
     if (nsxFlatpickr) nsxFlatpickr.clear();
-    if (hsdFlatpickr) hsdFlatpickr.clear();
-
-    const wrapper = document.getElementById('resultWrapper');
-    const text = document.getElementById('resultText');
-    if (wrapper) {
-        wrapper.className = 'calc-board__result-wrapper';
-    }
-    if (text) {
-        text.innerHTML = '';
-        text.classList.remove('calc-board__result-text--visible');
-    }
-
-    const diagramBoard = document.getElementById('diagramBoard');
-    if (diagramBoard) {
-        diagramBoard.style.display = 'none';
-    }
-    const svgContainer = document.getElementById('svgContainer');
-    if (svgContainer) {
-        svgContainer.innerHTML = '';
-    }
 
     const nsxInput = document.getElementById('nsx');
     const btnNsx = document.getElementById('btnNsxPicker');
@@ -248,7 +228,43 @@ export function handleToggleMode(toggleElement) {
     }
 }
 
-export function openResultModal(theme, title, mainText, subText, iconHtml) {
+export function refreshCalculationForm() {
+    ['tenHang', 'barcode', 'quantity', 'nsx', 'hsdDate', 'hsdDays', 'hsdMonths'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = '';
+    });
+    if (nsxFlatpickr) nsxFlatpickr.clear();
+    if (hsdFlatpickr) hsdFlatpickr.clear();
+
+    const defaultDvt = document.getElementById('calcDvtEA');
+    if (defaultDvt) defaultDvt.checked = true;
+
+    const wrapper = document.getElementById('resultWrapper');
+    const text = document.getElementById('resultText');
+    if (wrapper) wrapper.className = 'calc-board__result-wrapper';
+    if (text) {
+        text.innerHTML = '';
+        text.classList.remove('calc-board__result-text--visible');
+    }
+    const diagramBoard = document.getElementById('diagramBoard');
+    if (diagramBoard) diagramBoard.style.display = 'none';
+    const svgContainer = document.getElementById('svgContainer');
+    if (svgContainer) svgContainer.innerHTML = '';
+    setCalcFocusTheme('safe');
+
+    import('./history.js').then(module => {
+        module.setSelectedHistoryId(null);
+        module.updateHistoryUI();
+    });
+    document.getElementById('tenHang')?.focus();
+}
+
+export function setCalcFocusTheme(theme = 'safe') {
+    const focusZone = document.querySelector('.calc-focus-zone');
+    if (focusZone) focusZone.dataset.theme = theme;
+}
+
+export function openResultModal(theme, title, mainText, subText, iconHtml, detailsHtml = '') {
     const modal = document.getElementById('resultModal');
     if (!modal) return;
     const content = modal.querySelector('.result-modal-content');
@@ -256,6 +272,7 @@ export function openResultModal(theme, title, mainText, subText, iconHtml) {
     const mainEl = document.getElementById('resultModalMainText');
     const subEl = document.getElementById('resultModalSubText');
     const iconEl = document.getElementById('resultModalIcon');
+    const detailsEl = document.getElementById('resultModalDetails');
     const btnCreateKph = document.getElementById('btnResultModalCreateKph');
     const btnClose = document.getElementById('btnResultModalClose');
 
@@ -269,6 +286,10 @@ export function openResultModal(theme, title, mainText, subText, iconHtml) {
     if (mainEl) mainEl.innerHTML = mainText;
     if (subEl) subEl.innerHTML = subText;
     if (iconEl) iconEl.innerHTML = iconHtml;
+    if (detailsEl) {
+        detailsEl.innerHTML = detailsHtml;
+        detailsEl.hidden = !detailsHtml;
+    }
 
     // Toggle button layout based on status/error
     if (theme === 'danger' && title === 'Lỗi tra cứu') {
@@ -296,6 +317,7 @@ export function openResultModal(theme, title, mainText, subText, iconHtml) {
                 shelfLife = parseInt(daysVal, 10) || 0;
             }
             const isTpts = (shelfLife > 0 && shelfLife < 10);
+            btnCreateKph.classList.toggle('btn-create-kph-tpts', isTpts);
             btnCreateKph.textContent = `Tạo phiếu KPH (${isTpts ? 'TPTS' : 'TPCN'})`;
         }
         if (btnClose) {
@@ -314,7 +336,7 @@ export function closeResultModal() {
     }
 }
 
-export function executeCalculation(saveToHistory = true) {
+export function executeCalculation(saveToHistory = true, historyIdToRefresh = null) {
     if (saveToHistory) {
         import('./history.js').then(module => {
             module.setSelectedHistoryId(null);
@@ -388,6 +410,7 @@ export function executeCalculation(saveToHistory = true) {
             // Open popup result modal
             const alertType = output.isShortProduct ? 'other' : output.alert.type;
             const theme = alertType; // 'safe', 'warning', 'danger', 'other', 'expired'
+            setCalcFocusTheme(theme);
             let iconHtml = '';
             if (theme === 'safe') {
                 iconHtml = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
@@ -401,7 +424,20 @@ export function executeCalculation(saveToHistory = true) {
                 iconHtml = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
             }
 
-            openResultModal(theme, 'Kết quả tra cứu', mainText, subText, iconHtml);
+            const quantityDetail = quantityVal !== '' ? `${quantityVal} ${calcDvtVal}` : 'Chưa nhập';
+            const barcodeDetail = barcodeVal || 'Tra cứu không mã';
+            const resultLabel = output.isShortProduct ? 'Hạn sử dụng' : 'Ngày lùi';
+            const remainingDetail = output.isExpiredProduct ? 'Đã hết HSD' : formatRemainingText(output.daysRemaining);
+            const detailsHtml = `
+                <div class="result-modal-details__row"><span>Tên hàng</span><strong>${tenHangVal || 'Chưa nhập'}</strong></div>
+                <div class="result-modal-details__row"><span>Barcode</span><strong>${barcodeDetail}</strong></div>
+                <div class="result-modal-details__row"><span>Số lượng</span><strong>${quantityDetail}</strong></div>
+                <div class="result-modal-details__row"><span>NSX</span><strong>${nsxVal}</strong></div>
+                <div class="result-modal-details__row"><span>HSD</span><strong>${output.formattedHsd}</strong></div>
+                <div class="result-modal-details__row result-modal-details__row--result"><span>${resultLabel}</span><strong>${output.dateStr}</strong></div>
+                <div class="result-modal-details__row"><span>Trạng thái</span><strong>${output.alert.label} · ${remainingDetail}</strong></div>`;
+
+            openResultModal(theme, 'Kết quả tra cứu', mainText, subText, iconHtml, detailsHtml);
 
             if (saveToHistory) {
                 const existingIndex = historyData.findIndex(h => h.nsx === nsxVal && h.formattedHsd === output.formattedHsd && h.barcode === barcodeVal);
@@ -439,8 +475,29 @@ export function executeCalculation(saveToHistory = true) {
                 historyData.unshift(newItem);
                 saveHistoryToStorage(newItem);
                 updateHistoryUI();
+            } else if (historyIdToRefresh) {
+                const historyItem = historyData.find(item => item.id === historyIdToRefresh);
+                if (historyItem) {
+                    Object.assign(historyItem, {
+                        nsx: nsxVal,
+                        rawHsdDate: hsdDateVal,
+                        rawHsdDays: hsdDaysVal || Math.round((parseLocalDate(hsdDateVal) - parseLocalDate(nsxVal)) / MS_PER_DAY) + 1,
+                        formattedHsd: output.formattedHsd,
+                        result: output.dateStr,
+                        daysRemaining: output.daysRemaining,
+                        alertClass: output.alert.class,
+                        alertLabel: output.alert.label,
+                        alertType,
+                        alertWeight: output.alert.weight,
+                        isShortProduct: output.isShortProduct,
+                        isExpiredProduct: output.isExpiredProduct
+                    });
+                    saveHistoryToStorage(historyItem);
+                    updateHistoryUI();
+                }
             }
         } catch (error) {
+            setCalcFocusTheme('danger');
             if (wrapper) {
                 wrapper.className = 'calc-board__result-wrapper state-danger';
             }
@@ -813,6 +870,7 @@ window.openScannerForCalc = openScannerForCalc;
 window.openNsxPicker = openNsxPicker;
 window.openHsdPicker = openHsdPicker;
 window.executeCalculation = executeCalculation;
+window.refreshCalculationForm = refreshCalculationForm;
 window.clearAllHistory = clearAllHistory;
 window.setFilter = setFilter;
 window.togglePrioritySort = togglePrioritySort;
