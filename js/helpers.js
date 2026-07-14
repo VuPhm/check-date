@@ -1,7 +1,7 @@
 // --- HỆ THỐNG KIỂM SOÁT PHIÊN BẢN VÀ GIAO THỨC CHUYỂN GIAO PWA ---
 export const APP_VERSION_CONFIG = { 
-    currentVersion: "2.18.5",
-    lastUpdated: "14/07/2026"
+    currentVersion: "2.18.6",
+    lastUpdated: "15/07/2026"
 };
 
 const APP_VERSION_STORAGE_KEY = 'coopfood:last-seen-app-version';

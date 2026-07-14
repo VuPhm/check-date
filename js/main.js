@@ -43,7 +43,7 @@ import {
     exportHistoryToExcel
 } from './history.js';
 
-import './notifications.js';
+import { openNotificationModal } from './notifications.js';
 
 import {
     switchTab,
@@ -541,7 +541,7 @@ export function executeCalculation(saveToHistory = true, historyIdToRefresh = nu
 }
 
 // Khởi chạy khi DOM sẵn sàng
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // 0. Đồng bộ hóa trạng thái công tắc gạt và chế độ tính
     (function syncToggleMode() {
         const toggle = document.getElementById('calcModeToggle');
@@ -618,9 +618,12 @@ document.addEventListener('DOMContentLoaded', () => {
     })();
 
     // 3. Nạp lịch sử & KPH
-    loadHistoryFromStorage();
-    loadKphLogs();
+    await Promise.all([
+        loadHistoryFromStorage(),
+        loadKphLogs()
+    ]);
     initKphFlatpickrs();
+    openNotificationModal();
 
     // 3.5. Chặn nổi bọt sự kiện cho các nút picker để tránh đóng Flatpickr lập tức
     document.querySelectorAll('.btn-picker-trigger').forEach(btn => {
