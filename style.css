@@ -1076,6 +1076,71 @@
         line-height: 1.45;
     }
 
+    .app-install-help-shot {
+        position: relative;
+        grid-column: 1 / -1;
+        width: 100%;
+        margin: 2px 0 0;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        background: #f2f2f7;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .app-install-help-shot img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .app-install-help-shot figcaption {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: rgba(0, 102, 51, 0.94);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .app-install-help-shot--toolbar {
+        height: 126px;
+    }
+
+    .app-install-help-shot--toolbar img {
+        object-position: center bottom;
+    }
+
+    .app-install-help-shot--share-menu {
+        height: 210px;
+    }
+
+    .app-install-help-shot--share-menu img {
+        object-position: center 68%;
+    }
+
+    .app-install-help-shot--share-sheet {
+        height: 224px;
+    }
+
+    .app-install-help-shot--share-sheet img {
+        object-position: center 52%;
+    }
+
+    .app-install-help-shot--confirm-add {
+        height: 250px;
+    }
+
+    .app-install-help-shot--confirm-add img {
+        object-position: center top;
+    }
+
     .app-install-help-tip {
         margin-bottom: 16px;
         padding: 10px 12px;

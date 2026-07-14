@@ -1,6 +1,6 @@
 // --- HỆ THỐNG KIỂM SOÁT PHIÊN BẢN VÀ GIAO THỨC CHUYỂN GIAO PWA ---
 export const APP_VERSION_CONFIG = { 
-    currentVersion: "2.18.7",
+    currentVersion: "2.18.8",
     lastUpdated: "15/07/2026"
 };
 
@@ -103,24 +103,40 @@ function isIOS() {
 function getIOSInstallSteps() {
     return [
         {
-            icon: '🧭',
-            title: 'Mở bằng Safari',
-            detail: 'Nếu đang ở Zalo, Facebook hoặc trình duyệt khác, hãy chọn Mở bằng Safari.'
+            icon: '⋯',
+            title: 'Mở menu Safari nếu cần',
+            detail: 'Nếu không thấy nút Chia sẻ trên thanh công cụ, nhấn nút ba chấm ở góc dưới bên phải.',
+            image: './assets/install-guide/ios-step-1-more.png',
+            imageAlt: 'Thanh công cụ Safari với nút ba chấm ở góc dưới bên phải',
+            imageClass: 'toolbar',
+            imageHint: 'Bấm ⋯'
         },
         {
             icon: '⇧',
-            title: 'Nhấn nút Chia sẻ',
-            detail: 'Tìm biểu tượng hình vuông có mũi tên hướng lên trên thanh công cụ Safari.'
+            title: 'Chọn Chia sẻ',
+            detail: 'Trong menu vừa mở, chọn dòng “Chia sẻ” có biểu tượng mũi tên hướng lên.',
+            image: './assets/install-guide/ios-step-2-share.png',
+            imageAlt: 'Menu Safari có dòng Chia sẻ',
+            imageClass: 'share-menu',
+            imageHint: 'Chọn Chia sẻ'
         },
         {
             icon: '+',
             title: 'Thêm vào Màn hình chính',
-            detail: 'Cuộn danh sách hành động xuống và chọn “Thêm vào Màn hình chính”.'
+            detail: 'Trong bảng Chia sẻ, cuộn xuống và chọn “Thêm vào Màn hình chính”.',
+            image: './assets/install-guide/ios-step-3-home-screen.png',
+            imageAlt: 'Bảng Chia sẻ của iOS với mục Thêm vào Màn hình chính',
+            imageClass: 'share-sheet',
+            imageHint: 'Chọn mục này'
         },
         {
             icon: '✓',
             title: 'Xác nhận Thêm',
-            detail: 'Giữ “Mở dưới dạng ứng dụng web”, sau đó nhấn “Thêm” ở góc trên.'
+            detail: 'Giữ bật “Mở dưới dạng ứng dụng web”, sau đó nhấn “Thêm” ở góc trên bên phải.',
+            image: './assets/install-guide/ios-step-4-add.png',
+            imageAlt: 'Màn hình xác nhận thêm ứng dụng web với nút Thêm',
+            imageClass: 'confirm-add',
+            imageHint: 'Bấm Thêm'
         }
     ];
 }
@@ -237,6 +253,24 @@ export function openInstallHelpModal() {
 
                 content.append(title, detail);
                 item.append(icon, content);
+
+                if (step.image) {
+                    const shot = document.createElement('figure');
+                    shot.className = `app-install-help-shot app-install-help-shot--${step.imageClass}`;
+
+                    const image = document.createElement('img');
+                    image.src = step.image;
+                    image.alt = step.imageAlt;
+                    image.loading = 'lazy';
+                    image.decoding = 'async';
+
+                    const hint = document.createElement('figcaption');
+                    hint.textContent = step.imageHint;
+
+                    shot.append(image, hint);
+                    item.appendChild(shot);
+                }
+
                 steps.appendChild(item);
             });
             messageEl.appendChild(steps);

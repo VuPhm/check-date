@@ -1,9 +1,13 @@
-const CACHE_NAME = 'app-cache-v2.18.7';
+const CACHE_NAME = 'app-cache-v2.18.8';
 const ASSETS = [
     './',
     './index.html',
     './style.css',
     './assets/fonts/montserrat-latin-700-normal.woff2',
+    './assets/install-guide/ios-step-1-more.png',
+    './assets/install-guide/ios-step-2-share.png',
+    './assets/install-guide/ios-step-3-home-screen.png',
+    './assets/install-guide/ios-step-4-add.png',
     './js/helpers.js',
     './js/scanner.js',
     './js/business.js',
