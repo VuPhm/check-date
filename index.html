@@ -498,34 +498,55 @@
 
           <div class="kph-table-container">
             <table class="kph-table">
+              <colgroup>
+                <col class="kph-col-select">
+                <col class="kph-col-date">
+                <col class="kph-col-approval">
+                <col class="kph-col-sku">
+                <col class="kph-col-supplier">
+                <col class="kph-col-quantity">
+                <col class="kph-col-condition">
+                <col class="kph-col-resolution">
+                <col class="kph-col-reporter">
+                <col class="kph-col-image">
+                <col class="kph-col-delete">
+              </colgroup>
               <thead>
                 <tr>
-                  <th style="width: 44px; text-align: center;"><input type="checkbox" id="kphSelectAll"
+                  <th class="kph-col-select" style="text-align: center;"><input type="checkbox" id="kphSelectAll"
                       onchange="toggleSelectAllKph(this)" class="kph-checkbox"></th>
-                  <th style="width: 120px; cursor: pointer;" onclick="toggleKphSort('ngayPhatHien')"
-                    class="sortable-header">Ngày phát hiện <span id="sort-icon-ngayPhatHien" class="sort-icon">↕</span>
+                  <th class="kph-col-date sortable-header" style="cursor: pointer;" onclick="toggleKphSort('ngayPhatHien')">
+                    Ngày phát hiện <span id="sort-icon-ngayPhatHien" class="sort-icon">↕</span>
                   </th>
-                  <th style="width: 115px; text-align: center; cursor: pointer;" onclick="toggleKphSort('trangThaiDuyet')"
-                    class="sortable-header">Duyệt <span id="sort-icon-trangThaiDuyet" class="sort-icon">↕</span></th>
-                  <th style="width: 110px;">SKU/UPC</th>
-                  <th>Tên hàng hóa</th>
-                  <th>NCC</th>
-                  <th style="width: 60px; text-align: center;">ĐVT</th>
-                  <th style="width: 80px; cursor: pointer; text-align: center;" onclick="toggleKphSort('soLuong')"
-                    class="sortable-header">Số lượng <span id="sort-icon-soLuong" class="sort-icon">↕</span></th>
-                  <th>Mô tả tình trạng KPH</th>
-                  <th>Biện pháp xử lý</th>
-                  <th style="width: 110px; cursor: pointer;" onclick="toggleKphSort('ngayXuLy')"
-                    class="sortable-header">Ngày xử lý <span id="sort-icon-ngayXuLy" class="sort-icon">↕</span></th>
-                  <th style="width: 145px; text-align: center;">Thời gian duyệt</th>
-                  <th>Người phát hiện</th>
-                  <th style="width: 90px; text-align: center;">Ảnh</th>
-                  <th style="width: 50px; text-align: center;">Xóa</th>
+                  <th class="kph-col-approval sortable-header" style="text-align: center; cursor: pointer;" onclick="toggleKphSort('trangThaiDuyet')">
+                    <span class="kph-header-line">Duyệt <span id="sort-icon-trangThaiDuyet" class="sort-icon">↕</span></span>
+                    <span class="kph-header-line">Thời gian duyệt</span>
+                  </th>
+                  <th class="kph-col-sku">
+                    <span class="kph-header-line">SKU/UPC</span>
+                    <span class="kph-header-line">Tên hàng hóa</span>
+                  </th>
+                  <th class="kph-col-supplier">NCC</th>
+                  <th class="kph-col-quantity sortable-header" style="cursor: pointer; text-align: center;" onclick="toggleKphSort('soLuong')">
+                    <span class="kph-header-line">Số lượng <span id="sort-icon-soLuong" class="sort-icon">↕</span></span>
+                    <span class="kph-header-line">ĐVT</span>
+                  </th>
+                  <th class="kph-col-condition">
+                    <span class="kph-header-line">Mô tả tình trạng</span>
+                    <span class="kph-header-line">KPH</span>
+                  </th>
+                  <th class="kph-col-resolution sortable-header" style="cursor: pointer;" onclick="toggleKphSort('ngayXuLy')">
+                    <span class="kph-header-line">Biện pháp xử lý</span>
+                    <span class="kph-header-line">Ngày xử lý <span id="sort-icon-ngayXuLy" class="sort-icon">↕</span></span>
+                  </th>
+                  <th class="kph-col-reporter">Người phát hiện</th>
+                  <th class="kph-col-image" style="text-align: center;">Ảnh</th>
+                  <th class="kph-col-delete" style="text-align: center;">Xóa</th>
                 </tr>
               </thead>
               <tbody id="kphLogsList">
                 <tr>
-                  <td colspan="15" class="kph-empty-row" data-label="">Chưa có dữ liệu khai báo</td>
+                  <td colspan="11" class="kph-empty-row" data-label="">Chưa có dữ liệu khai báo</td>
                 </tr>
               </tbody>
             </table>

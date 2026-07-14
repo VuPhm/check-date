@@ -1263,7 +1263,7 @@ function _doUpdateKphLogsUI() {
         if (listContainer) {
             listContainer.innerHTML = `
                 <tr>
-                    <td colspan="13" class="kph-empty-row">Chưa có dữ liệu khai báo hoặc không khớp bộ lọc</td>
+                    <td colspan="11" class="kph-empty-row">Chưa có dữ liệu khai báo hoặc không khớp bộ lọc</td>
                 </tr>
             `;
         }
@@ -1353,19 +1353,22 @@ function _doUpdateKphLogsUI() {
                         <input type="checkbox" class="kph-checkbox" ${isChecked} onchange="window.toggleSelectRowKph('${item.id}')">
                     </td>
                     <td data-label="Ngày PH" style="text-align: center;">${item.ngayPhatHien}</td>
-                    <td data-label="Duyệt" style="text-align: center;">${approvalBtnHtml}</td>
-                    <td data-label="SKU" style="font-weight: 600; font-family: monospace; text-align: center;">${item.sku}</td>
-                    <td data-label="Tên hàng" style="font-weight: 500;">
-                        ${item.tenHang}
+                    <td data-label="Duyệt" style="text-align: center;">
+                        ${approvalBtnHtml}
+                        <div class="kph-cell-meta">${approvalTimeHtml}</div>
+                    </td>
+                    <td data-label="SKU / Tên hàng">
+                        <div class="kph-sku-value">${item.sku}</div>
+                        <div class="kph-product-name">${item.tenHang}</div>
                         ${item.ghiChu ? `<div style="font-size: 11px; color: var(--text-sub); font-style: italic; margin-top: 4px;">💬 ${item.ghiChu}</div>` : ''}
                     </td>
                     <td data-label="NCC">${item.ncc || '-'}</td>
-                    <td data-label="ĐVT" style="text-align: center;">${item.dvt}</td>
-                    <td data-label="Số lượng" style="text-align: center; font-weight: 600;">${item.soLuong}</td>
+                    <td data-label="SL / ĐVT" style="text-align: center; font-weight: 600;">${item.soLuong} <span class="kph-unit-value">${item.dvt}</span></td>
                     <td data-label="Tình trạng">${item.tinhTrang}</td>
-                    <td data-label="Biện pháp" style="font-weight: 500;">${xlText}</td>
-                    <td data-label="Ngày XL" style="text-align: center;">${ngayXlText}</td>
-                    <td data-label="Thời gian duyệt" style="text-align: center;">${approvalTimeHtml}</td>
+                    <td data-label="Biện pháp / Ngày XL" style="font-weight: 500;">
+                        ${xlText}
+                        <div class="kph-cell-meta">${ngayXlText}</div>
+                    </td>
                     <td data-label="Người PH">${item.nguoiPhatHien || '-'}</td>
                     <td data-label="Ảnh" style="text-align: center;">${imgHtml}</td>
                     <td data-label="">
