@@ -5,6 +5,7 @@ export const APP_VERSION_CONFIG = {
 };
 
 const APP_VERSION_STORAGE_KEY = 'coopfood:last-seen-app-version';
+let deferredInstallPrompt = null;
 
 export const MS_PER_DAY = 1000 * 60 * 60 * 24; 
 
@@ -88,6 +89,114 @@ export function notifyAppVersionUpdate() {
 export function closeAppUpdateModal() {
     const modal = document.getElementById('appUpdateModal');
     if (modal) modal.classList.remove('active');
+}
+
+function isAppRunningStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function setInstallStatus(message, isInstalled = false) {
+    const statusEl = document.getElementById('appInstallStatus');
+    const button = document.getElementById('btnInstallApp');
+    if (statusEl) statusEl.textContent = message;
+    if (button && isInstalled) {
+        button.disabled = true;
+        button.textContent = 'Đã cài đặt';
+    }
+}
+
+function getInstallHelp() {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isInAppBrowser = /; wv\)|\bFBAN\b|\bFBAV\b|Instagram|Zalo/i.test(navigator.userAgent);
+
+    if (isAppRunningStandalone()) {
+        return {
+            title: 'Ứng dụng đã được cài đặt',
+            message: 'Bạn đang dùng phiên bản đã thêm vào màn hình chính.'
+        };
+    }
+
+    if (!window.isSecureContext && location.hostname !== 'localhost') {
+        return {
+            title: 'Cần kết nối an toàn',
+            message: 'Không thể cài ứng dụng từ địa chỉ HTTP. Hãy mở ứng dụng bằng đường dẫn HTTPS.'
+        };
+    }
+
+    if (isInAppBrowser) {
+        return {
+            title: 'Mở bằng trình duyệt',
+            message: 'Trình duyệt bên trong Zalo, Facebook hoặc Instagram thường không hỗ trợ cài đặt. Hãy chọn “Mở bằng Chrome” rồi thử lại.'
+        };
+    }
+
+    if (isAndroid) {
+        return {
+            title: 'Thêm vào màn hình chính',
+            message: 'Mở menu ⋮ của trình duyệt, chọn “Cài đặt ứng dụng” hoặc “Thêm vào màn hình chính”. Nếu chưa thấy, hãy tải lại trang khi có Internet rồi thử lại.'
+        };
+    }
+
+    return {
+        title: 'Cài đặt ứng dụng',
+        message: 'Trình duyệt hiện tại chưa cung cấp nút cài đặt trực tiếp. Hãy dùng Chrome hoặc Edge phiên bản mới và mở ứng dụng qua HTTPS.'
+    };
+}
+
+export function openInstallHelpModal() {
+    const modal = document.getElementById('appInstallHelpModal');
+    const titleEl = document.getElementById('appInstallHelpTitle');
+    const messageEl = document.getElementById('appInstallHelpMessage');
+    const help = getInstallHelp();
+
+    if (titleEl) titleEl.textContent = help.title;
+    if (messageEl) messageEl.textContent = help.message;
+    if (modal) modal.classList.add('active');
+}
+
+export function closeInstallHelpModal() {
+    const modal = document.getElementById('appInstallHelpModal');
+    if (modal) modal.classList.remove('active');
+}
+
+/** Thiết lập nút cài PWA; lời gọi prompt phải bắt nguồn từ thao tác bấm của người dùng. */
+export function initPwaInstall() {
+    const installButton = document.getElementById('btnInstallApp');
+    if (!installButton) return;
+
+    if (isAppRunningStandalone()) {
+        setInstallStatus('Ứng dụng đã ở trên màn hình chính.', true);
+        return;
+    }
+
+    window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        setInstallStatus('Sẵn sàng cài đặt trên thiết bị này.');
+    });
+
+    window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        setInstallStatus('Đã cài đặt vào màn hình chính.', true);
+        closeInstallHelpModal();
+    });
+
+    installButton.addEventListener('click', async () => {
+        if (!deferredInstallPrompt) {
+            openInstallHelpModal();
+            return;
+        }
+
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        deferredInstallPrompt = null;
+
+        if (outcome === 'accepted') {
+            setInstallStatus('Đang hoàn tất cài đặt…');
+        } else {
+            setInstallStatus('Bạn có thể cài đặt lại bất cứ lúc nào.');
+        }
+    });
 }
 
 export function parseLocalDate(dateString) { 

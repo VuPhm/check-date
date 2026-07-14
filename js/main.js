@@ -8,6 +8,8 @@ import {
     initAppVersion,
     notifyAppVersionUpdate,
     closeAppUpdateModal,
+    initPwaInstall,
+    closeInstallHelpModal,
     showAppleConfirm,
     showAppleToast
 } from './helpers.js';
@@ -820,9 +822,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Khởi tạo app versioning & offline
     initAppVersion();
     notifyAppVersionUpdate();
+    initPwaInstall();
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeAppUpdateModal();
+        if (event.key === 'Escape') {
+            closeAppUpdateModal();
+            closeInstallHelpModal();
+        }
     });
 
     // 5. Khởi tạo Sidebar Cấu hình & Cá nhân
@@ -910,6 +916,7 @@ window.deleteSelectedKphLogs = deleteSelectedKphLogs;
 window.showAppleToast = showAppleToast;
 window.showAppleConfirm = showAppleConfirm;
 window.closeAppUpdateModal = closeAppUpdateModal;
+window.closeInstallHelpModal = closeInstallHelpModal;
 window.openKphCreateModal = openKphCreateModal;
 window.closeKphCreateModal = closeKphCreateModal;
 window.toggleStoreSettingsEdit = toggleStoreSettingsEdit;

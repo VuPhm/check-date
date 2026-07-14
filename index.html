@@ -1220,6 +1220,20 @@
     </div>
   </div>
 
+  <!-- Modal hướng dẫn cài ứng dụng khi trình duyệt không mở được hộp cài đặt hệ thống -->
+  <div id="appInstallHelpModal" class="apple-modal" onclick="window.closeInstallHelpModal()" role="dialog" aria-modal="true" aria-labelledby="appInstallHelpTitle">
+    <div class="apple-modal-content app-install-help-content" onclick="event.stopPropagation()">
+      <div class="apple-modal-header">
+        <h3 class="apple-modal-title" id="appInstallHelpTitle">Cài đặt ứng dụng</h3>
+        <button class="apple-modal-close-btn" type="button" aria-label="Đóng hướng dẫn" onclick="window.closeInstallHelpModal()">&times;</button>
+      </div>
+      <div class="app-install-help-body">
+        <p id="appInstallHelpMessage"></p>
+        <button class="btn-action" type="button" onclick="window.closeInstallHelpModal()">Đã hiểu</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Sidebar cấu hình và thông tin -->
   <div id="sidebarOverlay" class="sidebar-overlay"></div>
   <div id="appSidebar" class="app-sidebar">
@@ -1297,6 +1311,12 @@
           <span class="info-label">Chi tiết:</span>
           <span id="appVersionNote" class="info-value" style="font-weight: 600;">Đang tải...</span>
         </div>
+      </div>
+
+      <div class="sidebar-section app-install-section">
+        <h4 class="sidebar-section-title">Cài đặt ứng dụng</h4>
+        <p id="appInstallStatus" class="app-install-status" aria-live="polite">Thêm ứng dụng vào màn hình chính để mở nhanh hơn.</p>
+        <button id="btnInstallApp" class="btn-action app-install-button" type="button">Thêm vào màn hình chính</button>
       </div>
     </div>
   </div>
