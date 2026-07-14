@@ -4,7 +4,7 @@
 
 * **Bản chạy trực tuyến (Production Build):** [vuphm.github.io/coop-date](https://vuphm.github.io/coop-date/)
 * **Nền tảng phát triển:** HTML5, Vanilla CSS (Apple HIG Design), Vanilla JavaScript (ES6 Modules), Flatpickr.
-* **Phiên bản hiện tại:** `2.17.2` (11/07/2026)
+* **Phiên bản hiện tại:** `2.17.3` (14/07/2026)
 
 ---
 
@@ -47,7 +47,7 @@ Hệ thống hỗ trợ các tính năng nghiệp vụ cốt lõi sau:
   * **TPCN (Thực phẩm Công nghệ):** Hàng công nghiệp đóng gói sẵn, áp dụng đầy đủ quy trình khai báo.
   * **TPTS (Thực phẩm Tươi sống):** Hàng tươi sống, tự động đồng bộ ngày phát hiện = ngày xử lý, giao diện form tùy biến riêng.
 * **Khai báo thông tin chi tiết:** Hỗ trợ nhập liệu Đơn vị (CO.OP FOOD), Cửa hàng (STORE), Người phát hiện, Ngày phát hiện (mặc định hôm nay), SKU/UPC (hỗ trợ quét camera), Tên hàng, Nhà cung cấp (NCC), Đơn vị tính (DVT), Số lượng, Tình trạng (Hư hỏng, Móp méo, Cận hạn, Hết hạn, Khác), Biện pháp xử lý (Hủy, Trả NCC, Giảm giá, Khác), Ngày xử lý thực tế và Ảnh minh chứng.
-* **Nén ảnh tự động (Client-side Compression):** Đọc tệp tin ảnh tải lên, vẽ lại bằng Canvas để giới hạn kích thước tối đa `400x400` pixel và nén định dạng JPEG chất lượng `0.7` trước khi chuyển sang chuỗi Base64. Cơ chế này giúp tối ưu hóa dung lượng lưu trữ tránh bị tràn hạn mức (quota).
+* **Nén ảnh tự động (Client-side Compression):** Đọc tệp tin ảnh tải lên, vẽ lại bằng Canvas để giới hạn kích thước tối đa `400x400` pixel và nén định dạng JPEG chất lượng `0.7`. Ảnh mới được lưu trực tiếp dưới dạng `Blob` trong IndexedDB; dữ liệu Base64 cũ vẫn được hỗ trợ khi migration.
 * **Quy trình duyệt phiếu KPH (Approval Workflow):**
   * Mỗi phiếu KPH mới được tạo ra có trạng thái mặc định `cho_duyet` (Chờ duyệt).
   * Quản lý cửa hàng có thể mở modal duyệt, nhập thông tin Người duyệt, Biện pháp xử lý cuối cùng, Ngày xử lý thực tế, và xác nhận chuyển trạng thái sang `da_duyet` (Đã duyệt).
@@ -59,7 +59,7 @@ Hệ thống hỗ trợ các tính năng nghiệp vụ cốt lõi sau:
   * Chọn dòng hàng loạt (Select All / Single check) để thực hiện các thao tác nhóm.
   * Xem ảnh minh chứng phóng to sắc nét thông qua Modal giao diện tối giản.
   * Xóa từng phiếu khai báo lỗi hoặc xóa toàn bộ lịch sử khai báo KPH.
-* **Xuất báo cáo Excel (Excel Export):** Sử dụng các thư viện `exceljs` và `FileSaver.js` để kết xuất danh sách phiếu KPH được chọn (hoặc tất cả nếu không chọn) ra file Excel định dạng chuẩn, phân biệt theo sub-tab TPCN/TPTS.
+* **Xuất báo cáo Excel (Excel Export):** Sử dụng `ExcelJS`, `Blob` và URL tải tạm của trình duyệt để kết xuất danh sách phiếu KPH được chọn (hoặc tất cả nếu không chọn) ra file Excel định dạng chuẩn, phân biệt theo sub-tab TPCN/TPTS.
 
 ### F. Trung Tâm Thông Báo (Notification Center)
 * **Badge thông báo trên Header:** Hiển thị tổng số việc cần xử lý (phiếu KPH chờ duyệt + tra cứu có hạn lùi đáng lo ngại) ngay trên nút chuông thông báo.
@@ -114,7 +114,7 @@ Thuật toán tính toán hạn lùi hàng tuân thủ quy tắc sau:
 
 ### B. Lưu Trữ Dữ Liệu (Data Storage)
 * **IndexedDB (Primary Storage):** Ứng dụng sử dụng IndexedDB (`coop_kph_db`, version 2) với 2 object stores:
-  * `kph_logs`: Lưu trữ toàn bộ phiếu KPH (TPCN & TPTS) bao gồm cả ảnh minh chứng dạng Base64.
+  * `kph_logs`: Lưu trữ toàn bộ phiếu KPH (TPCN & TPTS), bao gồm ảnh minh chứng dạng `Blob` và khả năng đọc dữ liệu Base64 cũ.
   * `history_logs`: Lưu trữ lịch sử tra cứu hạn lùi hàng.
 * **Ưu điểm so với localStorage:** Không bị giới hạn quota 5-10MB, cho phép lưu trữ hàng trăm phiếu KPH kèm ảnh mà không lo tràn dung lượng.
 
@@ -225,22 +225,32 @@ main.js (Entry Point)
 * **`js/kph.js`**: Quản lý nghiệp vụ Khai Báo Hàng Không Phù Hợp (KPH):
   * Phân chia theo sub-tab TPCN/TPTS, mỗi loại có giao diện form tùy biến riêng.
   * Lưu trữ dữ liệu offline qua IndexedDB (`db.js`).
-  * Nén ảnh minh chứng bằng Canvas & JPEG 0.7 chất lượng trước khi chuyển sang Base64.
+  * Nén ảnh minh chứng bằng Canvas/JPEG 0.7 và lưu dưới dạng `Blob` trong IndexedDB.
   * Quy trình duyệt phiếu: `openKphApproveModal(id)`, `saveKphApproval()`, `closeKphApproveModal()`.
   * Lọc tìm kiếm theo khoảng ngày phát hiện, lọc theo trạng thái duyệt (`toggleKphFilterChoDuyet`).
   * Sắp xếp danh sách phiếu KPH theo các cột thông tin (ngày, số lượng, trạng thái duyệt).
   * Modal tạo phiếu mới: `openKphCreateModal(type)`, `closeKphCreateModal()`.
   * Quản lý cài đặt cửa hàng/người phát hiện: `saveStoreSettings()`, `loadStoreSettings()`, `saveSidebarSettings()`.
-  * Xuất báo cáo ra định dạng file Excel (.xlsx) thông qua thư viện `exceljs` và `FileSaver.js`.
+  * Xuất báo cáo Excel (.xlsx) bằng `ExcelJS`, `Blob` và URL tải tạm của trình duyệt.
 
 ### Điểm cần lưu ý khi nâng cấp hệ thống (Dành cho AI Agent)
-1. **Thay đổi phiên bản:** Khi cập nhật bất kỳ tính năng hoặc sửa đổi mã nguồn trong thư mục `js/` hoặc tệp `style.css`, bạn bắt buộc phải đồng bộ chuỗi phiên bản (ví dụ: `2.17.2`) tại 3 nơi:
+1. **Thay đổi phiên bản:** Khi cập nhật bất kỳ tính năng hoặc sửa đổi mã nguồn trong thư mục `js/` hoặc tệp `style.css`, bạn bắt buộc phải đồng bộ chuỗi phiên bản (ví dụ: `2.17.3`) tại 3 nơi:
    * Hằng số `currentVersion` và `lastUpdated` tại [helpers.js](js/helpers.js) (dòng 3-4).
    * Hằng số `CACHE_NAME` tại [sw.js](sw.js) (dòng 1).
    * Trường `version` và `lastUpdated` tại [version.json](version.json).
-   * Điều này đảm bảo cơ chế Version Mismatch Guard hoạt động chính xác và người dùng cuối nhận được bản cập nhật ngay lập tức.
+   * `CACHE_NAME` mới khiến Service Worker tạo cache mới và dọn cache phiên bản cũ khi activate; `version.json` hiện là metadata theo dõi deploy.
 2. **Thêm tệp JS mới:** Nếu tạo module JS mới trong thư mục `js/`, phải thêm đường dẫn tệp vào mảng `ASSETS` trong [sw.js](sw.js) để Service Worker cache đúng.
 3. **Giới hạn Thư viện Ngoại vi:** Hạn chế tối đa việc thêm các tệp CDN mới nhằm giữ vững tiêu chí tải trang tức thì dưới 1 giây và tương thích offline tuyệt đối của PWA.
 4. **Màu sắc trạng thái:** Khi thay đổi giao diện cảnh báo, hãy chỉnh sửa các biến CSS tương ứng (`--status-green-bg`, `--status-yellow-bg`, `--status-red-bg`) trong tệp [style.css](style.css) để duy trì tính đồng nhất của hệ thống giao diện.
 5. **IndexedDB Schema:** Khi cần thêm object store mới, tăng `DB_VERSION` trong [db.js](js/db.js) và cập nhật logic `onupgradeneeded`.
-6. **Thứ tự import:** Module `notifications.js` phải được import sau `kph.js` và `history.js` trong `main.js` vì nó phụ thuộc vào dữ liệu xuất ra từ 2 module đó.
+6. **Phụ thuộc module:** `notifications.js` phụ thuộc trực tiếp vào dữ liệu export từ `kph.js` và `history.js`; khi đổi import/export cần giữ dependency graph hợp lệ và tránh tạo vòng phụ thuộc mới.
+
+### Chạy dự án tại máy local
+
+Dự án không có bước cài dependency hoặc build. Do sử dụng ES Modules và Service Worker, hãy chạy qua HTTP server thay vì mở trực tiếp `index.html` bằng `file://`:
+
+```bash
+python3 -m http.server 8000
+```
+
+Sau đó mở `http://localhost:8000`. Camera/barcode cần secure context; `localhost` được trình duyệt xem là secure context, còn khi thử trên thiết bị khác nên dùng HTTPS.

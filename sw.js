@@ -1,4 +1,4 @@
-const CACHE_NAME = 'app-cache-v2.17.2';
+const CACHE_NAME = 'app-cache-v2.17.3';
 const ASSETS = [
     './',
     './index.html',
@@ -10,8 +10,10 @@ const ASSETS = [
     './js/history.js',
     './js/db.js',
     './js/kph.js',
+    './js/notifications.js',
     './js/main.js',
     './manifest.json',
+    './coopfood-logo.png',
     './favicon_io/android-chrome-192x192.png',
     './favicon_io/android-chrome-512x512.png',
     './favicon_io/favicon-32x32.png',

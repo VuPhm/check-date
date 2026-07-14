@@ -11,11 +11,11 @@
 | **Tên** | Check Date CoopFood |
 | **Loại** | Progressive Web App (PWA) |
 | **Production URL** | https://vuphm.github.io/coop-date/ |
-| **Phiên bản** | `2.17.2` (11/07/2026) |
+| **Phiên bản** | `2.17.3` (14/07/2026) |
 | **Nền tảng** | HTML5 + Vanilla CSS + Vanilla JS (ES6 Modules) |
 | **Framework** | Không dùng (React/Vue/Angular) |
 | **CSS Framework** | Không dùng (Tailwind/Bootstrap) — Vanilla CSS theo Apple HIG |
-| **Thư viện ngoài** | Flatpickr (date picker), html5-qrcode (scanner), ExcelJS + FileSaver.js (xuất Excel) |
+| **Thư viện ngoài** | Flatpickr (date picker), html5-qrcode (scanner), ExcelJS (xuất Excel) |
 | **Lưu trữ dữ liệu** | IndexedDB (`coop_kph_db`) — 2 stores: `kph_logs`, `history_logs` |
 | **Deploy** | GitHub Pages qua GitHub Actions (`.github/workflows/static.yml`) |
 
@@ -29,7 +29,7 @@ coop-date/
 ├── style.css               # Toàn bộ CSS (~106KB, Apple HIG Design)
 ├── sw.js                   # Service Worker — Network-First caching
 ├── manifest.json           # PWA manifest
-├── version.json            # Version tracking (dùng cho cache busting)
+├── version.json            # Metadata theo dõi phiên bản deploy
 ├── coopfood-logo.png       # Logo thương hiệu
 ├── favicon_io/             # Icons đa nền tảng
 └── js/
@@ -76,7 +76,7 @@ main.js ──┬── helpers.js
 ### 3. Khai Báo Hàng KPH (Tab "KPH")
 - **2 Sub-tabs:** TPCN (Thực phẩm Công nghệ) và TPTS (Thực phẩm Tươi sống).
 - **Form tạo phiếu:** Modal slide-up, nhập đầy đủ SKU/UPC (quét camera), tên hàng, NCC, DVT, số lượng, tình trạng, biện pháp xử lý, ảnh minh chứng.
-- **Nén ảnh tự động:** Canvas resize 400×400px + JPEG 0.7 → Base64.
+- **Nén ảnh tự động:** Canvas resize tối đa 400×400px + JPEG 0.7 → lưu `Blob` trong IndexedDB; Base64 cũ chỉ được giữ làm fallback/migration.
 - **Quy trình duyệt:** `cho_duyet` → Mở modal duyệt → Nhập người duyệt + biện pháp → `da_duyet`.
 - **Lọc/Sắp xếp:** Theo khoảng ngày, trạng thái duyệt, cột dữ liệu.
 - **Xuất Excel:** Phân biệt TPCN/TPTS, format chuẩn phiếu.
@@ -131,7 +131,7 @@ Nếu Shelf Life >= 10 ngày (hàng dài ngày):
 
 5. **IndexedDB schema:** Nếu thêm object store mới → tăng `DB_VERSION` trong `db.js` và xử lý trong `onupgradeneeded`.
 
-6. **Thứ tự import trong main.js:** `notifications.js` phải import SAU `kph.js` và `history.js`.
+6. **Phụ thuộc module:** `notifications.js` import dữ liệu từ `kph.js` và `history.js`; giữ dependency graph này hợp lệ và tránh tạo vòng phụ thuộc mới.
 
 7. **Giới hạn CDN:** Không thêm thư viện CDN mới trừ khi thật sự cần thiết (ảnh hưởng offline capability).
 
@@ -152,10 +152,8 @@ Nếu Shelf Life >= 10 ngày (hàng dài ngày):
 ### Phiếu KPH (IndexedDB: `kph_logs`)
 ```javascript
 {
-  id: "kph_1720800000000",       // Unique ID (timestamp-based)
+  id: "kph_1720800000000_ab12cd", // Timestamp + suffix ngẫu nhiên
   loaiKph: "TPCN" | "TPTS",     // Phân loại nhóm ngành hàng
-  coopFood: "CO.OP FOOD",       // Đơn vị
-  store: "CF 100",              // Mã cửa hàng
   nguoiPhatHien: "Nguyễn Văn A",
   ngayPhatHien: "13/07/2026",
   sku: "8934680090123",          // Mã vạch / SKU
@@ -164,27 +162,28 @@ Nếu Shelf Life >= 10 ngày (hàng dài ngày):
   dvt: "Hộp",                   // Đơn vị tính
   soLuong: "5",
   tinhTrang: "Cận hạn",         // Hư hỏng | Móp méo | Cận hạn | Hết hạn | Khác
-  tinhTrangKhac: "",             // Nếu tình trạng = "Khác"
-  bienPhap: "Hủy",              // Hủy | Trả NCC | Giảm giá | Khác
-  bienPhapKhac: "",              // Nếu biện pháp = "Khác"
+  bienPhap: "HỦY",              // HỦY | ĐỔI | XUẤT TRẢ | KHÁC
+  bienPhapText: "HỦY",          // Nội dung thực tế nếu chọn KHÁC
   ngayXuLy: "13/07/2026",
-  imageBase64: "data:image/jpeg;base64,...",
-  trangThaiDuyet: "cho_duyet" | "da_duyet",
+  ghiChu: "",
+  image: Blob,                    // JPEG đã nén; dữ liệu cũ có thể là data URI
+  trangThaiDuyet: "cho_duyet" | "da_duyet" | "khong_duyet",
   nguoiDuyet: "",
-  ngayGioDuyet: "",              // dd/mm/yyyy hh:mm:ss
-  bienPhapDuyet: "",
-  ngayXuLyDuyet: "",
-  createdAt: "13/07/2026 10:30:00"
+  thoiGianDuyet: ""              // dd/mm/yyyy hh:mm:ss
 }
 ```
+
+Thông tin đơn vị/cửa hàng/CHT không nằm trong từng phiếu; chúng được lưu bằng các khóa `localStorage` `kph_coop_food`, `kph_store`, `kph_cht`. Tên người phát hiện mặc định dùng khóa `kph_nguoi_phat_hien`.
 
 ### Mục Lịch Sử Tra Cứu (IndexedDB: `history_logs`)
 ```javascript
 {
-  id: "hist_1720800000000",
+  id: "item_1720800000000_ab12cd",
   nsx: "01/01/2026",             // Ngày sản xuất
+  rawHsdDate: "01/07/2026",
   formattedHsd: "01/07/2026",    // Ngày hạn sử dụng
   rawHsdDays: "181",             // Số ngày HSD
+  result: "26/05/2026",          // Ngày lùi/HSD hiển thị
   barcode: "8934680090123",
   tenHang: "Sữa tươi TH 1L",
   quantity: "10",
@@ -192,11 +191,28 @@ Nếu Shelf Life >= 10 ngày (hàng dài ngày):
   alertType: "safe" | "warning" | "danger" | "expired",
   alertLabel: "An toàn",
   alertClass: "state-safe",
+  alertWeight: 3,
   isShortProduct: false,
   isExpiredProduct: false,
   daysRemaining: 45,
-  timestamp: 1720800000000
+  checkedAt: "2026-07-14T03:30:00.000Z"
 }
+```
+
+---
+
+## 🖥️ Chạy Local & Kiểm Tra Cơ Bản
+
+Không cần `npm install` và không có bước build. Chạy repo qua HTTP server để ES Modules và Service Worker hoạt động đúng:
+
+```bash
+python3 -m http.server 8000
+```
+
+Mở `http://localhost:8000`. Có thể kiểm tra cú pháp JavaScript trước khi bàn giao bằng:
+
+```bash
+for file in js/*.js sw.js; do node --check "$file" || exit 1; done
 ```
 
 ---
@@ -277,4 +293,4 @@ Hãy review [tên_file].js với trọng tâm:
 
 ---
 
-> **Lưu ý:** Tài liệu này được cập nhật lần cuối ngày **13/07/2026** tại phiên bản **2.17.2**. Khi dự án có thay đổi lớn, hãy cập nhật lại file này.
+> **Lưu ý:** Tài liệu này được đối chiếu với code lần cuối ngày **14/07/2026** tại phiên bản **2.17.3**. Khi dự án có thay đổi lớn, hãy cập nhật lại file này.

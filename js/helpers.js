@@ -1,7 +1,7 @@
 // --- HỆ THỐNG KIỂM SOÁT PHIÊN BẢN VÀ GIAO THỨC CHUYỂN GIAO PWA ---
 export const APP_VERSION_CONFIG = { 
-    currentVersion: "2.17.2",       
-    lastUpdated: "11/07/2026"     
+    currentVersion: "2.17.3",
+    lastUpdated: "14/07/2026"
 };
 
 export const MS_PER_DAY = 1000 * 60 * 60 * 24; 
