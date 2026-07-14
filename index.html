@@ -624,7 +624,7 @@
             <div class="form-field flex-1">
               <label class="form-label" for="kphSku">Mã SKU / UPC</label>
               <div class="form-input-wrapper">
-                <input class="form-input" type="text" id="kphSku" placeholder="Nhập hoặc quét mã">
+                <input class="form-input" type="text" id="kphSku" placeholder="Nhập hoặc quét mã" inputmode="numeric">
                 <button type="button" class="btn-picker-trigger" onclick="openScannerForKPH()"
                   aria-label="Quét mã barcode">
                   <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2.5"
@@ -1211,6 +1211,7 @@
       </div>
       <div class="app-update-modal-body">
         <p>Chào mừng bạn đến với phiên bản mới của ứng dụng.</p>
+        <p class="app-update-troubleshooting-note">Nếu ứng dụng xảy ra lỗi sau khi cập nhật, hãy xoá ứng dụng rồi cài đặt/thêm lại vào màn hình chính.</p>
         <div class="app-update-details" aria-label="Thông tin phiên bản cập nhật">
           <div><span>Phiên bản</span><strong id="appUpdateVersion">Đang tải...</strong></div>
           <div><span>Thời gian cập nhật</span><strong id="appUpdateTime">Đang tải...</strong></div>
@@ -1293,7 +1294,7 @@
               <span class="sidebar-stat-val val-tracuu-danger" style="color: var(--brand-accent-red);">0</span>
             </div>
             <div class="sidebar-stat-row">
-              <span class="sidebar-stat-label">Quá hạn SD:</span>
+              <span class="sidebar-stat-label">Hết HSD:</span>
               <span class="sidebar-stat-val val-tracuu-expired" style="color: #8e8e93;">0</span>
             </div>
           </div>

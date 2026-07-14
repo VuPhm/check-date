@@ -542,6 +542,34 @@ export function executeCalculation(saveToHistory = true, historyIdToRefresh = nu
 
 // Khởi chạy khi DOM sẵn sàng
 document.addEventListener('DOMContentLoaded', async () => {
+    // Khóa lớp nền khi bất kỳ modal nào đang mở và khôi phục đúng vị trí cuộn khi đóng.
+    (function initModalScrollLock() {
+        const modals = Array.from(document.querySelectorAll('.apple-modal'));
+        if (modals.length === 0) return;
+
+        let locked = false;
+        let pageScrollY = 0;
+        const syncScrollLock = () => {
+            const shouldLock = modals.some(modal => modal.classList.contains('active'));
+            if (shouldLock === locked) return;
+
+            if (shouldLock) {
+                pageScrollY = window.scrollY;
+                document.body.style.top = `-${pageScrollY}px`;
+                document.body.classList.add('modal-scroll-locked');
+            } else {
+                document.body.classList.remove('modal-scroll-locked');
+                document.body.style.top = '';
+                window.scrollTo(0, pageScrollY);
+            }
+            locked = shouldLock;
+        };
+
+        const observer = new MutationObserver(syncScrollLock);
+        modals.forEach(modal => observer.observe(modal, { attributes: true, attributeFilter: ['class'] }));
+        syncScrollLock();
+    })();
+
     // 0. Đồng bộ hóa trạng thái công tắc gạt và chế độ tính
     (function syncToggleMode() {
         const toggle = document.getElementById('calcModeToggle');

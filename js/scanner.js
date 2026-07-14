@@ -100,7 +100,11 @@ export async function startScanning(cameraId) {
                     navigator.vibrate(100);
                 }
                 
-                document.getElementById(scannerTargetInputId).value = decodedText;
+                const targetInput = document.getElementById(scannerTargetInputId);
+                if (targetInput) {
+                    targetInput.value = decodedText;
+                    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
                 closeScanner();
             },
             (errorMessage) => {

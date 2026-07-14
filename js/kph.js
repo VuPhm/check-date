@@ -739,7 +739,8 @@ export async function addKphLog() {
     const soLuong = parseFloat(document.getElementById('kphSoLuong').value.trim() || '1');
 
     const tinhTrangRadio = document.querySelector('input[name="kphTinhTrangRadio"]:checked');
-    let tinhTrang = tinhTrangRadio ? tinhTrangRadio.value : 'Hư Hỏng';
+    let tinhTrang = tinhTrangRadio ? tinhTrangRadio.value : (kphCurrentType === 'TPCN' ? 'Cận date' : 'Hư Hỏng');
+    if (kphCurrentType === 'TPCN' && tinhTrang === 'Hư Hỏng') tinhTrang = 'Cận date';
     if (tinhTrang === 'Khác') {
         tinhTrang = document.getElementById('kphTinhTrangKhacInput').value.trim();
         if (!tinhTrang) tinhTrang = 'Khác';
@@ -949,7 +950,10 @@ export function clearKphForm() {
 
     // Reset radios
     const radHuHong = document.getElementById('kphTinhTrangHuHong');
-    if (radHuHong) radHuHong.checked = true;
+    const radCanDate = document.getElementById('kphTinhTrangCanDate');
+    const defaultTinhTrang = kphCurrentType === 'TPCN' ? 'Cận date' : 'Hư Hỏng';
+    if (radHuHong) radHuHong.checked = defaultTinhTrang === 'Hư Hỏng';
+    if (radCanDate) radCanDate.checked = defaultTinhTrang === 'Cận date';
     const kphTinhTrangKhacInput = document.getElementById('kphTinhTrangKhacInput');
     if (kphTinhTrangKhacInput) kphTinhTrangKhacInput.value = '';
 
@@ -961,7 +965,7 @@ export function clearKphForm() {
     const kphDvtEA = document.getElementById('kphDvtEA');
     if (kphDvtEA) kphDvtEA.checked = true;
 
-    toggleTinhTrangRadio('Hư Hỏng');
+    toggleTinhTrangRadio(defaultTinhTrang);
     toggleBienPhapRadio('HỦY');
     clearKphImage();
 
@@ -1815,6 +1819,18 @@ export function openKphCreateModal(type = 'TPCN') {
             headerEl.style.borderBottom = '3px solid var(--brand-primary)';
             headerEl.style.background = 'linear-gradient(to bottom, #eff7f2, var(--surface))';
         }
+    }
+
+    // TPCN không áp dụng tình trạng "Hư hỏng"; TPTS vẫn giữ lựa chọn này.
+    const huHongRadio = document.getElementById('kphTinhTrangHuHong');
+    const huHongLabel = document.querySelector('label[for="kphTinhTrangHuHong"]');
+    const canDateRadio = document.getElementById('kphTinhTrangCanDate');
+    const hideHuHong = type === 'TPCN';
+    if (huHongRadio) huHongRadio.style.display = hideHuHong ? 'none' : '';
+    if (huHongLabel) huHongLabel.style.display = hideHuHong ? 'none' : '';
+    if (hideHuHong && huHongRadio && huHongRadio.checked && canDateRadio) {
+        canDateRadio.checked = true;
+        toggleTinhTrangRadio('Cận date');
     }
 
     // Ẩn/hiện biện pháp xử lý đối với Thực phẩm tươi sống (TPTS)

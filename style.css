@@ -28,6 +28,7 @@
         scroll-behavior: smooth;
         scrollbar-gutter: stable;
         background-color: var(--brand-primary);
+        overscroll-behavior-y: none;
     }
 
     /* --- Custom Scrollbar System for all scrollable containers --- */
@@ -142,6 +143,26 @@
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+        overscroll-behavior-y: none;
+    }
+
+    /* Phủ màu thương hiệu ở vùng cao su phía trên trên trình duyệt di động. */
+    body::before {
+        content: "";
+        position: absolute;
+        top: -100vh;
+        right: 0;
+        left: 0;
+        height: 100vh;
+        background-color: var(--brand-primary);
+        pointer-events: none;
+    }
+
+    body.modal-scroll-locked {
+        position: fixed;
+        width: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
     }
 }
 
@@ -870,6 +891,7 @@
         transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         padding: 16px;
         box-sizing: border-box;
+        overscroll-behavior: contain;
     }
 
     .apple-modal.active {
@@ -890,6 +912,7 @@
         transform: translateY(30px) scale(0.95);
         transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
         box-sizing: border-box;
+        overscroll-behavior: contain;
     }
 
     .apple-modal.active .apple-modal-content {
@@ -958,6 +981,17 @@
         margin: 0 0 18px;
         color: var(--text-sub);
         font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .app-update-modal-body .app-update-troubleshooting-note {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--status-yellow-border);
+        border-radius: 10px;
+        background: var(--status-yellow-bg);
+        color: #714800;
+        font-size: 12px;
         line-height: 1.5;
     }
 
@@ -3424,19 +3458,23 @@
     }
 
     .apple-toast--success {
-        border-left: 4px solid var(--brand-primary);
+        border-color: var(--brand-primary);
+        border-left-width: 4px;
     }
 
     .apple-toast--warning {
-        border-left: 4px solid var(--brand-accent-orange);
+        border-color: var(--brand-accent-orange);
+        border-left-width: 4px;
     }
 
     .apple-toast--error {
-        border-left: 4px solid var(--brand-accent-red);
+        border-color: var(--brand-accent-red);
+        border-left-width: 4px;
     }
 
     .apple-toast--info {
-        border-left: 4px solid #007aff;
+        border-color: #007aff;
+        border-left-width: 4px;
     }
 
     .apple-confirm-overlay {
@@ -4767,6 +4805,9 @@
 .notif-item.state-warning .notif-item__indicator { background-color: var(--brand-accent-orange); }
 .notif-item.state-danger .notif-item__indicator { background-color: var(--brand-accent-red); }
 .notif-item.state-expired .notif-item__indicator { background-color: #8e8e93; }
+.notif-item.state-warning { border-color: var(--brand-accent-orange) !important; }
+.notif-item.state-danger { border-color: var(--brand-accent-red) !important; }
+.notif-item.state-expired { border-color: #8e8e93 !important; }
 
 .notif-item__main {
     flex: 1;
