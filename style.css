@@ -144,6 +144,15 @@
         padding: 0;
         box-sizing: border-box;
         overscroll-behavior-y: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    input,
+    textarea,
+    [contenteditable="true"] {
+        -webkit-user-select: text;
+        user-select: text;
     }
 
     /* Phủ màu thương hiệu ở vùng cao su phía trên trên trình duyệt di động. */
@@ -4581,10 +4590,48 @@
     border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
 }
 
-.app-install-status {
-    margin: -4px 0 12px;
+.app-info-install-section {
+    padding: 14px;
+    border: 1px solid rgba(0, 102, 51, 0.12);
+    border-radius: var(--radius-item);
+    background: rgba(255, 255, 255, 0.62);
+}
+
+.app-info-install-section .sidebar-section-title {
+    margin-bottom: 10px;
+}
+
+.app-version-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 12px;
     color: var(--text-secondary);
-    font-size: 13px;
+}
+
+.app-version-row strong {
+    color: var(--text-main);
+    font-size: 12px;
+    text-align: right;
+}
+
+.app-install-status {
+    margin: 0 0 8px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.sidebar-update-note {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--status-yellow-border);
+    border-radius: 8px;
+    background: var(--status-yellow-bg);
+    color: #714800;
+    font-size: 11px;
     line-height: 1.45;
 }
 

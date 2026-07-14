@@ -1304,19 +1304,14 @@
         </div>
       </div>
 
-      <div class="sidebar-section info-section"
-        style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color, rgba(0,0,0,0.08));">
-        <h4 class="sidebar-section-title" style="margin-bottom: 8px;">Thông tin ứng dụng</h4>
-        <div class="info-item"
-          style="font-size: 13px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center;">
-          <span class="info-label">Chi tiết:</span>
-          <span id="appVersionNote" class="info-value" style="font-weight: 600;">Đang tải...</span>
+      <div class="sidebar-section app-install-section app-info-install-section">
+        <h4 class="sidebar-section-title">Ứng dụng & Cài đặt</h4>
+        <div class="app-version-row">
+          <span>Phiên bản</span>
+          <strong id="appVersionNote">Đang tải...</strong>
         </div>
-      </div>
-
-      <div class="sidebar-section app-install-section">
-        <h4 class="sidebar-section-title">Cài đặt ứng dụng</h4>
         <p id="appInstallStatus" class="app-install-status" aria-live="polite">Thêm ứng dụng vào màn hình chính để mở nhanh hơn.</p>
+        <p class="sidebar-update-note">Nếu ứng dụng lỗi sau khi cập nhật, hãy xoá rồi cài đặt/thêm lại vào màn hình chính.</p>
         <button id="btnInstallApp" class="btn-action app-install-button" type="button">Thêm vào màn hình chính</button>
       </div>
     </div>
