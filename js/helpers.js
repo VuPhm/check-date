@@ -1,6 +1,6 @@
 // --- HỆ THỐNG KIỂM SOÁT PHIÊN BẢN VÀ GIAO THỨC CHUYỂN GIAO PWA ---
 export const APP_VERSION_CONFIG = { 
-    currentVersion: "2.18.12",
+    currentVersion: "2.19.3",
     lastUpdated: "15/07/2026"
 };
 
@@ -40,11 +40,21 @@ export function updateVersionUI(version, date, status) {
     }
 }
 
-export function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js')
-            .catch((err) => console.error("SW Register Error:", err));
+export async function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+
+    // Vite chỉ sinh sw.js trong production build. Ở dev, xóa đăng ký cũ để
+    // Service Worker production không cache/chặn các module HMR trên localhost.
+    if (import.meta.env.DEV) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations
+            .filter((registration) => registration.scope.startsWith(window.location.origin))
+            .map((registration) => registration.unregister()));
+        return;
     }
+
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { type: 'module' })
+        .catch((err) => console.error("SW Register Error:", err));
 }
 
 export function initAppVersion() {
@@ -54,7 +64,7 @@ export function initAppVersion() {
     };
     
     updateUI();
-    registerServiceWorker();
+    registerServiceWorker().catch((err) => console.warn("Không thể dọn Service Worker ở môi trường dev:", err));
     
     window.addEventListener('online', updateUI);
     window.addEventListener('offline', updateUI);
@@ -540,11 +550,12 @@ export function showAppleToast(message, type = 'info', duration = 3000) {
 // Hàm tải động thư viện ExcelJS từ CDN nếu chưa được định nghĩa
 export async function loadExcelJS() {
     if (window.ExcelJS) return window.ExcelJS;
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js';
-        script.onload = () => resolve(window.ExcelJS);
-        script.onerror = () => reject(new Error('Không thể tải thư viện ExcelJS. Vui lòng kiểm tra kết nối mạng.'));
-        document.head.appendChild(script);
-    });
+    try {
+        const module = await import('exceljs');
+        window.ExcelJS = module.default || module;
+        return window.ExcelJS;
+    } catch (error) {
+        console.error('ExcelJS load error:', error);
+        throw new Error('Không thể tải thư viện xuất Excel.');
+    }
 }

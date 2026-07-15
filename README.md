@@ -3,8 +3,8 @@
 Ứng dụng Progressive Web App (PWA) gọn nhẹ, hoạt động độc lập và tối ưu cho thiết bị di động, giúp nhân viên/quản lý tại các cửa hàng bán lẻ (CoopFood) tra cứu nhanh thời hạn lùi hàng (ngày phải thu hồi hoặc giảm giá sản phẩm) dựa trên Ngày Sản Xuất (NSX) và Hạn Sử Dụng (HSD).
 
 * **Bản chạy trực tuyến (Production Build):** [vuphm.github.io/coop-date](https://vuphm.github.io/coop-date/)
-* **Nền tảng phát triển:** HTML5, Vanilla CSS (Apple HIG Design), Vanilla JavaScript (ES6 Modules), Flatpickr.
-* **Phiên bản hiện tại:** `2.18.8` (15/07/2026)
+* **Nền tảng phát triển:** Vite, Vue 3, TypeScript, Pinia, Dexie và Vanilla CSS (Apple HIG Design).
+* **Phiên bản hiện tại:** `2.19.3` (15/07/2026)
 
 ---
 
@@ -103,7 +103,7 @@ Thuật toán tính toán hạn lùi hàng tuân thủ quy tắc sau:
 ## 3. Yêu Cầu Phi Chức Năng (Non-functional Requirements)
 
 ### A. Tương Thích PWA Hoạt Động Ngoại Tuyến (Offline Compatibility)
-* **Pre-caching tài nguyên:** Tệp Service Worker (`sw.js`) thực hiện đăng ký và lưu trữ cứng (cache) toàn bộ tài nguyên cốt lõi (`index.html`, `style.css`, các tệp tin trong thư mục `js/`, `manifest.json` và các biểu tượng favicon).
+* **Pre-caching tài nguyên:** Workbox tạo Service Worker từ `src/sw.ts` và tự sinh precache manifest trong lúc build, bao gồm app shell và tài nguyên tĩnh cần thiết.
 * **Chiến lược Caching (Network-First với Cache Fallback):**
   * Đối với các yêu cầu `GET` tải tài nguyên, hệ thống ưu tiên gửi yêu cầu lên Network trước nhằm bảo đảm người dùng nhận được phiên bản logic mới nhất khi có kết nối mạng ổn định.
   * Nếu kết nối mạng thất bại (ngoại tuyến), Service Worker lập tức chặn và trả về tài nguyên trong Cache giúp ứng dụng hoạt động mượt mà không bị gián đoạn.
@@ -134,12 +134,13 @@ Thuật toán tính toán hạn lùi hàng tuân thủ quy tắc sau:
 * **Modal Tạo/Duyệt Phiếu KPH:** Giao diện form slide-up toàn màn hình trên mobile.
 
 ### E. Dễ Dàng Bảo Trì & Nâng Cấp (Maintainability)
-* **Kiến trúc tối giản, không phụ thuộc thư viện nặng:** Không sử dụng các framework cồng kềnh như React/Vue hay CSS utility như Tailwind. Toàn bộ mã nguồn nằm gọn trong các tệp vanilla thuần túy giúp ứng dụng tải cực nhanh và an toàn.
+* **Kiến trúc chuyển đổi tăng dần:** Vite/Vue/TypeScript là nền chạy chính. Header, màn hình tra cứu, lịch sử, danh sách KPH, form tạo/duyệt KPH, preview ảnh, nội dung thông báo, domain nghiệp vụ, repository IndexedDB và state mới đã chuyển sang `src/`. Pipeline nén/đóng dấu ảnh và một số bộ điều phối DOM vẫn đi qua lớp tương thích trong `js/`.
 * **Tách biệt rõ rệt trách nhiệm (Separation of Concerns):**
   * Tệp `index.html` chỉ định nghĩa cấu trúc khung.
   * Tệp `style.css` quản lý toàn bộ hệ thống biến CSS màu sắc thương hiệu (Brand Palette 5-3-1-1) và hiệu ứng chuyển động.
-  * Thư mục `js/` chứa mã nguồn JavaScript chia theo mô-đun chức năng riêng biệt (ES6 Modules).
-* **Triển khai tự động (CI/CD):** Tích hợp sẵn luồng GitHub Actions (`.github/workflows/static.yml`) tự động deploy ứng dụng lên GitHub Pages mỗi khi nhánh `main` được cập nhật.
+  * Thư mục `src/` chứa component Vue, TypeScript domain, Pinia store và Dexie repository.
+  * Thư mục `js/` là lớp giao diện legacy đang được chuyển đổi tăng dần.
+* **Triển khai tự động (CI/CD):** GitHub Actions chạy test/build và deploy thư mục `dist` lên GitHub Pages.
 
 ---
 
@@ -153,19 +154,27 @@ coop-date/
 ├── .github/workflows/
 │   └── static.yml              # GitHub Actions tự động deploy lên Github Pages
 ├── favicon_io/                 # Chứa bộ tài nguyên Icon đa nền tảng
+├── src/                        # Vue components, TypeScript domain/store/repository
+│   ├── components/             # Component giao diện đã chuyển đổi
+│   ├── domain/                 # Types, validation và nghiệp vụ thuần
+│   ├── repositories/           # Dexie/IndexedDB repository
+│   ├── stores/                 # Pinia session, branch và sync state
+│   ├── main.ts                 # Entry point Vite/Vue
+│   └── sw.ts                   # Workbox service worker source
 ├── js/                         # Thư mục mã nguồn Javascript modular (ES6 Modules)
-│   ├── business.js             # Xử lý logic nghiệp vụ tính toán hạn lùi
-│   ├── db.js                   # ★ Tầng truy xuất IndexedDB (KPH logs + History logs)
+│   ├── business.js             # Cầu tương thích tới TypeScript domain
+│   ├── db.js                   # Cầu tương thích tới Dexie repository
 │   ├── helpers.js              # Các hàm phụ trợ, cấu hình phiên bản, UI components
 │   ├── history.js              # Quản lý lưu trữ/hiển thị danh sách lịch sử tra cứu
-│   ├── kph.js                  # Nghiệp vụ và giao diện KPH (TPCN/TPTS + Approval)
+│   ├── kph.js                  # Cầu tương thích KPH, pipeline ảnh và sự kiện cho Vue
 │   ├── main.js                 # Điểm khởi chạy ứng dụng, lắng nghe DOM, điều hướng
 │   ├── notifications.js        # ★ Trung tâm thông báo (Badge, Modal, Sidebar stats)
 │   ├── scanner.js              # Điều khiển camera và tích hợp html5-qrcode
 │   └── timeline.js             # Vẽ sơ đồ trực quan SVG động
 ├── index.html                  # Layout cấu trúc của PWA
 ├── style.css                   # Hệ thống CSS stylesheet (Apple Design Concept)
-├── sw.js                       # Service Worker phục vụ chế độ offline
+├── vite.config.ts              # Build, PWA và sao chép static assets
+├── package.json                # Dependency và scripts
 ├── manifest.json               # Cấu hình PWA cài đặt ứng dụng trên màn hình chính
 └── version.json                # Tệp lưu vết phiên bản deploy
 ```
@@ -234,23 +243,46 @@ main.js (Entry Point)
   * Xuất báo cáo Excel (.xlsx) bằng `ExcelJS`, `Blob` và URL tải tạm của trình duyệt.
 
 ### Điểm cần lưu ý khi nâng cấp hệ thống (Dành cho AI Agent)
-1. **Thay đổi phiên bản:** Khi cập nhật bất kỳ tính năng hoặc sửa đổi mã nguồn trong thư mục `js/` hoặc tệp `style.css`, bạn bắt buộc phải đồng bộ chuỗi phiên bản (ví dụ: `2.17.3`) tại 3 nơi:
+1. **Thay đổi phiên bản:** Đồng bộ phiên bản tại:
    * Hằng số `currentVersion` và `lastUpdated` tại [helpers.js](js/helpers.js) (dòng 3-4).
-   * Hằng số `CACHE_NAME` tại [sw.js](sw.js) (dòng 1).
    * Trường `version` và `lastUpdated` tại [version.json](version.json).
-   * `CACHE_NAME` mới khiến Service Worker tạo cache mới và dọn cache phiên bản cũ khi activate; `version.json` hiện là metadata theo dõi deploy.
-2. **Thêm tệp JS mới:** Nếu tạo module JS mới trong thư mục `js/`, phải thêm đường dẫn tệp vào mảng `ASSETS` trong [sw.js](sw.js) để Service Worker cache đúng.
+   * Trường `version` tại [package.json](package.json).
+   Workbox tạo precache manifest tự động trong lúc build; không chỉnh tay danh sách cache.
+2. **Mã mới:** Ưu tiên TypeScript trong `src/`. Chỉ sửa `js/` khi duy trì hoặc tháo gỡ lớp legacy.
 3. **Giới hạn Thư viện Ngoại vi:** Hạn chế tối đa việc thêm các tệp CDN mới nhằm giữ vững tiêu chí tải trang tức thì dưới 1 giây và tương thích offline tuyệt đối của PWA.
 4. **Màu sắc trạng thái:** Khi thay đổi giao diện cảnh báo, hãy chỉnh sửa các biến CSS tương ứng (`--status-green-bg`, `--status-yellow-bg`, `--status-red-bg`) trong tệp [style.css](style.css) để duy trì tính đồng nhất của hệ thống giao diện.
-5. **IndexedDB Schema:** Khi cần thêm object store mới, tăng `DB_VERSION` trong [db.js](js/db.js) và cập nhật logic `onupgradeneeded`.
+5. **IndexedDB Schema:** Khai báo migration mới trong [localDatabase.ts](src/repositories/localDatabase.ts), không xóa hoặc đổi tên store hiện có nếu chưa có kế hoạch di chuyển dữ liệu.
 6. **Phụ thuộc module:** `notifications.js` phụ thuộc trực tiếp vào dữ liệu export từ `kph.js` và `history.js`; khi đổi import/export cần giữ dependency graph hợp lệ và tránh tạo vòng phụ thuộc mới.
 
 ### Chạy dự án tại máy local
 
-Dự án không có bước cài dependency hoặc build. Do sử dụng ES Modules và Service Worker, hãy chạy qua HTTP server thay vì mở trực tiếp `index.html` bằng `file://`:
+Dự án cần Node.js 24. Trên MacBook Pro Intel 2019, kiểm tra Terminal đang chạy kiến trúc Intel rồi dùng Node qua `nvm`:
 
 ```bash
-python3 -m http.server 8000
+arch
+# Kết quả mong đợi: i386 hoặc x86_64
+nvm install 24
+nvm use 24
+node -v
 ```
 
-Sau đó mở `http://localhost:8000`. Camera/barcode cần secure context; `localhost` được trình duyệt xem là secure context, còn khi thử trên thiết bị khác nên dùng HTTPS.
+Cài dependency và chạy đúng máy chủ Vite:
+
+```bash
+npm install
+npm run dev
+```
+
+Mở địa chỉ Vite in trong Terminal, mặc định là `http://localhost:5173/`. Không mở trực tiếp `index.html` và không dùng Python/VS Code Live Server cho mã nguồn, vì trình duyệt không tự biên dịch tệp Vue/TypeScript nên các vùng giao diện sẽ trống. Muốn kiểm tra bản production local:
+
+```bash
+npm run build
+npm run preview
+```
+
+Kiểm tra trước khi bàn giao:
+
+```bash
+npm test
+npm run build
+```

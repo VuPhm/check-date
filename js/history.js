@@ -1,5 +1,4 @@
 import { 
-    formatRemainingText, 
     formatLocalDate, 
     showAppleConfirm, 
     showAppleToast, 
@@ -38,25 +37,11 @@ export function setFilter(filterType) {
         }
     }
     
-    // Cập nhật class active cho các thẻ tag bộ lọc
-    document.querySelectorAll('.filter-tags .tag').forEach(tag => {
-        tag.classList.remove('active');
-    });
-    
-    activeFilters.forEach(f => {
-        const tagElement = document.querySelector(`.tag--${f}`);
-        if (tagElement) tagElement.classList.add('active');
-    });
-    
     updateHistoryUI(); 
 } 
 
 export function togglePrioritySort() { 
     isPrioritySort = !isPrioritySort; 
-    const btn = document.getElementById('sortToggleBtn'); 
-    const txt = document.getElementById('sortToggleText'); 
-    if (btn) btn.classList.toggle('active', isPrioritySort); 
-    if (txt) txt.innerText = isPrioritySort ? "Sắp xếp: Ưu tiên hạn lùi" : "Sắp xếp: Mặc định"; 
     updateHistoryUI(); 
 } 
 
@@ -181,118 +166,20 @@ export function clearAllHistory() {
 }
 
 export function updateFilterCounts() {
-    const total = historyData.length;
-    const safe = historyData.filter(item => item.alertType === 'safe').length;
-    const warning = historyData.filter(item => item.alertType === 'warning').length;
-    const danger = historyData.filter(item => item.alertType === 'danger').length;
-    const other = historyData.filter(item => item.alertType === 'other').length;
-    const expired = historyData.filter(item => item.alertType === 'expired').length;
-    
-    const tagAll = document.querySelector('.tag--all');
-    const tagSafe = document.querySelector('.tag--safe');
-    const tagWarning = document.querySelector('.tag--warning');
-    const tagDanger = document.querySelector('.tag--danger');
-    const tagOther = document.querySelector('.tag--other');
-    const tagExpired = document.querySelector('.tag--expired');
-    
-    if (tagAll) tagAll.innerText = `Tất cả (${total})`;
-    if (tagSafe) tagSafe.innerText = `An toàn (${safe})`;
-    if (tagWarning) tagWarning.innerText = `Sắp tới hạn (${warning})`;
-    if (tagDanger) tagDanger.innerText = `Quá hạn lùi (${danger})`;
-    if (tagOther) tagOther.innerText = `Khác (${other})`;
-    if (tagExpired) tagExpired.innerText = `Đã hết HSD (${expired})`;
+    return {
+        total: historyData.length,
+        safe: historyData.filter(item => item.alertType === 'safe').length,
+        warning: historyData.filter(item => item.alertType === 'warning').length,
+        danger: historyData.filter(item => item.alertType === 'danger').length,
+        other: historyData.filter(item => item.alertType === 'other').length,
+        expired: historyData.filter(item => item.alertType === 'expired').length
+    };
 }
 
 export function updateHistoryUI() {
-    updateFilterCounts();
-    
-    const container = document.getElementById('historyList');
-    if (!container) return;
-    
-    const clearBtn = document.getElementById('btnClearHistory');
-    const exportBtn = document.getElementById('btnExportHistoryExcel');
-    let displayData = [...historyData];
-    if (!activeFilters.has('all')) {
-        displayData = displayData.filter(item => activeFilters.has(item.alertType));
-    }
-    if (isPrioritySort) displayData.sort((a, b) => a.alertWeight - b.alertWeight);
-    
-    if (clearBtn) {
-        clearBtn.disabled = displayData.length === 0;
-        clearBtn.title = displayData.length ? `Xóa ${displayData.length} lượt tra cứu đang hiển thị` : 'Không có dữ liệu để xóa';
-        clearBtn.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-            <span>Xóa (${displayData.length})</span>
-        `;
-    }
-    
-    if (exportBtn) {
-        exportBtn.disabled = displayData.length === 0;
-        exportBtn.innerHTML = `
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-              stroke-linejoin="round" style="width: 14px; height: 14px;">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Xuất Excel (${displayData.length})</span>
-        `;
-    }
-    
-    if (displayData.length === 0) {
-        container.innerHTML = '<li class="history-empty">Không có dữ liệu phù hợp</li>';
-        return;
-    }
-    
-    container.innerHTML = displayData.map(item => {
-        const labelPrefix = item.isShortProduct ? 'HSD' : 'Ngày lùi';
-        const remainingText = item.isExpiredProduct ? 'Đã hết HSD' : formatRemainingText(item.daysRemaining);
-        const alertLabelText = item.isExpiredProduct ? 'Đã qua hạn lùi' : item.alertLabel;
-        const dvtLabel = item.dvt || 'EA';
-        const qtyLabel = (item.quantity !== undefined && item.quantity !== "") ? item.quantity : "";
-        const displayBarcode = item.barcode || 'Tra cứu không mã';
-        const displayQty = qtyLabel !== "" ? `x${qtyLabel} ${dvtLabel}` : "";
-        const isSelected = item.id === selectedHistoryId;
-        
-        return `
-            <li id="history-item-${item.id}" class="history-item ${item.alertClass} ${isSelected ? 'is-selected' : ''}" onclick="window.loadHistoryItem('${item.nsx}', '${item.formattedHsd}', '${item.rawHsdDays}', '${item.barcode || ''}', '${qtyLabel}', '${dvtLabel}', '${(item.tenHang || '').replace(/'/g, "\\'")}', '${item.id}')">
-                <div class="history-item__indicator"></div>
-                <div class="history-item__content">
-                    <div class="history-item__header-row">
-                        <span class="history-item__barcode">${displayBarcode}</span>
-                        ${displayQty ? `<span class="history-item__qty-badge">${displayQty}</span>` : ''}
-                    </div>
-                    ${item.tenHang ? `<div class="history-item__name-row" style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-top: 4px; margin-bottom: 2px; text-align: left;">${item.tenHang}</div>` : ''}
-                    <div class="history-item__detail-row">
-                        <div class="history-item__dates-col">
-                            <span class="history-item__date-label">NSX: <strong>${item.nsx}</strong></span>
-                            <span class="history-item__date-label">HSD: <strong>${item.formattedHsd}</strong></span>
-                        </div>
-                        <div class="history-item__result-col">
-                            <span class="history-item__result-label">${labelPrefix}</span>
-                            <span class="history-item__result-value">${item.result}</span>
-                        </div>
-                    </div>
-                    <div class="history-item__footer-row">
-                        <span class="history-item__status-badge">${alertLabelText}</span>
-                        <span class="history-item__countdown">${remainingText}</span>
-                    </div>
-                </div>
-                <button class="history-item__delete-btn" onclick="event.stopPropagation(); window.removeHistoryItem('${item.id}')" aria-label="Xóa">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </li>
-        `;
-    }).join('');
-
+    window.dispatchEvent(new CustomEvent('coop:history-changed', {
+        detail: { counts: updateFilterCounts() }
+    }));
     if (typeof window.updateNotificationStats === 'function') {
         window.updateNotificationStats();
     }

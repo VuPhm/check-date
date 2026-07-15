@@ -39,277 +39,27 @@
   </script>
   <link rel="apple-touch-icon" sizes="180x180" href="./favicon_io/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="brand-header-apple">
-        <img class="brand-apple-logo" src="coopfood-logo.png" alt="Co.op Food Logo">
-      </div>
-
-      <div class="apple-tab-bar">
-        <button class="tab-btn active" id="tab-btn-tracuu" onclick="switchTab('tracuu')" aria-label="Tra cứu hạn lùi">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-            stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <span>Hạn lùi hàng</span>
-        </button>
-        <button class="tab-btn" id="tab-btn-kph" onclick="switchTab('kph')" aria-label="Hàng không phù hợp">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
-          </svg>
-          <span>Hàng KPH</span>
-        </button>
-      </div>
-
-      <div class="header-right">
-        <div class="apple-chrono-line">
-          <span class="chrono-line__label">Hôm nay:</span>
-          <span class="chrono-line__value desktop-only" id="widgetFullDate">---</span>
-          <span class="chrono-line__value mobile-only" id="widgetShortDate">---</span>
-        </div>
-        <button class="header-action-btn notification-btn" id="btnNotification" aria-label="Thông báo" type="button" onclick="window.openNotificationModal()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span class="notification-badge" style="display: none;">0</span>
-        </button>
-        <button class="header-action-btn menu-personal-btn" id="btnOpenSidebar" aria-label="Cá nhân và cấu hình"
-          type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <circle cx="12" cy="6" r="3.5"></circle>
-            <path d="M4 12h16"></path>
-            <path d="M6 16h12"></path>
-            <path d="M8 20h8"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
+  <header class="app-header" id="vue-header-root">
+    <div class="vue-loading-fallback vue-loading-fallback--header">Đang tải ứng dụng…</div>
   </header>
 
   <div class="app-container">
     <div class="workspace">
       <!-- Tab 1: Tra cứu Hạn lùi -->
       <div id="tab-tracuu" class="tab-content active-tab">
-        <main class="calc-board">
-
-          <div class="form-field" style="margin-bottom: 12px;">
-            <label class="form-label" for="tenHang">Tên hàng hóa</label>
-            <div class="form-input-wrapper">
-              <input class="form-input" type="text" id="tenHang" placeholder="Nhập tên hàng hóa">
-            </div>
+        <div id="vue-lookup-root">
+          <div class="vue-loading-fallback">
+            <strong>Đang khởi động giao diện…</strong>
+            <span>Nếu thông báo này không biến mất, hãy chạy ứng dụng bằng <code>npm run dev</code> thay cho Python HTTP server.</span>
           </div>
-
-          <div class="apple-input-row">
-            <div class="form-field flex-2">
-              <div class="form-label-row">
-                <label class="form-label" for="barcode">Mã Barcode</label>
-                <span class="barcode-formats-badge" id="barcodeFormatsNote" onclick="toggleBarcodeFormats()">
-                  <strong id="activeFormatsText">EAN-13, EAN-8, Code 128</strong>
-                </span>
-              </div>
-              <div class="form-input-wrapper">
-                <input class="form-input" type="text" id="barcode" placeholder="Nhập hoặc quét mã" inputmode="numeric">
-                <button type="button" class="btn-picker-trigger" id="btnScanBarcode" onclick="openScannerForCalc()"
-                  aria-label="Quét mã barcode">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" style="width: 20px; height: 20px;">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
-                  </svg>
-                </button>
-              </div>
-
-              <div class="barcode-formats-container hidden" id="barcodeFormatsContainer">
-                <div class="barcode-format-tags">
-                  <span class="format-tag active" data-format="EAN_13">EAN-13</span>
-                  <span class="format-tag active" data-format="EAN_8">EAN-8</span>
-                  <span class="format-tag active" data-format="CODE_128">Code 128</span>
-                  <span class="format-tag" data-format="CODE_39">Code 39</span>
-                  <span class="format-tag" data-format="UPC_A">UPC-A</span>
-                </div>
-              </div>
-            </div>
-            <div class="form-field flex-1">
-              <div class="form-label-row">
-                <label class="form-label" for="quantity">Số lượng</label>
-                <div class="dvt-radio-group" id="calcDvtGroup">
-                  <input type="radio" name="calcDvt" id="calcDvtEA" value="EA" checked>
-                  <label for="calcDvtEA">EA</label>
-                  <input type="radio" name="calcDvt" id="calcDvtKg" value="kg">
-                  <label for="calcDvtKg">kg</label>
-                </div>
-              </div>
-              <div class="form-input-wrapper">
-                <input class="form-input" type="number" id="quantity" min="0.001" step="any" placeholder="Nhập số lượng"
-                  inputmode="decimal">
-              </div>
-            </div>
-          </div>
-
-          <section class="calc-focus-zone" aria-label="Thông tin hạn sử dụng và tra cứu">
-          <div class="form-field" id="nsxGroup">
-            <div class="form-label-row">
-              <label class="form-label" for="nsx">Ngày sản xuất</label>
-              <div class="nsx-toggle-container">
-                <span class="nsx-toggle-label" id="nsxToggleLabel">Đã biết</span>
-                <label class="apple-switch compact-switch">
-                  <input type="checkbox" id="calcModeToggle" onchange="handleToggleMode(this)" checked>
-                  <span class="apple-switch-slider"></span>
-                </label>
-              </div>
-            </div>
-            <div class="form-input-wrapper">
-              <input class="form-input auto-date" type="text" id="nsx" placeholder="dd/mm/yyyy" inputmode="numeric"
-                maxlength="10">
-              <button type="button" class="btn-picker-trigger" id="btnNsxPicker" onclick="openNsxPicker()"
-                aria-label="Chọn ngày">
-                <svg viewBox="0 0 24 24">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-              </button>
-              <input type="text" id="nsxHidden" class="hidden-picker">
-            </div>
-          </div>
-
-          <div class="form-field" id="hsdGroup">
-            <label class="form-label" for="hsdDate">Hạn sử dụng (Chọn ngày)</label>
-            <div class="form-input-wrapper">
-              <input class="form-input auto-date" type="text" id="hsdDate" placeholder="dd/mm/yyyy" inputmode="numeric"
-                maxlength="10">
-              <button type="button" class="btn-picker-trigger" onclick="openHsdPicker()" aria-label="Chọn ngày">
-                <svg viewBox="0 0 24 24">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
-              </button>
-              <input type="text" id="hsdHidden" class="hidden-picker">
-            </div>
-          </div>
-
-          <div class="divider-or" id="dividerOr">hoặc</div>
-
-          <div class="apple-input-row" id="hsdDuoRow">
-            <div class="form-field flex-1">
-              <label class="form-label" for="hsdDays">HSD (Số ngày)</label>
-              <div class="form-input-wrapper">
-                <input class="form-input" type="number" id="hsdDays" placeholder="Ví dụ: 30" inputmode="numeric"
-                  min="1">
-                <span class="form-input-suffix">ngày</span>
-              </div>
-            </div>
-            <div class="form-field flex-1">
-              <label class="form-label" for="hsdMonths">HSD (Số tháng)</label>
-              <div class="form-input-wrapper">
-                <input class="form-input" type="number" id="hsdMonths" placeholder="Ví dụ: 3" inputmode="numeric"
-                  min="1">
-                <span class="form-input-suffix">tháng</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="calc-focus-zone__actions">
-            <button class="btn-action" id="btnSubmit" onclick="executeCalculation()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="6"></circle>
-                <path d="m20 20-4.2-4.2"></path>
-              </svg>
-              Tra cứu
-            </button>
-            <button class="btn-secondary btn-refresh-calc" type="button" id="btnRefreshCalc" onclick="refreshCalculationForm()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"></path>
-                <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"></path>
-                <path d="M3 21v-5h5"></path>
-                <path d="M21 3v5h-5"></path>
-              </svg>
-              Làm mới
-            </button>
-          </div>
-          </section>
-
-          <div id="resultWrapper" class="calc-board__result-wrapper">
-            <div id="resultText" class="calc-board__result-text"></div>
-          </div>
-        </main>
-
-        <div id="diagramBoard" class="diagram-board">
-          <h3 class="diagram-board__title">Sơ đồ trục thời hạn lùi hàng</h3>
-          <div id="svgContainer"></div>
         </div>
-
-        <div class="history-wrapper">
-          <section class="history-board">
-            <div class="history-board__header">
-              <h2 class="history-board__title">Lịch sử</h2>
-              <div class="history-board__actions" style="display: flex; gap: 8px; align-items: center;">
-                <button id="btnExportHistoryExcel" class="btn-export-history-excel" onclick="exportHistoryToExcel()"
-                  title="Xuất Excel" disabled>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                    stroke-linejoin="round" style="width: 14px; height: 14px;">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                  </svg>
-                  <span>Xuất Excel</span>
-                </button>
-                <button id="btnClearHistory" class="btn-clear-history" onclick="clearAllHistory()"
-                  title="Xóa toàn bộ lịch sử" disabled>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                    stroke-linejoin="round" style="width: 14px; height: 14px;">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                  </svg>
-                  <span>Xóa (0)</span>
-                </button>
-              </div>
-            </div>
-            <div class="controls">
-              <div class="filter-tags">
-                <span class="tag tag--all active" onclick="setFilter('all')">Tất cả</span>
-                <span class="tag tag--safe" onclick="setFilter('safe')">An toàn</span>
-                <span class="tag tag--warning" onclick="setFilter('warning')">Sắp tới hạn</span>
-                <span class="tag tag--danger" onclick="setFilter('danger')">Quá hạn lùi</span>
-                <span class="tag tag--other" onclick="setFilter('other')">Khác</span>
-                <span class="tag tag--expired" onclick="setFilter('expired')">Đã hết HSD</span>
-              </div>
-              <button id="sortToggleBtn" class="sort-toggle-box" onclick="togglePrioritySort()">
-                <svg viewBox="0 0 24 24">
-                  <polyline points="15 3 21 3 21 9"></polyline>
-                  <polyline points="9 21 3 21 3 15"></polyline>
-                  <line x1="21" y1="3" x2="14" y2="10"></line>
-                  <line x1="3" y1="21" x2="10" y2="14"></line>
-                </svg>
-                <span id="sortToggleText">Sắp xếp: Mặc định</span>
-              </button>
-            </div>
-            <ul id="historyList" class="history-list">
-              <li class="history-empty">Chưa có dữ liệu tra cứu</li>
-            </ul>
-          </section>
+        <div id="vue-history-root">
+          <div class="vue-loading-fallback">Đang tải lịch sử…</div>
         </div>
       </div>
 
@@ -515,66 +265,9 @@
             </button>
           </div>
 
-          <div class="kph-table-container">
-            <table class="kph-table">
-              <colgroup>
-                <col class="kph-col-select">
-                <col class="kph-col-date">
-                <col class="kph-col-approval">
-                <col class="kph-col-sku">
-                <col class="kph-col-supplier">
-                <col class="kph-col-quantity">
-                <col class="kph-col-condition">
-                <col class="kph-col-resolution">
-                <col class="kph-col-image">
-                <col class="kph-col-delete">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th class="kph-col-select" style="text-align: center;"><input type="checkbox" id="kphSelectAll"
-                      onchange="toggleSelectAllKph(this)" class="kph-checkbox"></th>
-                  <th class="kph-col-date sortable-header" style="text-align: center; cursor: pointer;" onclick="toggleKphSort('ngayPhatHien')">
-                    Phát hiện <span id="sort-icon-ngayPhatHien" class="sort-icon">↕</span>
-                  </th>
-                  <th class="kph-col-approval sortable-header" style="text-align: center; cursor: pointer;" onclick="toggleKphSort('trangThaiDuyet')">
-                    <span class="kph-header-line">Duyệt <span id="sort-icon-trangThaiDuyet" class="sort-icon">↕</span></span>
-                    <span class="kph-header-line">Thời gian duyệt</span>
-                  </th>
-                  <th class="kph-col-sku sortable-header" style="cursor: pointer;" onclick="toggleKphSort('skuTenHang')">
-                    <span class="kph-header-line">SKU/UPC</span>
-                    <span class="kph-header-line">Tên hàng hóa <span id="sort-icon-skuTenHang" class="sort-icon">↕</span></span>
-                  </th>
-                  <th class="kph-col-supplier sortable-header" style="cursor: pointer;" onclick="toggleKphSort('ncc')">
-                    NCC <span id="sort-icon-ncc" class="sort-icon">↕</span>
-                  </th>
-                  <th class="kph-col-quantity sortable-header" style="cursor: pointer; text-align: center;" onclick="toggleKphSort('soLuong')">
-                    <span class="kph-header-line">SL <span id="sort-icon-soLuong" class="sort-icon">↕</span></span>
-                    <span class="kph-header-line">ĐVT</span>
-                  </th>
-                  <th class="kph-col-condition sortable-header" style="cursor: pointer;" onclick="toggleKphSort('tinhTrang')">
-                    <span class="kph-header-line">Mô tả tình trạng <span id="sort-icon-tinhTrang" class="sort-icon">↕</span></span>
-                    <span class="kph-header-line">KPH</span>
-                  </th>
-                  <th class="kph-col-resolution sortable-header" style="cursor: pointer;" onclick="toggleKphSort('ngayXuLy')">
-                    <span class="kph-header-line">Biện pháp xử lý</span>
-                    <span class="kph-header-line">Ngày xử lý <span id="sort-icon-ngayXuLy" class="sort-icon">↕</span></span>
-                  </th>
-                  <th class="kph-col-image sortable-header" style="text-align: center; cursor: pointer;" onclick="toggleKphSort('imageCount')">
-                    Ảnh <span id="sort-icon-imageCount" class="sort-icon">↕</span>
-                  </th>
-                  <th class="kph-col-delete" style="text-align: center;">Xóa</th>
-                </tr>
-              </thead>
-              <tbody id="kphLogsList">
-                <tr>
-                  <td colspan="10" class="kph-empty-row" data-label="">Chưa có dữ liệu khai báo</td>
-                </tr>
-              </tbody>
-            </table>
+          <div id="vue-kph-list-root">
+            <div class="vue-loading-fallback">Đang tải danh sách phiếu KPH…</div>
           </div>
-
-          <!-- Hộp danh sách dạng card hiển thị trên di động -->
-          <div class="kph-mobile-list-container" id="kphLogsMobileList"></div>
         </section>
       </div>
 
@@ -1197,7 +890,7 @@
         <button class="apple-modal-close-btn" onclick="window.closeNotificationModal()">&times;</button>
       </div>
       <div class="apple-modal-body" id="notificationModalBody" style="padding: 16px; overflow-y: auto;">
-        <!-- Nội dung thống kê được render tự động -->
+        <div class="vue-loading-fallback">Đang tải thông báo…</div>
       </div>
     </div>
   </div>
@@ -1317,9 +1010,8 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script type="module" src="js/main.js"></script>
+  <div id="vue-app-runtime"></div>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 
 </html>

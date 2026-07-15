@@ -11,9 +11,9 @@
 | **Tên** | Check Date CoopFood |
 | **Loại** | Progressive Web App (PWA) |
 | **Production URL** | https://vuphm.github.io/coop-date/ |
-| **Phiên bản** | `2.18.8` (15/07/2026) |
-| **Nền tảng** | HTML5 + Vanilla CSS + Vanilla JS (ES6 Modules) |
-| **Framework** | Không dùng (React/Vue/Angular) |
+| **Phiên bản** | `2.19.3` (15/07/2026) |
+| **Nền tảng** | Vite + Vue 3 + TypeScript + Vanilla CSS |
+| **Framework** | Vue 3, chuyển đổi tăng dần từ giao diện legacy |
 | **CSS Framework** | Không dùng (Tailwind/Bootstrap) — Vanilla CSS theo Apple HIG |
 | **Thư viện ngoài** | Flatpickr (date picker), html5-qrcode (scanner), ExcelJS (xuất Excel) |
 | **Lưu trữ dữ liệu** | IndexedDB (`coop_kph_db`) — 2 stores: `kph_logs`, `history_logs` |
@@ -27,7 +27,8 @@
 coop-date/
 ├── index.html              # Cấu trúc HTML duy nhất (Single Page App)
 ├── style.css               # Toàn bộ CSS (~106KB, Apple HIG Design)
-├── sw.js                   # Service Worker — Network-First caching
+├── src/                    # Vue components, TypeScript domain/store/repository
+├── vite.config.ts          # Vite + PWA/Workbox build
 ├── manifest.json           # PWA manifest
 ├── version.json            # Metadata theo dõi phiên bản deploy
 ├── coopfood-logo.png       # Logo thương hiệu
@@ -119,17 +120,17 @@ Nếu Shelf Life >= 10 ngày (hàng dài ngày):
 1. **Đồng bộ phiên bản (BẮT BUỘC):** Cập nhật version string ở **3 nơi**:
    ```
    js/helpers.js  → APP_VERSION_CONFIG.currentVersion + lastUpdated
-   sw.js          → CACHE_NAME string (ví dụ: 'app-cache-v2.18.0')
    version.json   → version + lastUpdated
+   package.json   → version
    ```
 
-2. **Thêm file JS mới:** Phải thêm vào mảng `ASSETS` trong `sw.js` để Service Worker cache.
+2. **PWA cache:** Workbox tạo precache manifest từ `src/sw.ts`; không duy trì danh sách asset thủ công.
 
-3. **Không dùng framework:** Giữ nguyên Vanilla JS/CSS. Không thêm React/Vue/Tailwind.
+3. **Mã mới:** Viết Vue 3 + TypeScript trong `src/`; giữ CSS hiện tại và chuyển dần từng màn hình khỏi `js/`.
 
 4. **Không thao túng DOM trong `business.js`:** File này chỉ chứa logic nghiệp vụ thuần túy.
 
-5. **IndexedDB schema:** Nếu thêm object store mới → tăng `DB_VERSION` trong `db.js` và xử lý trong `onupgradeneeded`.
+5. **IndexedDB schema:** Thêm version/migration trong `src/repositories/localDatabase.ts` và bảo toàn hai store hiện có.
 
 6. **Phụ thuộc module:** `notifications.js` import dữ liệu từ `kph.js` và `history.js`; giữ dependency graph này hợp lệ và tránh tạo vòng phụ thuộc mới.
 
@@ -204,16 +205,18 @@ Thông tin đơn vị/cửa hàng/CHT không nằm trong từng phiếu; chúng 
 
 ## 🖥️ Chạy Local & Kiểm Tra Cơ Bản
 
-Không cần `npm install` và không có bước build. Chạy repo qua HTTP server để ES Modules và Service Worker hoạt động đúng:
+Sử dụng Node.js 24:
 
 ```bash
-python3 -m http.server 8000
+npm install
+npm run dev
 ```
 
-Mở `http://localhost:8000`. Có thể kiểm tra cú pháp JavaScript trước khi bàn giao bằng:
+Kiểm tra trước khi bàn giao:
 
 ```bash
-for file in js/*.js sw.js; do node --check "$file" || exit 1; done
+npm test
+npm run build
 ```
 
 ---
@@ -253,7 +256,7 @@ Người dùng mở app (có mạng)
 
 ### Khi yêu cầu sửa lỗi:
 ```
-Dự án: Check Date CoopFood (PWA, Vanilla JS ES6 Modules)
+Dự án: Check Date CoopFood (PWA, Vue 3 + TypeScript, đang chuyển đổi tăng dần)
 File liên quan: js/[tên_file].js
 Lỗi: [mô tả]
 Ngữ cảnh: [đoạn code xung quanh]
@@ -261,11 +264,11 @@ Ngữ cảnh: [đoạn code xung quanh]
 
 ### Khi yêu cầu thêm tính năng:
 ```
-Dự án: Check Date CoopFood (PWA, Vanilla JS ES6 Modules)
+Dự án: Check Date CoopFood (PWA, Vue 3 + TypeScript, đang chuyển đổi tăng dần)
 Yêu cầu: [mô tả tính năng]
 File cần sửa: [liệt kê file]
 Ràng buộc:
-- Không dùng framework (React/Vue)
+- Mã mới dùng Vue 3 + TypeScript; bảo toàn lớp legacy cho tới khi component tương ứng được chuyển xong
 - Giữ nguyên kiến trúc ES6 Modules
 - Cập nhật version ở 3 nơi nếu sửa logic
 - Giao diện theo Apple HIG (style.css)
@@ -274,7 +277,7 @@ Ràng buộc:
 
 ### Khi yêu cầu review code:
 ```
-Dự án: Check Date CoopFood (PWA, Vanilla JS ES6 Modules)
+Dự án: Check Date CoopFood (PWA, Vue 3 + TypeScript, đang chuyển đổi tăng dần)
 Hãy review [tên_file].js với trọng tâm:
 - Performance (DOM manipulation efficiency)
 - Memory leaks (event listeners, object URLs)
@@ -295,4 +298,4 @@ Hãy review [tên_file].js với trọng tâm:
 
 ---
 
-> **Lưu ý:** Tài liệu này được đối chiếu với code lần cuối ngày **15/07/2026** tại phiên bản **2.18.8**. Khi dự án có thay đổi lớn, hãy cập nhật lại file này.
+> **Lưu ý:** Tài liệu này được đối chiếu với code lần cuối ngày **15/07/2026** tại phiên bản **2.19.3**. Khi dự án có thay đổi lớn, hãy cập nhật lại file này.

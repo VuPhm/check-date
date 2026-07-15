@@ -43,7 +43,7 @@ import {
     exportHistoryToExcel
 } from './history.js';
 
-import { openNotificationModal } from './notifications.js';
+import { closeNotificationModal, openNotificationModal } from './notifications.js';
 
 import {
     switchTab,
@@ -857,8 +857,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
+            closeResultModal();
+            closeImageModal();
+            closeKphCreateModal();
+            closeKphApproveModal();
+            closeNotificationModal();
+            closeScanner();
             closeAppUpdateModal();
             closeInstallHelpModal();
+            document.getElementById('appSidebar')?.classList.remove('active');
+            document.getElementById('sidebarOverlay')?.classList.remove('active');
         }
     });
 

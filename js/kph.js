@@ -1,5 +1,8 @@
 import { isValidDateStr, parseLocalDate, formatLocalDate, showAppleConfirm, showAppleToast, loadExcelJS } from './helpers.js';
 import { addLog, deleteLog, clearAllLogs, getAllLogs } from './db.js';
+import { buildKphApprovalUpdate } from '../src/domain/kphApproval.ts';
+import { buildKphLog } from '../src/domain/kphEntry.ts';
+import { fitImageIntoBounds } from '../src/domain/excelImage.ts';
 
 export let activeTab = 'tracuu';
 export let kphActiveSubTab = 'TPCN';
@@ -40,7 +43,7 @@ export function setKphImageBlob(val) {
     if (val) kphImageBlobs.push(val);
 }
 
-function getKphLogImages(log) {
+export function getKphLogImages(log) {
     if (Array.isArray(log.images) && log.images.length > 0) {
         return log.images.slice(0, MAX_KPH_IMAGES);
     }
@@ -234,14 +237,14 @@ export function toggleBienPhapKhac(val) {
 export function toggleTinhTrangRadio(val) {
     const col = document.getElementById('colTinhTrangKhac');
     if (col) {
-        col.style.display = (val === 'Khác') ? '' : 'none';
+        col.style.display = (val === 'Khác') ? 'block' : 'none';
     }
 }
 
 export function toggleBienPhapRadio(val) {
     const col = document.getElementById('colBienPhapKhac');
     if (col) {
-        col.style.display = (val === 'KHÁC') ? '' : 'none';
+        col.style.display = (val === 'KHÁC') ? 'block' : 'none';
     }
 }
 
@@ -588,22 +591,6 @@ async function createStampedKphImage(file, capturedAt) {
 }
 
 function renderKphImagePreviews() {
-    const previewContainer = document.getElementById('kphPreviewContainer');
-    const count = document.getElementById('kphImageCount');
-    if (count) count.textContent = `${kphImageBlobs.length}/${MAX_KPH_IMAGES}`;
-    if (previewContainer) {
-        previewContainer.style.display = kphImageBlobs.length ? 'flex' : 'none';
-        previewContainer.innerHTML = kphImagePreviewUrls.map((url, index) => `
-            <div class="kph-preview-item">
-                <img src="${url}" alt="Ảnh minh chứng ${index + 1}" onclick="window.zoomImage('${url}')">
-                <button type="button" class="kph-delete-image-btn-new" onclick="window.clearKphImage(${index})" aria-label="Xóa ảnh ${index + 1}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-        `).join('');
-    }
     const isFull = kphImageBlobs.length >= MAX_KPH_IMAGES;
     ['kphCameraInput', 'kphLibraryInput'].forEach(id => {
         const input = document.getElementById(id);
@@ -612,6 +599,7 @@ function renderKphImagePreviews() {
     document.querySelectorAll('.kph-upload-card-btn').forEach(label => label.classList.toggle('disabled', isFull));
     kphImageBlob = kphImageBlobs[0] || null;
     kphImagePreviewUrl = kphImagePreviewUrls[0] || null;
+    window.dispatchEvent(new CustomEvent('coop:kph-images-changed'));
 }
 
 // Xử lý tối đa 3 ảnh, nén và đóng dấu trước khi lưu vào IndexedDB.
@@ -729,6 +717,55 @@ export async function saveKphLogs() {
     }
 }
 
+function focusKphField(id) {
+    const control = document.getElementById(id);
+    if (!control) return;
+    const focusTarget = control.type === 'file'
+        ? document.querySelector(`label[for="${id}"]`)
+        : control;
+    const container = control.closest('.form-field, .kph-section-group')
+        || focusTarget?.closest('.kph-section-group')
+        || focusTarget;
+
+    if (container) {
+        container.classList.remove('kph-field-invalid');
+        requestAnimationFrame(() => container.classList.add('kph-field-invalid'));
+    }
+    if (focusTarget instanceof HTMLElement) {
+        focusTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (focusTarget.tabIndex < 0) focusTarget.tabIndex = -1;
+        setTimeout(() => focusTarget.focus({ preventScroll: true }), 180);
+    }
+}
+
+function reportKphValidationError(message, fieldId) {
+    showAppleToast(`⚠️ ${message}`, 'warning');
+    focusKphField(fieldId);
+}
+
+async function getImagePixelSize(arrayBuffer) {
+    const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
+    if ('createImageBitmap' in window) {
+        const bitmap = await createImageBitmap(blob);
+        const size = { width: bitmap.width, height: bitmap.height };
+        bitmap.close();
+        return size;
+    }
+
+    const imageUrl = URL.createObjectURL(blob);
+    try {
+        const image = await new Promise((resolve, reject) => {
+            const element = new Image();
+            element.onload = () => resolve(element);
+            element.onerror = reject;
+            element.src = imageUrl;
+        });
+        return { width: image.naturalWidth, height: image.naturalHeight };
+    } finally {
+        URL.revokeObjectURL(imageUrl);
+    }
+}
+
 export async function addKphLog() {
     const ngayPhatHien = document.getElementById('kphNgayPhatHien').value.trim();
     const nguoiPhatHien = document.getElementById('kphNguoiPhatHien').value.trim();
@@ -757,43 +794,56 @@ export async function addKphLog() {
     const ngayXuLy = document.getElementById('kphNgayXuLy').value.trim();
     const ghiChu = document.getElementById('kphGhiChu').value.trim();
 
-    // Kiểm tra các trường bắt buộc
-    if (!ngayPhatHien || isNaN(soLuong) || !nguoiPhatHien) {
-        showAppleToast("⚠️ Vui lòng điền đầy đủ các thông tin: Ngày phát hiện, Số lượng, Người phát hiện.", "warning");
+    // Kiểm tra theo từng trường, đưa con trỏ đến đúng vị trí cần sửa.
+    if (!ngayPhatHien || !isValidDateStr(ngayPhatHien)) {
+        reportKphValidationError('Ngày phát hiện chưa đúng định dạng dd/mm/yyyy.', 'kphNgayPhatHien');
+        return;
+    }
+    if (!Number.isFinite(soLuong) || soLuong <= 0) {
+        reportKphValidationError('Số lượng phải lớn hơn 0.', 'kphSoLuong');
+        return;
+    }
+    if (!nguoiPhatHien) {
+        reportKphValidationError('Vui lòng nhập tên người phát hiện.', 'kphNguoiPhatHien');
         return;
     }
 
     if (!sku && !tenHang) {
-        showAppleToast("⚠️ Vui lòng điền ít nhất Mã SKU/UPC hoặc Tên hàng hóa.", "warning");
+        reportKphValidationError('Cần nhập ít nhất Mã SKU/UPC hoặc Tên hàng hóa.', 'kphSku');
         return;
     }
 
     // Chờ các ảnh đang được xử lý xong trước khi kiểm tra và lưu phiếu.
     await kphImageUploadQueue;
     if (kphImageBlobs.length === 0) {
-        showAppleToast("⚠️ Ảnh minh chứng là bắt buộc. Vui lòng chụp hoặc chọn ảnh từ thư viện.", "warning");
+        reportKphValidationError('Ảnh minh chứng là bắt buộc. Hãy chụp hoặc chọn ảnh từ thư viện.', 'kphCameraInput');
         return;
     }
 
-    const logEntry = {
-        id: 'kph_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        ngayPhatHien,
-        nguoiPhatHien,
-        sku,
-        tenHang,
-        ncc,
-        dvt,
-        soLuong,
-        tinhTrang,
-        bienPhap,
-        bienPhapText,
-        ngayXuLy,
-        ghiChu,
-        trangThaiDuyet: 'cho_duyet',
-        thoiGianDuyet: '',
-        loaiKph: kphCurrentType,
-        images: [...kphImageBlobs] // Tối đa 3 JPEG đã nén và đóng dấu
-    };
+    let logEntry;
+    try {
+        logEntry = buildKphLog({
+            id: 'kph_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            type: kphCurrentType,
+            detectedDate: ngayPhatHien,
+            detectedBy: nguoiPhatHien,
+            sku,
+            productName: tenHang,
+            supplier: ncc,
+            unit: dvt,
+            quantity: soLuong,
+            condition: tinhTrang,
+            resolution: bienPhap,
+            resolutionText: bienPhapText,
+            resolutionDate: ngayXuLy,
+            note: ghiChu,
+            images: [...kphImageBlobs]
+        });
+    } catch (error) {
+        console.error('KPH validation error:', error);
+        reportKphValidationError('Thông tin phiếu chưa hợp lệ. Vui lòng kiểm tra lại các trường bắt buộc.', 'kphNgayPhatHien');
+        return;
+    }
 
     try {
         await addLog(logEntry);
@@ -1160,13 +1210,6 @@ export function toggleSelectRowKph(id) {
     updateKphLogsUI();
 }
 
-let activeImageUrls = [];
-
-export function clearActiveImageUrls() {
-    activeImageUrls.forEach(url => URL.revokeObjectURL(url));
-    activeImageUrls = [];
-}
-
 // Debounce bằng microtask để gộp nhiều lần gọi liên tiếp thành 1 lần render duy nhất
 let _kphUIUpdateScheduled = false;
 
@@ -1182,9 +1225,6 @@ export function updateKphLogsUI() {
 }
 
 function _doUpdateKphLogsUI() {
-    // Thu hồi toàn bộ Object URL cũ để giải phóng RAM lập tức
-    clearActiveImageUrls();
-
     const filteredLogs = getFilteredKphLogs();
 
     // Cập nhật số lượng phiếu của từng sub-tab phụ thuộc bộ lọc ngày
@@ -1266,32 +1306,8 @@ function _doUpdateKphLogsUI() {
         if (btnDelete) btnDelete.removeAttribute('disabled');
     }
 
-    const listContainer = document.getElementById('kphLogsList');
-    const mobileContainer = document.getElementById('kphLogsMobileList');
-
-    if (filteredLogs.length === 0) {
-        if (listContainer) {
-            listContainer.innerHTML = `
-                <tr>
-                    <td colspan="10" class="kph-empty-row">Chưa có dữ liệu khai báo hoặc không khớp bộ lọc</td>
-                </tr>
-            `;
-        }
-        if (mobileContainer) {
-            mobileContainer.innerHTML = `
-                <div class="kph-empty-mobile">Chưa có dữ liệu khai báo hoặc không khớp bộ lọc</div>
-            `;
-        }
-        const selectAllCheckbox = document.getElementById('kphSelectAll');
-        if (selectAllCheckbox) selectAllCheckbox.checked = false;
-        const selectAllCheckboxMobile = document.getElementById('kphSelectAllMobile');
-        if (selectAllCheckboxMobile) selectAllCheckboxMobile.checked = false;
-        return;
-    }
-
     const sortedLogs = sortKphLogs(filteredLogs);
-
-    const allSelected = sortedLogs.every(item => kphSelectedIds.has(item.id));
+    const allSelected = sortedLogs.length > 0 && sortedLogs.every(item => kphSelectedIds.has(item.id));
     const selectAllCheckbox = document.getElementById('kphSelectAll');
     if (selectAllCheckbox) {
         selectAllCheckbox.checked = allSelected;
@@ -1301,214 +1317,7 @@ function _doUpdateKphLogsUI() {
         selectAllCheckboxMobile.checked = allSelected;
     }
 
-    // Tạo Object URL cho các ảnh hiển thị để tối ưu hóa bộ nhớ
-    const sortedLogsWithUrls = sortedLogs.map(item => {
-        const imgUrls = getKphLogImages(item).map(image => {
-            if (image instanceof Blob) {
-                const url = URL.createObjectURL(image);
-                activeImageUrls.push(url);
-                return url;
-            }
-            if (typeof image === 'string' && image.startsWith('data:')) return image;
-            return '';
-        }).filter(Boolean);
-        return { ...item, imgUrls };
-    });
-
-    // 1. Render giao diện Bảng (Desktop)
-    if (listContainer) {
-        listContainer.innerHTML = sortedLogsWithUrls.map((item, index) => {
-            const isChecked = kphSelectedIds.has(item.id) ? 'checked' : '';
-            const isSelectedClass = kphSelectedIds.has(item.id) ? 'class="selected-row"' : '';
-
-            const imgHtml = item.imgUrls.length ?
-                `<div class="kph-thumbnail-list">${item.imgUrls.map((url, imageIndex) =>
-                    `<img class="kph-thumbnail" src="${url}" alt="Ảnh minh chứng ${imageIndex + 1}" onclick="window.zoomImage('${url}')">`
-                ).join('')}</div>` :
-                `<span style="color: var(--text-sub); font-size: 11px; font-style: italic;">Không có</span>`;
-
-            let bienPhapBadge = '';
-            if (item.bienPhap === 'HỦY') {
-                bienPhapBadge = `<span class="badge badge-danger">HỦY</span>`;
-            } else if (item.bienPhap === 'ĐỔI') {
-                bienPhapBadge = `<span class="badge badge-warning">ĐỔI</span>`;
-            } else if (item.bienPhap === 'XUẤT TRẢ') {
-                bienPhapBadge = `<span class="badge badge-info">XUẤT TRẢ</span>`;
-            } else {
-                bienPhapBadge = `<span class="badge badge-secondary" title="Biện pháp xử lý khác">${item.bienPhapText || 'KHÁC'}</span>`;
-            }
-
-            const xlText = `<div class="xl-badge-wrapper">${bienPhapBadge}</div>`;
-            const ngayXlText = item.ngayXuLy ? 
-                item.ngayXuLy : 
-                `<span class="badge badge-unprocessed">Chưa xử lý</span>`;
-
-            const status = item.trangThaiDuyet || 'cho_duyet';
-            let approvalBtnHtml = '';
-            if (status === 'da_duyet') {
-                approvalBtnHtml = `<button class="btn-approval btn-approved" onclick="window.openKphApproveModal('${item.id}')">Đã duyệt</button>`;
-            } else if (status === 'khong_duyet') {
-                approvalBtnHtml = `<button class="btn-approval btn-rejected" onclick="window.openKphApproveModal('${item.id}')">Không duyệt</button>`;
-            } else {
-                approvalBtnHtml = `<button class="btn-approval btn-pending" onclick="window.openKphApproveModal('${item.id}')">Chờ duyệt</button>`;
-            }
-
-            const approvalTimeHtml = (status === 'cho_duyet') ? 
-                `<span class="thoi-gian-duyet-val cho-duyet">chưa duyệt</span>` : 
-                `<div class="thoi-gian-duyet-val">${item.thoiGianDuyet || '-'}</div>`;
-
-            return `
-                <tr ${isSelectedClass}>
-                    <td data-label="" style="text-align: center;">
-                        <input type="checkbox" class="kph-checkbox" ${isChecked} onchange="window.toggleSelectRowKph('${item.id}')">
-                    </td>
-                    <td data-label="Phát hiện" style="text-align: center;">
-                        <div style="font-weight: 600;">${item.ngayPhatHien}</div>
-                        <div class="kph-cell-meta">${item.nguoiPhatHien || '-'}</div>
-                    </td>
-                    <td data-label="Duyệt" style="text-align: center;">
-                        ${approvalBtnHtml}
-                        <div class="kph-cell-meta">${approvalTimeHtml}</div>
-                    </td>
-                    <td data-label="SKU / Tên hàng">
-                        <div class="kph-sku-value">${item.sku}</div>
-                        <div class="kph-product-name">${item.tenHang}</div>
-                        ${item.ghiChu ? `<div style="font-size: 11px; color: var(--text-sub); font-style: italic; margin-top: 4px;">💬 ${item.ghiChu}</div>` : ''}
-                    </td>
-                    <td data-label="NCC">${item.ncc || '-'}</td>
-                    <td data-label="SL / ĐVT" style="text-align: center; font-weight: 600;">${item.soLuong} <span class="kph-unit-value">${item.dvt}</span></td>
-                    <td data-label="Tình trạng">${item.tinhTrang}</td>
-                    <td data-label="Biện pháp / Ngày XL" style="font-weight: 500;">
-                        ${xlText}
-                        <div class="kph-cell-meta">${ngayXlText}</div>
-                    </td>
-                    <td data-label="Ảnh" style="text-align: center;">${imgHtml}</td>
-                    <td data-label="">
-                        <button class="kph-cell-btn-delete" onclick="window.removeKphLog('${item.id}')" aria-label="Xóa">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    // 2. Render giao diện Card (Mobile)
-    if (mobileContainer) {
-        mobileContainer.innerHTML = sortedLogsWithUrls.map((item, index) => {
-            const isChecked = kphSelectedIds.has(item.id) ? 'checked' : '';
-            const isSelectedClass = kphSelectedIds.has(item.id) ? 'selected-card' : '';
-
-            const imgHtml = item.imgUrls.length ?
-                `<div class="kph-card-images">${item.imgUrls.map((url, imageIndex) => `
-                    <div class="kph-card-img-wrapper" onclick="window.zoomImage('${url}')">
-                        <img src="${url}" alt="Ảnh minh chứng ${imageIndex + 1}">
-                    </div>`).join('')}
-                 </div>` : '';
-
-            let bienPhapBadge = '';
-            if (item.bienPhap === 'HỦY') {
-                bienPhapBadge = `<span class="badge badge-danger">Hủy</span>`;
-            } else if (item.bienPhap === 'ĐỔI') {
-                bienPhapBadge = `<span class="badge badge-warning">Đổi</span>`;
-            } else if (item.bienPhap === 'XUẤT TRẢ') {
-                bienPhapBadge = `<span class="badge badge-info">Xuất trả</span>`;
-            } else {
-                bienPhapBadge = `<span class="badge badge-secondary">${item.bienPhapText || 'Khác'}</span>`;
-            }
-
-            const mobileXlPlanHtml = `
-                <div class="kph-card-detail-row">
-                    <span class="detail-label">Biện pháp:</span>
-                    <span class="detail-val">${bienPhapBadge}</span>
-                </div>
-            `;
-            const mobileXlDateHtml = `
-                <div class="kph-card-detail-row">
-                    <span class="detail-label">Ngày xử lý:</span>
-                    <span class="detail-val">${item.ngayXuLy ? `<span style="font-weight:600;">${item.ngayXuLy}</span>` : `<span class="badge badge-unprocessed">Chưa xử lý</span>`}</span>
-                </div>
-            `;
-
-            const status = item.trangThaiDuyet || 'cho_duyet';
-
-            const mobileApprovalTimeHtml = (status !== 'cho_duyet') ? 
-                `<div class="kph-card-detail-row">
-                    <span class="detail-label">Thời gian duyệt:</span>
-                    <span class="detail-val" style="font-size: 11px;">
-                        <div>${item.thoiGianDuyet || '-'}</div>
-                    </span>
-                 </div>` : '';
-
-            let mobileActionBtn = '';
-            if (status === 'da_duyet') {
-                mobileActionBtn = `<button type="button" class="btn-approval btn-approved" onclick="window.openKphApproveModal('${item.id}')">Đã duyệt</button>`;
-            } else if (status === 'khong_duyet') {
-                mobileActionBtn = `<button type="button" class="btn-approval btn-rejected" onclick="window.openKphApproveModal('${item.id}')">Không duyệt</button>`;
-            } else {
-                mobileActionBtn = `<button type="button" class="btn-approval btn-pending" onclick="window.openKphApproveModal('${item.id}')">Chờ duyệt</button>`;
-            }
-
-            return `
-                <div class="kph-mobile-card ${isSelectedClass}">
-                    <div class="kph-card-header">
-                        <div class="kph-card-header-left">
-                            <input type="checkbox" class="kph-checkbox" ${isChecked} onchange="window.toggleSelectRowKph('${item.id}')">
-                            <span class="kph-card-date">${item.ngayPhatHien}</span>
-                        </div>
-                        <span class="kph-card-sku">${item.sku}</span>
-                    </div>
-                    
-                    <div class="kph-card-body">
-                        <div class="kph-card-main-info">
-                            <h4 class="kph-card-title">${item.tenHang}</h4>
-                            <div class="kph-card-qty">${item.soLuong} <span class="qty-unit">${item.dvt}</span></div>
-                        </div>
-                        
-                        <div class="kph-card-details">
-                            <div class="kph-card-detail-row">
-                                <span class="detail-label">NCC:</span>
-                                <span class="detail-val">${item.ncc || '-'}</span>
-                            </div>
-                            <div class="kph-card-detail-row">
-                                <span class="detail-label">Tình trạng:</span>
-                                <span class="detail-val" style="color: var(--brand-accent-orange); font-weight: 500;">${item.tinhTrang}</span>
-                            </div>
-                            ${mobileXlPlanHtml}
-                            ${mobileXlDateHtml}
-                            ${mobileApprovalTimeHtml}
-                            <div class="kph-card-detail-row">
-                                <span class="detail-label font-light">Người PH:</span>
-                                <span class="detail-val font-light">${item.nguoiPhatHien || '-'}</span>
-                            </div>
-                            ${item.ghiChu ? `
-                            <div class="kph-card-detail-row">
-                                <span class="detail-label">Ghi chú:</span>
-                                <span class="detail-val" style="font-style: italic; font-size: 12px; color: var(--text-sub);">💬 ${item.ghiChu}</span>
-                            </div>
-                            ` : ''}
-                        </div>
-                        
-                        ${imgHtml}
-                    </div>
-                    
-                    <div class="kph-card-actions">
-                        ${mobileActionBtn}
-                        <button type="button" class="kph-card-btn-delete" onclick="window.removeKphLog('${item.id}')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px; margin-right: 4px;">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                            Xóa bản ghi
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
+    window.dispatchEvent(new CustomEvent('coop:kph-changed'));
 
     if (typeof window.updateNotificationStats === 'function') {
         window.updateNotificationStats();
@@ -1736,9 +1545,11 @@ export async function exportKphToExcel() {
 
                         if (arrayBuffer) {
                             const imageId = workbook.addImage({ buffer: arrayBuffer, extension: 'jpeg' });
+                            const pixelSize = await getImagePixelSize(arrayBuffer);
+                            const displaySize = fitImageIntoBounds(pixelSize, { width: 36, height: 74 });
                             worksheet.addImage(imageId, {
-                                tl: { col: 14 + imageIndex * 0.32, row: currentRow - 0.96 },
-                                ext: { width: 40, height: 82 },
+                                tl: { col: 14 + imageIndex * 0.27, row: currentRow - 0.92 },
+                                ext: displaySize,
                                 editAs: 'oneCell'
                             });
                         }
@@ -1986,7 +1797,7 @@ export function openKphApproveModal(id) {
     // If KHÁC, show textarea and fill content
     const colKhac = document.getElementById('colApproveBienPhapKhac');
     if (colKhac) {
-        colKhac.style.display = (bienPhap === 'KHÁC') ? '' : 'none';
+        colKhac.style.display = (bienPhap === 'KHÁC') ? 'block' : 'none';
     }
     const khacInput = document.getElementById('kphApproveBienPhapKhacInput');
     if (khacInput) {
@@ -2060,7 +1871,7 @@ export function toggleApproveNguoiDuyetEdit(editable) {
 export function toggleApproveBienPhapRadio(val) {
     const col = document.getElementById('colApproveBienPhapKhac');
     if (col) {
-        col.style.display = (val === 'KHÁC') ? '' : 'none';
+        col.style.display = (val === 'KHÁC') ? 'block' : 'none';
     }
 }
 
@@ -2085,27 +1896,13 @@ export async function saveKphApproval() {
     const newNgayXuLy = document.getElementById('kphApproveNgayXuLy').value.trim();
     const newNguoiDuyet = document.getElementById('kphApproveNguoiDuyet') ? document.getElementById('kphApproveNguoiDuyet').value.trim() : '';
 
-    // Determine thoiGianDuyet
-    let thoiGianDuyet = currentLog.thoiGianDuyet || '';
-    if (newStatus !== currentLog.trangThaiDuyet) {
-        if (newStatus === 'cho_duyet') {
-            thoiGianDuyet = '';
-        } else {
-            thoiGianDuyet = formatLocalDateTime(new Date());
-        }
-    } else if ((newStatus === 'da_duyet' || newStatus === 'khong_duyet') && !thoiGianDuyet) {
-        thoiGianDuyet = formatLocalDateTime(new Date());
-    }
-
-    const updatedLog = {
-        ...currentLog,
-        trangThaiDuyet: newStatus,
-        thoiGianDuyet: thoiGianDuyet,
-        nguoiDuyet: newNguoiDuyet,
-        bienPhap: newBienPhap,
-        bienPhapText: newBienPhapText,
-        ngayXuLy: newNgayXuLy
-    };
+    const updatedLog = buildKphApprovalUpdate(currentLog, {
+        status: newStatus,
+        resolution: newBienPhap,
+        resolutionText: newBienPhapText,
+        resolutionDate: newNgayXuLy,
+        approver: newNguoiDuyet
+    }, formatLocalDateTime(new Date()));
 
     try {
         await addLog(updatedLog); // IndexedDB put
