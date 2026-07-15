@@ -11,13 +11,13 @@
 | **Tên** | Check Date CoopFood |
 | **Loại** | Progressive Web App (PWA) |
 | **Production URL** | https://vuphm.github.io/coop-date/ |
-| **Phiên bản** | `2.19.3` (15/07/2026) |
+| **Phiên bản** | `2.20.0` (15/07/2026) |
 | **Nền tảng** | Vite + Vue 3 + TypeScript + Vanilla CSS |
 | **Framework** | Vue 3, chuyển đổi tăng dần từ giao diện legacy |
 | **CSS Framework** | Không dùng (Tailwind/Bootstrap) — Vanilla CSS theo Apple HIG |
 | **Thư viện ngoài** | Flatpickr (date picker), html5-qrcode (scanner), ExcelJS (xuất Excel) |
 | **Lưu trữ dữ liệu** | IndexedDB (`coop_kph_db`) — 2 stores: `kph_logs`, `history_logs` |
-| **Deploy** | GitHub Pages qua GitHub Actions (`.github/workflows/static.yml`) |
+| **Deploy** | GitHub Pages giữ bản Vanilla; staging HTTPS dùng reverse proxy `/api` tới API brand |
 
 ---
 
@@ -298,4 +298,4 @@ Hãy review [tên_file].js với trọng tâm:
 
 ---
 
-> **Lưu ý:** Tài liệu này được đối chiếu với code lần cuối ngày **15/07/2026** tại phiên bản **2.19.3**. Khi dự án có thay đổi lớn, hãy cập nhật lại file này.
+> **Lưu ý:** Tài liệu này được đối chiếu với code lần cuối ngày **15/07/2026** tại phiên bản **2.20.0**. Khi dự án có thay đổi lớn, hãy cập nhật lại file này.

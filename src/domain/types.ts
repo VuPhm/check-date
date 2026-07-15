@@ -1,4 +1,4 @@
-export type BranchRole = 'manager' | 'deputy';
+export type BranchRole = 'manager' | 'employee';
 export type SyncStatus = 'idle' | 'offline' | 'syncing' | 'synced' | 'error';
 export type ApprovalStatus = 'cho_duyet' | 'da_duyet' | 'khong_duyet';
 export type KphResolution = 'HỦY' | 'ĐỔI' | 'XUẤT TRẢ' | 'KHÁC';
@@ -15,13 +15,33 @@ export interface AuthenticatedUser {
   displayName: string;
   role: BranchRole;
   branchId: string;
+  employeeCode?: string;
+}
+
+export interface DeviceSession extends AuthenticatedUser {
+  deviceId: string;
+  accessToken: string;
 }
 
 export interface ServerEndpoint {
-  protocol: 'http' | 'https';
-  host: string;
-  port: number;
+  /** Full API origin/path, e.g. https://sync.example.vn/api. */
   basePath: string;
+}
+
+export interface ManagedDevice {
+  deviceId: string;
+  deviceName: string;
+  userId: string;
+  displayName: string;
+  role: BranchRole;
+  lastSeenAt?: string;
+}
+
+export interface ManagedEmployee {
+  id: string;
+  displayName: string;
+  employeeCode: string;
+  active: boolean;
 }
 
 export interface SyncMetadata {

@@ -4899,6 +4899,87 @@ button.notif-item {
     font-weight: 700;
 }
 
+.sync-config-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+}
+
+.sync-config-note,
+.sync-config-message,
+.sync-status {
+    margin: 0 0 10px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.sync-config-note { color: var(--text-secondary); }
+.sync-config-message { color: var(--text-primary); }
+.sync-status { color: var(--text-secondary); font-weight: 600; }
+.sync-status.is-synced { color: var(--brand-primary); }
+.sync-status.is-error, .sync-status.is-offline { color: var(--brand-accent-red); }
+
+.sync-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.sync-config-field {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.sync-config-field span {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.sync-config-field .form-input { width: 100%; min-width: 0; }
+
+.sync-config-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 8px;
+}
+
+.sync-config-actions .btn-action { min-width: 0; font-size: 12px; }
+.sync-config-actions .sync-secondary { background: rgba(0, 102, 51, 0.1); color: var(--brand-primary); }
+.sync-full-action { width: 100%; margin-top: 2px; }
+
+.sync-pending-list {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+}
+
+.sync-pending-heading { margin-bottom: 8px; font-size: 12px; font-weight: 700; }
+
+.sync-pending-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 7px 0;
+    font-size: 12px;
+}
+
+.sync-pending-item .btn-action { height: 30px; padding: 0 9px; font-size: 11px; }
+
+.sync-refresh-button {
+    width: 100%;
+    margin-top: 9px;
+    border: 0;
+    background: transparent;
+    color: var(--brand-primary);
+    font-size: 12px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .app-install-section {
     margin-top: 20px;
     padding-top: 16px;

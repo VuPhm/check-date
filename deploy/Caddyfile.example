@@ -1,0 +1,12 @@
+staging.example.com {
+    # Browser gọi HTTPS /api; Caddy chuyển tiếp bên trong tới API HTTP/IP của brand.
+    handle /api/* {
+        reverse_proxy http://BRAND_IP:BRAND_PORT
+    }
+
+    handle {
+        root * /srv/coop-date/dist
+        try_files {path} /index.html
+        file_server
+    }
+}

@@ -1,12 +1,15 @@
 {
   "name": "coop-date",
   "private": true,
-  "version": "2.19.3",
+  "version": "2.20.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
+    "mock:api": "node scripts/mock-central-api.mjs",
+    "demo": "node scripts/demo.mjs",
+    "demo:reset": "node scripts/reset-demo-data.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

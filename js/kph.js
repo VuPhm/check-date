@@ -1,5 +1,5 @@
 import { isValidDateStr, parseLocalDate, formatLocalDate, showAppleConfirm, showAppleToast, loadExcelJS } from './helpers.js';
-import { addLog, deleteLog, clearAllLogs, getAllLogs } from './db.js';
+import { addLog, softDeleteLog, clearAllLogs, getAllLogs } from './db.js';
 import { buildKphApprovalUpdate } from '../src/domain/kphApproval.ts';
 import { buildKphLog } from '../src/domain/kphEntry.ts';
 import { fitImageIntoBounds } from '../src/domain/excelImage.ts';
@@ -36,6 +36,25 @@ export let kphFilterTuNgay = '';
 export let kphFilterDenNgay = '';
 export let kphFilterChoDuyet = false;
 export const kphSelectedIds = new Set();
+
+function getActiveBranchId() {
+    try {
+        return JSON.parse(localStorage.getItem('coop_branch_identity') || 'null')?.id || null;
+    } catch {
+        return null;
+    }
+}
+
+function getActiveSession() {
+    try { return JSON.parse(localStorage.getItem('coop_device_session') || 'null'); } catch { return null; }
+}
+
+function canDeleteKphLog(log) {
+    const session = getActiveSession();
+    if (!session) return true; // Local-only records remain manageable before joining a store.
+    if (session.role === 'manager') return true;
+    return log.createdBy === session.id && (log.trangThaiDuyet || 'cho_duyet') === 'cho_duyet';
+}
 
 export function setKphImageBlob(val) {
     kphImageBlob = val;
@@ -692,9 +711,10 @@ export async function loadKphLogs() {
             }
         }
 
+        const activeBranchId = getActiveBranchId();
         const logs = await getAllLogs();
         kphLogs.length = 0;
-        kphLogs.push(...logs.map(log => {
+        kphLogs.push(...logs.filter(log => !log.deletedAt && (!activeBranchId || log.branchId === activeBranchId)).map(log => {
             if (!log.loaiKph) {
                 log.loaiKph = 'TPCN';
             }
@@ -839,6 +859,14 @@ export async function addKphLog() {
             note: ghiChu,
             images: [...kphImageBlobs]
         });
+        logEntry.branchId = getActiveBranchId() || undefined;
+        const session = getActiveSession();
+        logEntry.createdBy = session?.id;
+        logEntry.updatedBy = session?.id;
+        const now = new Date().toISOString();
+        logEntry.createdAt = now;
+        logEntry.updatedAt = now;
+        logEntry.version = 1;
     } catch (error) {
         console.error('KPH validation error:', error);
         reportKphValidationError('Thông tin phiếu chưa hợp lệ. Vui lòng kiểm tra lại các trường bắt buộc.', 'kphNgayPhatHien');
@@ -855,6 +883,7 @@ export async function addKphLog() {
         updateKphLogsUI();
         clearKphForm();
         closeKphCreateModal();
+        window.dispatchEvent(new CustomEvent('coop:local-change'));
     } catch (e) {
         console.error("Failed to add log to IndexedDB", e);
         showAppleToast("⚠️ Có lỗi xảy ra khi lưu dữ liệu vào IndexedDB.", "error");
@@ -865,6 +894,10 @@ export async function removeKphLog(id) {
     const idx = kphLogs.findIndex(item => item.id === id);
     if (idx !== -1) {
         const item = kphLogs[idx];
+        if (!canDeleteKphLog(item)) {
+            showAppleToast('⚠️ Nhân viên chỉ được xóa phiếu của mình khi còn chờ duyệt.', 'warning');
+            return;
+        }
         const confirmDelete = await showAppleConfirm({
             title: "Xác nhận xóa phiếu",
             htmlContent: `
@@ -889,11 +922,12 @@ export async function removeKphLog(id) {
         });
         if (confirmDelete) {
             try {
-                await deleteLog(id);
+                await softDeleteLog(item);
                 kphLogs.splice(idx, 1);
                 kphSelectedIds.delete(id);
                 showAppleToast("Đã xóa bản ghi thành công.", "success");
                 updateKphLogsUI();
+                window.dispatchEvent(new CustomEvent('coop:local-change'));
             } catch (e) {
                 console.error("Failed to delete log from IndexedDB", e);
                 showAppleToast("⚠️ Có lỗi xảy ra khi xóa dữ liệu khỏi IndexedDB.", "error");
@@ -929,7 +963,7 @@ export async function clearAllKphLogs() {
     if (confirmClear) {
         try {
             for (const item of logsInTab) {
-                await deleteLog(item.id);
+                await softDeleteLog(item);
                 kphSelectedIds.delete(item.id);
                 const idx = kphLogs.findIndex(l => l.id === item.id);
                 if (idx !== -1) kphLogs.splice(idx, 1);
@@ -976,7 +1010,8 @@ export async function deleteSelectedKphLogs() {
     if (confirmDelete) {
         try {
             for (const id of selectedIds) {
-                await deleteLog(id);
+                const item = kphLogs.find(item => item.id === id);
+                if (item) await softDeleteLog(item);
                 const idx = kphLogs.findIndex(item => item.id === id);
                 if (idx !== -1) {
                     kphLogs.splice(idx, 1);
@@ -1905,11 +1940,18 @@ export async function saveKphApproval() {
     }, formatLocalDateTime(new Date()));
 
     try {
+        const session = getActiveSession();
+        if (session?.role !== 'manager') {
+            showAppleToast('⚠️ Chỉ CHT được duyệt hoặc sửa phiếu.', 'warning');
+            return;
+        }
+        updatedLog.updatedBy = session.id;
         await addLog(updatedLog); // IndexedDB put
         kphLogs[logIdx] = updatedLog;
         showAppleToast("Đã cập nhật duyệt phiếu thành công.", "success");
         updateKphLogsUI();
         closeKphApproveModal();
+        window.dispatchEvent(new CustomEvent('coop:local-change'));
     } catch (e) {
         console.error("Failed to update approval in IndexedDB", e);
         showAppleToast("⚠️ Lỗi xảy ra khi lưu trạng thái duyệt.", "error");

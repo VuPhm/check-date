@@ -4,7 +4,7 @@
 
 * **Bản chạy trực tuyến (Production Build):** [vuphm.github.io/coop-date](https://vuphm.github.io/coop-date/)
 * **Nền tảng phát triển:** Vite, Vue 3, TypeScript, Pinia, Dexie và Vanilla CSS (Apple HIG Design).
-* **Phiên bản hiện tại:** `2.19.3` (15/07/2026)
+* **Phiên bản hiện tại:** `2.20.0` (15/07/2026)
 
 ---
 
@@ -71,6 +71,11 @@ Hệ thống hỗ trợ các tính năng nghiệp vụ cốt lõi sau:
 ### G. Thanh Điều Hướng Sidebar
 * **Cài đặt cửa hàng:** Quản lý thông tin Đơn vị (CF), Cửa hàng (Store), Người phụ trách mặc định.
 * **Thống kê nhanh:** Hiển thị số lượng phiếu KPH chờ duyệt (TPCN/TPTS), số tra cứu sắp đến hạn/quá hạn lùi/quá hạn sử dụng.
+
+### H. Ghép thiết bị cửa hàng
+* Mỗi cửa hàng dùng mã 4 số và PIN để ghép thiết bị lần đầu.
+* PC/CHT cho phép yêu cầu ghép của nhân viên; nhân viên không cần đăng nhập lặp lại.
+* App đồng bộ qua API trung tâm cùng origin `/api`; staging HTTPS dùng reverse proxy tới API brand.
 
 ---
 

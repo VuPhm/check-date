@@ -1,9 +1,6 @@
 import { z } from 'zod';
 
 export const serverEndpointSchema = z.object({
-  protocol: z.enum(['http', 'https']).default('https'),
-  host: z.string().trim().min(1),
-  port: z.number().int().min(1).max(65535),
   basePath: z.string().trim().default('/api'),
 });
 
@@ -16,8 +13,13 @@ export const branchIdentitySchema = z.object({
 export const authenticatedUserSchema = z.object({
   id: z.string().min(1),
   displayName: z.string().min(1),
-  role: z.enum(['manager', 'deputy']),
+  role: z.enum(['manager', 'employee']),
   branchId: z.string().min(1),
+});
+
+export const deviceSessionSchema = authenticatedUserSchema.extend({
+  deviceId: z.string().min(1),
+  accessToken: z.string().min(1),
 });
 
 export const kphApprovalInputSchema = z.object({

@@ -650,6 +650,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadHistoryFromStorage(),
         loadKphLogs()
     ]);
+    window.addEventListener('coop:remote-sync', async () => {
+        await Promise.all([loadHistoryFromStorage(), loadKphLogs()]);
+    });
     initKphFlatpickrs();
     openNotificationModal();
 

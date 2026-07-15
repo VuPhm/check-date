@@ -5,6 +5,17 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 export default defineConfig({
   base: './',
+  server: {
+    // Cloudflare Quick Tunnel assigns a random *.trycloudflare.com hostname.
+    // Keep this narrowly scoped to development instead of accepting all hosts.
+    allowedHosts: ['.trycloudflare.com'],
+    proxy: {
+      '/api': {
+        target: process.env.VITE_BRAND_API || 'http://127.0.0.1:8787',
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     vue(),
     VitePWA({

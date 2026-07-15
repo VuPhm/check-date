@@ -24,6 +24,10 @@ export function buildKphApprovalUpdate(
 
   return {
     ...currentLog,
+    // This is used by the sync server to prevent a stale device from
+    // overwriting an approval that was just changed on another device.
+    updatedAt: new Date().toISOString(),
+    version: (typeof currentLog.version === 'number' ? currentLog.version : 0) + 1,
     trangThaiDuyet: input.status,
     thoiGianDuyet: approvalTimestamp(
       currentLog.trangThaiDuyet,

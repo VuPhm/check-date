@@ -4,9 +4,16 @@ export {
     getAllLogs,
     addLog,
     deleteLog,
+    softDeleteLog,
     clearAllLogs,
     getAllHistoryLogs,
     addHistoryLog,
     deleteHistoryLog,
-    clearAllHistoryLogs
+    softDeleteHistoryLog,
+    clearAllHistoryLogs,
+    getPendingChanges,
+    acknowledgeChanges,
+    getSyncCursor,
+    setSyncCursor,
+    assignUnboundRecords
 } from '../src/repositories/localDatabase.ts';

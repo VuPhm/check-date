@@ -9,13 +9,21 @@ import {
 import { 
     getAllHistoryLogs, 
     addHistoryLog, 
-    deleteHistoryLog
+    softDeleteHistoryLog
 } from './db.js';
 
 export const historyData = [];
 export const activeFilters = new Set(['all']);
 export let isPrioritySort = false;
 export let selectedHistoryId = null;
+
+function getActiveBranchId() {
+    try {
+        return JSON.parse(localStorage.getItem('coop_branch_identity') || 'null')?.id || null;
+    } catch {
+        return null;
+    }
+}
 
 export function setSelectedHistoryId(id) {
     selectedHistoryId = id;
@@ -70,9 +78,10 @@ export async function loadHistoryFromStorage() {
             }
         }
         
+        const activeBranchId = getActiveBranchId();
         const logs = await getAllHistoryLogs();
         historyData.length = 0;
-        historyData.push(...logs);
+        historyData.push(...logs.filter(log => !log.deletedAt && (!activeBranchId || log.branchId === activeBranchId)));
         // Sắp xếp theo thứ tự thời gian tra cứu giảm dần (mới nhất lên trên)
         historyData.sort((a, b) => {
             const timeA = a.checkedAt ? new Date(a.checkedAt).getTime() : 0;
@@ -88,7 +97,7 @@ export async function loadHistoryFromStorage() {
 export async function saveHistoryToStorage(item) {
     try {
         if (item) {
-            await addHistoryLog(item);
+            await addHistoryLog({ ...item, branchId: getActiveBranchId() || item.branchId });
         }
     } catch (e) {
         console.error("Failed to save history to IndexedDB", e);
@@ -98,14 +107,16 @@ export async function saveHistoryToStorage(item) {
 export function removeHistoryItem(id) {
     const idx = historyData.findIndex(item => item.id === id);
     if (idx !== -1) {
+        const item = historyData[idx];
         historyData.splice(idx, 1);
-        deleteHistoryLog(id).catch(err => console.error("Lỗi khi xóa khỏi DB:", err));
+        softDeleteHistoryLog(item).catch(err => console.error("Lỗi khi xóa khỏi DB:", err));
         updateHistoryUI();
     }
 }
 
 export function removeHistoryItemFromDB(id) {
-    deleteHistoryLog(id).catch(err => console.error("Lỗi khi xóa khỏi DB:", err));
+    const item = historyData.find(item => item.id === id);
+    if (item) softDeleteHistoryLog(item).catch(err => console.error("Lỗi khi xóa khỏi DB:", err));
 }
 
 export function clearAllHistory() {
@@ -158,7 +169,7 @@ export function clearAllHistory() {
             for (let i = historyData.length - 1; i >= 0; i--) {
                 if (idsToRemove.has(historyData[i].id)) historyData.splice(i, 1);
             }
-            Promise.all([...idsToRemove].map(id => deleteHistoryLog(id)))
+            Promise.all(displayData.map(item => softDeleteHistoryLog(item)))
                 .catch(err => console.error("Lỗi khi dọn dẹp DB:", err));
             updateHistoryUI();
         }

@@ -11,6 +11,8 @@ describe('buildKphApprovalUpdate', () => {
     }, APPROVED_AT);
     expect(result.thoiGianDuyet).toBe(APPROVED_AT);
     expect(result.nguoiDuyet).toBe('Cửa hàng trưởng');
+    expect(result.version).toBe(1);
+    expect(Date.parse(result.updatedAt as string)).not.toBeNaN();
   });
 
   it('xóa thời điểm khi trả phiếu về chờ duyệt', () => {
