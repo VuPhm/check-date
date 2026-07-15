@@ -6,15 +6,18 @@ import { joinEmployee, loginManager } from '../../services/syncApi';
 const KEY = 'coop_first_run_setup_complete';
 const appStore = useAppStore();
 const open = ref(false); const role = ref<'employee' | 'manager'>('employee');
+const storeCode = ref('0001'); const storePassword = ref('0001');
 const joinCode = ref(''); const displayName = ref(''); const employeeCode = ref(''); const deviceName = ref(''); const busy = ref(false); const message = ref('');
 function clean(value: string) { return value.replace(/\D/g, '').slice(0, 4); }
 function dismiss() { localStorage.setItem(KEY, '1'); open.value = false; }
 async function connect() {
   try {
     busy.value = true;
-    const configuredStoreCode = localStorage.getItem('kph_coop_food') || '0001';
-    const configuredStorePassword = localStorage.getItem('kph_store_password') || configuredStoreCode;
+    const configuredStoreCode = storeCode.value.trim() || '0001';
+    const configuredStorePassword = storePassword.value || configuredStoreCode;
+    storeCode.value = configuredStoreCode;
     localStorage.setItem('kph_coop_food', configuredStoreCode);
+    localStorage.setItem('kph_store_password', configuredStorePassword);
     if (!localStorage.getItem('kph_store')) localStorage.setItem('kph_store', `Co.op Food ${configuredStoreCode}`);
     if (role.value === 'manager') {
       localStorage.setItem('kph_cht', displayName.value.trim());
@@ -26,22 +29,26 @@ async function connect() {
   } catch (error) { message.value = error instanceof Error ? error.message : 'Không thể kết nối cửa hàng.'; } finally { busy.value = false; }
 }
 onMounted(() => {
+  storeCode.value = localStorage.getItem('kph_coop_food') || '0001';
+  storePassword.value = localStorage.getItem('kph_store_password') || storeCode.value;
   open.value = !localStorage.getItem(KEY) && !appStore.session;
-  window.addEventListener('coop:open-setup', () => { open.value = true; });
+  window.addEventListener('coop:open-setup', () => { message.value = ''; open.value = true; });
 });
 </script>
 <template>
   <div v-if="open" class="first-run-backdrop" role="dialog" aria-modal="true" aria-label="Thiết lập ứng dụng">
     <section class="first-run-card">
+      <p class="first-run-card__eyebrow">Bắt đầu sử dụng</p>
       <h2>Thiết lập Co.op Date</h2>
-      <template>
-        <p>Nhập thông tin nhân viên hoặc CHT. Mã và mật khẩu cửa hàng đã được thiết lập trong Cấu hình cửa hàng.</p>
-        <div class="sync-config-actions"><button class="btn-action" :class="{ 'sync-secondary': role !== 'employee' }" @click="role = 'employee'">Nhân viên</button><button class="btn-action" :class="{ 'sync-secondary': role !== 'manager' }" @click="role = 'manager'">CHT</button></div>
-        <template v-if="role === 'manager'"><label class="sync-config-field"><span>Tên CHT <em>(tuỳ chọn)</em></span><input v-model="displayName" class="form-input" placeholder="Có thể thiết lập sau"></label></template>
-        <template v-else><label class="sync-config-field"><span>Họ tên</span><input v-model="displayName" class="form-input"></label><label class="sync-config-field"><span>Mã nhân viên</span><input v-model="employeeCode" class="form-input"></label><label class="sync-config-field"><span>Mã tham gia cửa hàng</span><input v-model="joinCode" class="form-input" type="password" inputmode="numeric" maxlength="4" @input="joinCode = clean(joinCode)"></label></template>
-        <label class="sync-config-field"><span>Tên thiết bị</span><input v-model="deviceName" class="form-input" :placeholder="role === 'manager' ? 'PC hoặc điện thoại CHT' : 'Điện thoại nhân viên'"></label>
-        <button class="btn-action sync-full-action" :disabled="busy" @click="connect">{{ busy ? 'Đang kết nối…' : 'Kết nối cửa hàng' }}</button><button class="sync-refresh-button" @click="dismiss">Dùng cục bộ trước</button>
-      </template>
+      <p>Chọn vai trò để kết nối ngay, hoặc bỏ qua và thiết lập sau trong tab Cấu hình.</p>
+      <div class="first-run-role-switch" role="group" aria-label="Vai trò sử dụng"><button class="btn-action" :class="{ 'sync-secondary': role !== 'employee' }" @click="role = 'employee'">Nhân viên</button><button class="btn-action" :class="{ 'sync-secondary': role !== 'manager' }" @click="role = 'manager'">Cửa hàng trưởng</button></div>
+      <div class="first-run-form">
+        <div class="apple-input-row settings-form-row"><div class="form-field"><label class="form-label" for="firstRunStoreCode">Mã cửa hàng</label><input id="firstRunStoreCode" v-model="storeCode" class="form-input" inputmode="numeric" maxlength="4" @input="storeCode = clean(storeCode)"></div><div v-if="role === 'manager'" class="form-field"><label class="form-label" for="firstRunStorePassword">Mật khẩu cửa hàng</label><input id="firstRunStorePassword" v-model="storePassword" type="password" class="form-input"></div></div>
+        <template v-if="role === 'manager'"><div class="form-field"><label class="form-label" for="firstRunManagerName">Tên CHT <em>(tuỳ chọn)</em></label><input id="firstRunManagerName" v-model="displayName" class="form-input" placeholder="Có thể thiết lập sau"></div></template>
+        <template v-else><div class="apple-input-row settings-form-row"><div class="form-field"><label class="form-label" for="firstRunEmployeeName">Họ tên</label><input id="firstRunEmployeeName" v-model="displayName" class="form-input"></div><div class="form-field"><label class="form-label" for="firstRunEmployeeCode">Mã nhân viên</label><input id="firstRunEmployeeCode" v-model="employeeCode" class="form-input"></div></div><div class="form-field"><label class="form-label" for="firstRunJoinCode">Mã tham gia cửa hàng</label><input id="firstRunJoinCode" v-model="joinCode" class="form-input" type="password" inputmode="numeric" maxlength="4" @input="joinCode = clean(joinCode)"></div></template>
+        <div class="form-field"><label class="form-label" for="firstRunDeviceName">Tên thiết bị</label><input id="firstRunDeviceName" v-model="deviceName" class="form-input" :placeholder="role === 'manager' ? 'PC hoặc điện thoại CHT' : 'Điện thoại nhân viên'"></div>
+      </div>
+      <div class="first-run-actions"><button class="btn-action" :disabled="busy" @click="connect">{{ busy ? 'Đang kết nối…' : role === 'manager' ? 'Đăng nhập CHT' : 'Tham gia cửa hàng' }}</button><button class="btn-secondary" :disabled="busy" @click="dismiss">Thiết lập sau</button></div>
       <p v-if="message" class="sync-config-message">{{ message }}</p>
     </section>
   </div>

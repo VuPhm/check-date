@@ -4297,31 +4297,37 @@ button.notif-item {
         grid-template-areas:
             "calc history"
             "diagram history";
-        gap: 24px;
+        column-gap: 24px;
+        row-gap: 16px;
         width: 100%;
         box-sizing: border-box;
         grid-column: 1 / -1;
+        align-items: stretch;
     }
+
+    #tab-tracuu .calc-board { padding: 20px; align-self: start; }
+    #tab-tracuu .calc-board > .apple-input-row { margin-bottom: 12px; }
+    #tab-tracuu .calc-focus-zone { margin: 4px -20px 0; padding: 16px 20px; border-radius: calc(var(--radius-box) + 2px); }
+    #tab-tracuu .calc-focus-zone > .form-field,
+    #tab-tracuu .calc-focus-zone > .apple-input-row { margin-bottom: 10px; }
+    #tab-tracuu .calc-focus-zone > .divider-or { margin: -2px 0 10px; }
+    #tab-tracuu .diagram-board { display: block; align-self: start; padding: 16px 20px; overflow: hidden; }
+    #tab-tracuu #svgContainer { max-height: 145px; overflow: hidden; line-height: 0; }
 
     #tab-tracuu .history-wrapper {
         grid-area: history;
         position: -webkit-sticky;
         position: sticky;
-        top: 96px; /* Cách mép trên (dưới sticky header) */
+        top: calc(var(--desktop-header-height) + 12px);
         width: 100%;
-        /* `max-height` chỉ đặt trần, không làm cột cao hơn. Dùng chiều cao
-           chủ động để danh sách có thêm không gian và vẫn giới hạn trên màn lớn. */
-        height: clamp(780px, calc(100vh + 96px), 980px);
-        max-height: 980px;
+        height: calc(100vh - var(--desktop-header-height) - 56px);
+        height: calc(100dvh - var(--desktop-header-height) - 56px);
+        min-height: 0;
+        align-self: stretch;
         box-sizing: border-box;
     }
 
     #tab-tracuu .history-board {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -4331,7 +4337,7 @@ button.notif-item {
 
     #tab-tracuu .history-list {
         flex: 1 1 auto;
-        min-height: 540px;
+        min-height: 0;
         max-height: none;
         overflow-y: auto;
     }
@@ -5008,6 +5014,44 @@ button.notif-item {
     cursor: pointer;
 }
 
+/* Settings workspace follows the section, field and action patterns used in KPH forms. */
+.settings-workspace { display: grid; gap: 20px; }
+.settings-section-group { margin: 0 !important; }
+.settings-section-description { margin: -4px 0 16px; color: var(--text-sub); font-size: 12px; line-height: 1.5; }
+.settings-form-row { margin-bottom: 14px; }
+.settings-form-row:last-child { margin-bottom: 0; }
+.settings-host-field { max-width: 680px; margin-bottom: 16px; }
+.form-label em { margin-left: 3px; color: var(--text-sub); font-size: 10px; font-style: normal; font-weight: 600; }
+.settings-role-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.settings-role-switch .btn-action { min-height: 42px; margin: 0; font-size: 13px; }
+.settings-role-switch .sync-secondary { background: rgba(0, 102, 51, .1); color: var(--brand-primary); }
+.settings-helper-text { margin: 0 0 14px; color: var(--text-sub); font-size: 12px; line-height: 1.5; }
+.settings-action-row { display: flex; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(0, 102, 51, .08); }
+.settings-action-row .btn-action { width: auto; min-width: min(100%, 220px); margin: 0; padding: 11px 18px; font-size: 13px; }
+.settings-status-panel { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; padding: 14px; border: 1px solid rgba(0, 102, 51, .12); border-radius: var(--radius-item); background: var(--status-green-bg); }
+.settings-status-panel > div { display: grid; gap: 3px; min-width: 0; }
+.settings-status-panel strong { color: var(--text-main); font-size: 13px; }
+.settings-status-panel span { color: var(--text-sub); font-size: 11px; }
+.settings-status-panel .sync-status { display: grid; gap: 3px; margin: 0; text-align: right; font-size: 12px; }
+.settings-status-panel .sync-status small { color: var(--text-sub); font-size: 10px; font-weight: 500; white-space: nowrap; }
+.settings-list-group { margin-top: 20px; }
+.settings-list-group h4 { margin: 0 0 8px; color: var(--brand-primary); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.settings-list-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(0, 102, 51, .08); color: var(--text-main); font-size: 12px; line-height: 1.4; }
+.settings-list-item span { min-width: 0; overflow-wrap: anywhere; }
+.settings-list-item .btn-secondary { flex: none; width: auto; margin: 0; padding: 7px 10px; font-size: 11px; }
+.settings-list-item--activity { justify-content: flex-start; }
+.settings-text-button { margin-top: 12px; padding: 0; border: 0; background: transparent; color: var(--brand-primary); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.settings-text-button--danger { color: var(--brand-accent-red); }
+.settings-footer-action { display: flex; justify-content: flex-end; margin-top: -8px; }
+
+@media (max-width: 640px) {
+    .settings-workspace { gap: 16px; }
+    .settings-section-group { padding: 16px; }
+    .settings-status-panel { align-items: flex-start; flex-direction: column; gap: 8px; }
+    .settings-status-panel .sync-status { text-align: left; }
+    .settings-action-row .btn-action { width: 100%; }
+}
+
 .app-install-section {
     margin-top: 20px;
     padding-top: 16px;
@@ -5462,10 +5506,27 @@ button.notif-item {
 .notif-work-item.is-unread:hover { background: rgba(76, 86, 98, 0.25); }
 
 .first-run-backdrop { position: fixed; z-index: 10000; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(20, 28, 36, .48); }
-.first-run-card { width: min(100%, 440px); max-height: min(720px, 92vh); overflow: auto; padding: 24px; border-radius: 22px; background: #fff; box-shadow: 0 24px 70px rgba(0,0,0,.28); }
-.first-run-card h2 { margin: 0 0 10px; font-size: 22px; }
-.first-run-card > p { color: var(--text-secondary); line-height: 1.5; margin: 0 0 16px; }
-.first-run-card .sync-config-field { margin: 12px 0; }
+.first-run-card { width: min(100%, 520px); max-height: min(760px, 92vh); overflow: auto; padding: 24px; border-radius: var(--radius-box); background: var(--surface); box-shadow: 0 24px 70px rgba(0,0,0,.28); }
+.first-run-card__eyebrow { margin: 0 0 4px; color: var(--brand-primary); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.first-run-card h2 { margin: 0 0 8px; font-size: 22px; }
+.first-run-card > p:not(.first-run-card__eyebrow):not(.sync-config-message) { color: var(--text-sub); line-height: 1.5; margin: 0 0 18px; }
+.first-run-role-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.first-run-role-switch .btn-action { min-height: 42px; margin: 0; padding: 10px 12px; font-size: 13px; }
+.first-run-role-switch .sync-secondary { background: rgba(0, 102, 51, .1); color: var(--brand-primary); }
+.first-run-form { display: grid; gap: 14px; }
+.first-run-form .settings-form-row { margin: 0; }
+.first-run-actions { display: flex; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0, 102, 51, .08); }
+.first-run-actions .btn-action { flex: 2 1 auto; width: auto; margin: 0; padding: 12px 16px; font-size: 14px; }
+.first-run-actions .btn-secondary { flex: 1 1 auto; width: auto; margin: 0; padding: 12px 16px; font-size: 14px; }
+.first-run-card .sync-config-message { margin: 14px 0 0; color: var(--brand-accent-red); }
+
+@media (max-width: 640px) {
+    .first-run-backdrop { align-items: end; padding: 12px; }
+    .first-run-card { width: 100%; max-height: 92vh; padding: 20px 16px; border-radius: var(--radius-box) var(--radius-box) 16px 16px; }
+    .first-run-actions { flex-direction: column; }
+    .first-run-actions .btn-action,
+    .first-run-actions .btn-secondary { width: 100%; }
+}
 
 /* ====================================================================
    DESKTOP NAVIGATION & PROFILE HEADER

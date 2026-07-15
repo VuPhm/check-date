@@ -49,25 +49,50 @@ onMounted(() => {
 });
 </script>
 <template>
-  <section class="sidebar-section sync-config-section"><h4 class="sidebar-section-title">Quản trị cửa hàng</h4>
-    <div class="store-profile-grid">
-      <label class="sync-config-field"><span>Mã cửa hàng / CO.OP FOOD</span><input id="sidebarCoopFood" v-model="storeCode" class="form-input" inputmode="numeric" maxlength="4" @input="storeCode = cleanCode(storeCode); saveStoreProfile()"></label>
-      <label class="sync-config-field"><span>Tên cửa hàng</span><input id="sidebarStore" v-model="storeName" class="form-input" placeholder="Co.op Food 0001" @input="saveStoreProfile"></label>
-      <label class="sync-config-field"><span>Cửa hàng trưởng (tuỳ chọn)</span><input id="sidebarCht" v-model="storeCht" class="form-input" placeholder="Có thể thiết lập sau" @input="saveStoreProfile"></label>
-      <label class="sync-config-field"><span>Mật khẩu cửa hàng</span><input id="sidebarStorePassword" v-model="storePassword" type="password" class="form-input" placeholder="Thiết lập khi cần đăng nhập" @input="saveStorePassword"></label>
-    </div>
-    <h4 class="sidebar-section-title sync-config-section__title">Đồng bộ</h4>
-    <label class="sync-config-field"><span>Host / API</span><input v-model="host" class="form-input" placeholder="https://host/api hoặc /api" @change="saveHost"></label>
-    <template v-if="!appStore.session">
-      <div class="sync-config-actions"><button class="btn-action" :class="{ 'sync-secondary': mode !== 'employee' }" @click="mode = 'employee'">Nhân viên</button><button class="btn-action" :class="{ 'sync-secondary': mode !== 'manager' }" @click="mode = 'manager'">CHT</button></div>
-      <template v-if="mode === 'manager'"><p class="sync-config-note">Dùng tên CHT và mật khẩu cửa hàng ở phần Quản trị cửa hàng phía trên.</p></template>
-      <template v-else><label class="sync-config-field"><span>Họ tên</span><input v-model="displayName" class="form-input"></label><label class="sync-config-field"><span>Mã nhân viên</span><input v-model="employeeCode" class="form-input"></label><label class="sync-config-field"><span>Mã tham gia cửa hàng</span><input v-model="joinCode" type="password" class="form-input" inputmode="numeric" maxlength="4" @input="joinCode = cleanCode(joinCode)"></label></template>
-      <label class="sync-config-field"><span>Tên thiết bị</span><input v-model="deviceName" class="form-input" :placeholder="mode === 'manager' ? 'PC hoặc điện thoại CHT' : 'Điện thoại nhân viên'"></label><button class="btn-action sync-full-action" :disabled="busy" @click="signIn">{{ busy ? 'Đang kết nối…' : mode === 'manager' ? 'Đăng nhập CHT' : 'Tham gia cửa hàng' }}</button>
-      <p class="sync-config-note">Có thể dùng app cục bộ trước, rồi kết nối cửa hàng trong mục này khi cần.</p>
-    </template>
-    <template v-else><p class="sync-config-note"><strong>{{ appStore.session.displayName }}</strong> · {{ appStore.isManager ? 'CHT' : 'Nhân viên' }} · CH {{ appStore.session.branchId }}</p><p class="sync-status" :class="`is-${appStore.syncStatus}`">{{ statusLabel }} · {{ lastSync }}</p><button class="btn-action sync-full-action" :disabled="busy" @click="syncNow">Đồng bộ ngay</button>
-      <div v-if="appStore.isManager" class="sync-pending-list"><div class="sync-pending-heading">Quản trị cửa hàng</div><label class="sync-config-field"><span>Mã tham gia nhân viên (4 số)</span><input v-model="newJoinCode" class="form-input" inputmode="numeric" maxlength="4" @input="newJoinCode = cleanCode(newJoinCode)"></label><label class="sync-config-field"><span>Đổi mật khẩu CHT (tuỳ chọn)</span><input v-model="newPassword" type="password" class="form-input"></label><button class="btn-action sync-full-action" :disabled="busy" @click="saveAdmin">Lưu cài đặt</button><div class="sync-pending-heading">Nhân viên</div><div v-for="item in employees" :key="item.id" class="sync-pending-item"><span>{{ item.displayName }} · {{ item.employeeCode }}</span><button class="btn-action" @click="dropEmployee(item.id)">Xóa</button></div><div class="sync-pending-heading">Thiết bị</div><div v-for="item in devices" :key="item.deviceId" class="sync-pending-item"><span>{{ item.deviceName }} · {{ item.displayName }}</span><button class="btn-action" @click="dropDevice(item.deviceId)">Thu hồi</button></div><button class="sync-refresh-button" @click="refreshAdmin">Làm mới</button></div>
-      <div v-if="appStore.activityEvents.length" class="sync-pending-list"><div class="sync-pending-heading">Hoạt động gần đây</div><div v-for="event in appStore.activityEvents.slice(0, showAllActivities ? 50 : 5)" :key="event.id" class="sync-pending-item"><span>{{ event.summary }}</span></div><button v-if="appStore.activityEvents.length > 5" class="sync-refresh-button" @click="showAllActivities = !showAllActivities">{{ showAllActivities ? 'Thu gọn' : `Xem thêm (${Math.min(appStore.activityEvents.length - 5, 45)})` }}</button></div><button class="sync-refresh-button" @click="appStore.clearSession">Đăng xuất thiết bị này</button>
-    </template><p v-if="message" class="sync-config-message" aria-live="polite">{{ message }}</p>
+  <section class="settings-workspace">
+    <section class="kph-section-group store-settings-group settings-section-group">
+      <h3 class="kph-section-title">Thông tin cửa hàng</h3>
+      <p class="settings-section-description">Dùng để nhận diện cửa hàng và đăng nhập CHT.</p>
+      <div class="apple-input-row settings-form-row">
+        <div class="form-field"><label class="form-label" for="sidebarCoopFood">Mã cửa hàng / CO.OP FOOD</label><input id="sidebarCoopFood" v-model="storeCode" class="form-input" inputmode="numeric" maxlength="4" @input="storeCode = cleanCode(storeCode); saveStoreProfile()"></div>
+        <div class="form-field"><label class="form-label" for="sidebarStore">Tên cửa hàng</label><input id="sidebarStore" v-model="storeName" class="form-input" placeholder="Co.op Food 0001" @input="saveStoreProfile"></div>
+      </div>
+      <div class="apple-input-row settings-form-row">
+        <div class="form-field"><label class="form-label" for="sidebarCht">Cửa hàng trưởng <em>(tuỳ chọn)</em></label><input id="sidebarCht" v-model="storeCht" class="form-input" placeholder="Có thể thiết lập sau" @input="saveStoreProfile"></div>
+        <div class="form-field"><label class="form-label" for="sidebarStorePassword">Mật khẩu cửa hàng</label><input id="sidebarStorePassword" v-model="storePassword" type="password" class="form-input" placeholder="Thiết lập khi cần đăng nhập" @input="saveStorePassword"></div>
+      </div>
+    </section>
+
+    <section class="kph-section-group settings-section-group">
+      <h3 class="kph-section-title">Kết nối & đồng bộ</h3>
+      <p class="settings-section-description">Liên kết thiết bị với dữ liệu cửa hàng khi bạn sẵn sàng.</p>
+      <div class="form-field settings-host-field"><label class="form-label" for="syncHost">Host / API</label><input id="syncHost" v-model="host" class="form-input" placeholder="https://host/api hoặc /api" @change="saveHost"></div>
+      <template v-if="!appStore.session">
+        <div class="settings-role-switch" role="group" aria-label="Vai trò kết nối"><button class="btn-action" :class="{ 'sync-secondary': mode !== 'employee' }" @click="mode = 'employee'">Nhân viên</button><button class="btn-action" :class="{ 'sync-secondary': mode !== 'manager' }" @click="mode = 'manager'">Cửa hàng trưởng</button></div>
+        <p v-if="mode === 'manager'" class="settings-helper-text">Dùng tên CHT và mật khẩu ở phần Thông tin cửa hàng phía trên.</p>
+        <template v-else><div class="apple-input-row settings-form-row"><div class="form-field"><label class="form-label" for="syncDisplayName">Họ tên</label><input id="syncDisplayName" v-model="displayName" class="form-input"></div><div class="form-field"><label class="form-label" for="syncEmployeeCode">Mã nhân viên</label><input id="syncEmployeeCode" v-model="employeeCode" class="form-input"></div></div><div class="form-field"><label class="form-label" for="syncJoinCode">Mã tham gia cửa hàng</label><input id="syncJoinCode" v-model="joinCode" type="password" class="form-input" inputmode="numeric" maxlength="4" @input="joinCode = cleanCode(joinCode)"></div></template>
+        <div class="form-field"><label class="form-label" for="syncDeviceName">Tên thiết bị</label><input id="syncDeviceName" v-model="deviceName" class="form-input" :placeholder="mode === 'manager' ? 'PC hoặc điện thoại CHT' : 'Điện thoại nhân viên'"></div>
+        <div class="settings-action-row"><button class="btn-action" :disabled="busy" @click="signIn">{{ busy ? 'Đang kết nối…' : mode === 'manager' ? 'Đăng nhập CHT' : 'Tham gia cửa hàng' }}</button></div>
+        <p class="settings-helper-text">Bạn có thể dùng app cục bộ trước và kết nối cửa hàng sau.</p>
+      </template>
+      <template v-else><div class="settings-status-panel"><div><strong>{{ appStore.session.displayName }}</strong><span>{{ appStore.isManager ? 'Cửa hàng trưởng' : 'Nhân viên' }} · CH {{ appStore.session.branchId }}</span></div><p class="sync-status" :class="`is-${appStore.syncStatus}`">{{ statusLabel }}<small>{{ lastSync }}</small></p></div><div class="settings-action-row"><button class="btn-action" :disabled="busy" @click="syncNow">{{ busy ? 'Đang đồng bộ…' : 'Đồng bộ ngay' }}</button></div></template>
+    </section>
+
+    <section v-if="appStore.session && appStore.isManager" class="kph-section-group settings-section-group">
+      <h3 class="kph-section-title">Quản trị cửa hàng</h3>
+      <div class="apple-input-row settings-form-row"><div class="form-field"><label class="form-label" for="syncNewJoinCode">Mã tham gia nhân viên</label><input id="syncNewJoinCode" v-model="newJoinCode" class="form-input" inputmode="numeric" maxlength="4" @input="newJoinCode = cleanCode(newJoinCode)"></div><div class="form-field"><label class="form-label" for="syncNewPassword">Đổi mật khẩu CHT <em>(tuỳ chọn)</em></label><input id="syncNewPassword" v-model="newPassword" type="password" class="form-input"></div></div>
+      <div class="settings-action-row"><button class="btn-action" :disabled="busy" @click="saveAdmin">Lưu cài đặt</button></div>
+      <div class="settings-list-group"><h4>Nhân viên</h4><div v-for="item in employees" :key="item.id" class="settings-list-item"><span>{{ item.displayName }} · {{ item.employeeCode }}</span><button class="btn-secondary" @click="dropEmployee(item.id)">Xóa</button></div></div>
+      <div class="settings-list-group"><h4>Thiết bị</h4><div v-for="item in devices" :key="item.deviceId" class="settings-list-item"><span>{{ item.deviceName }} · {{ item.displayName }}</span><button class="btn-secondary" @click="dropDevice(item.deviceId)">Thu hồi</button></div><button class="settings-text-button" @click="refreshAdmin">Làm mới danh sách</button></div>
+    </section>
+
+    <section v-if="appStore.session && appStore.activityEvents.length" class="kph-section-group settings-section-group">
+      <h3 class="kph-section-title">Hoạt động gần đây</h3>
+      <div v-for="event in appStore.activityEvents.slice(0, showAllActivities ? 50 : 5)" :key="event.id" class="settings-list-item settings-list-item--activity"><span>{{ event.summary }}</span></div>
+      <button v-if="appStore.activityEvents.length > 5" class="settings-text-button" @click="showAllActivities = !showAllActivities">{{ showAllActivities ? 'Thu gọn' : `Xem thêm (${Math.min(appStore.activityEvents.length - 5, 45)})` }}</button>
+    </section>
+
+    <div v-if="appStore.session" class="settings-footer-action"><button class="settings-text-button settings-text-button--danger" @click="appStore.clearSession">Đăng xuất thiết bị này</button></div>
+    <p v-if="message" class="sync-config-message" aria-live="polite">{{ message }}</p>
   </section>
 </template>

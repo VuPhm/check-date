@@ -151,7 +151,6 @@ function handleModeChange(event: Event) {
   </main>
 
   <div id="diagramBoard" class="diagram-board">
-    <h3 class="diagram-board__title">Sơ đồ trục thời hạn lùi hàng</h3>
     <div id="svgContainer" />
   </div>
 </template>

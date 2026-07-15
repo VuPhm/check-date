@@ -32,6 +32,7 @@ import {
 
 import {
     historyData,
+    setSelectedHistoryId,
     loadHistoryFromStorage,
     saveHistoryToStorage,
     removeHistoryItem,
@@ -336,13 +337,7 @@ export function closeResultModal() {
     }
 }
 
-export function executeCalculation(saveToHistory = true, historyIdToRefresh = null) {
-    if (saveToHistory) {
-        import('./history.js').then(module => {
-            module.setSelectedHistoryId(null);
-            module.updateHistoryUI();
-        });
-    }
+export function executeCalculation(saveToHistory = true) {
     const nsxVal = document.getElementById('nsx').value.trim();
     const hsdDateVal = document.getElementById('hsdDate').value.trim();
     const hsdDaysVal = document.getElementById('hsdDays').value.trim();
@@ -439,62 +434,52 @@ export function executeCalculation(saveToHistory = true, historyIdToRefresh = nu
 
             openResultModal(theme, 'Kết quả tra cứu', mainText, subText, iconHtml, detailsHtml);
 
-            if (saveToHistory) {
-                const existingIndex = historyData.findIndex(h => h.nsx === nsxVal && h.formattedHsd === output.formattedHsd && h.barcode === barcodeVal);
-                if (existingIndex !== -1) {
-                    const existingItem = historyData[existingIndex];
-                    historyData.splice(existingIndex, 1);
-                    // Also delete from storage to avoid duplicate keys in IndexedDB
-                    if (existingItem.id) {
-                        import('./history.js').then(module => {
-                            module.removeHistoryItemFromDB(existingItem.id);
-                        });
-                    }
-                }
+            const historyPayload = {
+                nsx: nsxVal,
+                rawHsdDate: hsdDateVal,
+                rawHsdDays: hsdDaysVal || Math.round((parseLocalDate(hsdDateVal) - parseLocalDate(nsxVal)) / MS_PER_DAY) + 1,
+                formattedHsd: output.formattedHsd,
+                result: output.dateStr,
+                daysRemaining: output.daysRemaining,
+                alertClass: output.alert.class,
+                alertLabel: output.alert.label,
+                alertType,
+                alertWeight: output.alert.weight,
+                isShortProduct: output.isShortProduct,
+                isExpiredProduct: output.isExpiredProduct,
+                barcode: barcodeVal,
+                tenHang: tenHangVal,
+                quantity: quantityVal,
+                dvt: calcDvtVal,
+                checkedAt: new Date().toISOString()
+            };
 
+            if (saveToHistory) {
+                // History is immutable: an identical lookup points to the old record,
+                // while any changed linked field creates a genuinely new record.
+                const existingItem = historyData.find(item =>
+                    item.nsx === historyPayload.nsx &&
+                    item.rawHsdDate === historyPayload.rawHsdDate &&
+                    String(item.rawHsdDays) === String(historyPayload.rawHsdDays) &&
+                    item.formattedHsd === historyPayload.formattedHsd &&
+                    item.barcode === historyPayload.barcode &&
+                    item.tenHang === historyPayload.tenHang &&
+                    String(item.quantity ?? '') === String(historyPayload.quantity ?? '') &&
+                    item.dvt === historyPayload.dvt
+                );
+                if (existingItem) {
+                    setSelectedHistoryId(existingItem.id);
+                    updateHistoryUI();
+                    return;
+                }
                 const newItem = {
                     id: 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-                    nsx: nsxVal,
-                    rawHsdDate: hsdDateVal,
-                    rawHsdDays: hsdDaysVal || Math.round((parseLocalDate(hsdDateVal) - parseLocalDate(nsxVal)) / MS_PER_DAY) + 1,
-                    formattedHsd: output.formattedHsd,
-                    result: output.dateStr,
-                    daysRemaining: output.daysRemaining,
-                    alertClass: output.alert.class,
-                    alertLabel: output.alert.label,
-                    alertType: alertType,
-                    alertWeight: output.alert.weight,
-                    isShortProduct: output.isShortProduct,
-                    isExpiredProduct: output.isExpiredProduct,
-                    barcode: barcodeVal,
-                    tenHang: tenHangVal,
-                    quantity: quantityVal,
-                    dvt: calcDvtVal,
-                    checkedAt: new Date().toISOString()
+                    ...historyPayload
                 };
                 historyData.unshift(newItem);
                 saveHistoryToStorage(newItem);
+                setSelectedHistoryId(newItem.id);
                 updateHistoryUI();
-            } else if (historyIdToRefresh) {
-                const historyItem = historyData.find(item => item.id === historyIdToRefresh);
-                if (historyItem) {
-                    Object.assign(historyItem, {
-                        nsx: nsxVal,
-                        rawHsdDate: hsdDateVal,
-                        rawHsdDays: hsdDaysVal || Math.round((parseLocalDate(hsdDateVal) - parseLocalDate(nsxVal)) / MS_PER_DAY) + 1,
-                        formattedHsd: output.formattedHsd,
-                        result: output.dateStr,
-                        daysRemaining: output.daysRemaining,
-                        alertClass: output.alert.class,
-                        alertLabel: output.alert.label,
-                        alertType,
-                        alertWeight: output.alert.weight,
-                        isShortProduct: output.isShortProduct,
-                        isExpiredProduct: output.isExpiredProduct
-                    });
-                    saveHistoryToStorage(historyItem);
-                    updateHistoryUI();
-                }
             }
         } catch (error) {
             setCalcFocusTheme('danger');
