@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useAppStore } from '../../stores/app';
 import { getStoreAdministration, joinEmployee, loginManager, removeEmployee, revokeDevice, updateStoreAdministration } from '../../services/syncApi';
 import type { ManagedDevice, ManagedEmployee } from '../../domain/types';
+import { requestDeviceNotificationPermission } from '../../services/deviceNotifications';
 
 const appStore = useAppStore();
 const mode = ref<'employee' | 'manager'>('employee');
@@ -11,6 +12,7 @@ const storeCode = ref(''); const password = ref(''); const joinCode = ref('');
 const displayName = ref(''); const employeeCode = ref(''); const deviceName = ref('');
 const newJoinCode = ref(''); const newPassword = ref('');
 const employees = ref<ManagedEmployee[]>([]); const devices = ref<ManagedDevice[]>([]);
+const showAllActivities = ref(false);
 const message = ref(''); const busy = ref(false);
 const statusLabel = computed(() => ({ idle: 'Chưa đồng bộ', offline: 'Ngoại tuyến', syncing: 'Đang đồng bộ…', synced: 'Đã đồng bộ', error: 'Có lỗi' }[appStore.syncStatus]));
 const lastSync = computed(() => appStore.lastSyncedAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'medium' }).format(new Date(appStore.lastSyncedAt)) : 'Chưa từng đồng bộ');
@@ -28,6 +30,8 @@ async function saveAdmin() { if (!appStore.session) return; try { busy.value = t
 async function syncNow() { try { busy.value = true; await appStore.syncNow(); message.value = 'Đồng bộ hoàn tất.'; } catch (e) { message.value = e instanceof Error ? e.message : 'Đồng bộ thất bại.'; } finally { busy.value = false; } }
 async function dropDevice(id: string) { if (!appStore.session) return; await revokeDevice(appStore.endpoint, appStore.session, id); await refreshAdmin(); }
 async function dropEmployee(id: string) { if (!appStore.session) return; await removeEmployee(appStore.endpoint, appStore.session, id); await refreshAdmin(); }
+async function requestDeviceNotifications() { const permission = await requestDeviceNotificationPermission(); message.value = permission === 'granted' ? 'Đã cho phép thông báo thiết bị.' : permission === 'denied' ? 'Quyền thông báo đang bị chặn trong trình duyệt.' : permission === 'default' ? 'Chưa cấp quyền thông báo.' : permission === 'insecure' ? 'Thông báo cần HTTPS (hoặc localhost).' : 'Trình duyệt này không hỗ trợ thông báo thiết bị.'; }
+function openSetup() { window.dispatchEvent(new CustomEvent('coop:open-setup')); }
 onMounted(refreshAdmin);
 </script>
 <template>
@@ -43,7 +47,7 @@ onMounted(refreshAdmin);
     </template>
     <template v-else><p class="sync-config-note"><strong>{{ appStore.session.displayName }}</strong> · {{ appStore.isManager ? 'CHT' : 'Nhân viên' }} · CH {{ appStore.session.branchId }}</p><p class="sync-status" :class="`is-${appStore.syncStatus}`">{{ statusLabel }} · {{ lastSync }}</p><button class="btn-action sync-full-action" :disabled="busy" @click="syncNow">Đồng bộ ngay</button>
       <div v-if="appStore.isManager" class="sync-pending-list"><div class="sync-pending-heading">Quản trị cửa hàng</div><label class="sync-config-field"><span>Mã tham gia nhân viên (4 số)</span><input v-model="newJoinCode" class="form-input" inputmode="numeric" maxlength="4" @input="newJoinCode = cleanCode(newJoinCode)"></label><label class="sync-config-field"><span>Đổi mật khẩu CHT (tuỳ chọn)</span><input v-model="newPassword" type="password" class="form-input"></label><button class="btn-action sync-full-action" :disabled="busy" @click="saveAdmin">Lưu cài đặt</button><div class="sync-pending-heading">Nhân viên</div><div v-for="item in employees" :key="item.id" class="sync-pending-item"><span>{{ item.displayName }} · {{ item.employeeCode }}</span><button class="btn-action" @click="dropEmployee(item.id)">Xóa</button></div><div class="sync-pending-heading">Thiết bị</div><div v-for="item in devices" :key="item.deviceId" class="sync-pending-item"><span>{{ item.deviceName }} · {{ item.displayName }}</span><button class="btn-action" @click="dropDevice(item.deviceId)">Thu hồi</button></div><button class="sync-refresh-button" @click="refreshAdmin">Làm mới</button></div>
-      <button class="sync-refresh-button" @click="appStore.clearSession">Đăng xuất thiết bị này</button>
+      <div v-if="appStore.activityEvents.length" class="sync-pending-list"><div class="sync-pending-heading">Hoạt động gần đây</div><div v-for="event in appStore.activityEvents.slice(0, showAllActivities ? 50 : 5)" :key="event.id" class="sync-pending-item"><span>{{ event.summary }}</span></div><button v-if="appStore.activityEvents.length > 5" class="sync-refresh-button" @click="showAllActivities = !showAllActivities">{{ showAllActivities ? 'Thu gọn' : `Xem thêm (${Math.min(appStore.activityEvents.length - 5, 45)})` }}</button></div><button class="sync-refresh-button" @click="openSetup">Thiết lập ứng dụng</button><button class="sync-refresh-button" @click="requestDeviceNotifications">Cho phép thông báo thiết bị</button><button class="sync-refresh-button" @click="appStore.clearSession">Đăng xuất thiết bị này</button>
     </template><p v-if="message" class="sync-config-message" aria-live="polite">{{ message }}</p>
   </section>
 </template>

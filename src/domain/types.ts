@@ -44,6 +44,18 @@ export interface ManagedEmployee {
   active: boolean;
 }
 
+export interface ActivityEvent {
+  id: string;
+  branchId: string;
+  type: 'kph.created' | 'kph.approved' | 'kph.rejected' | 'kph.deleted';
+  recordId: string;
+  actorName: string;
+  actorRole: BranchRole;
+  targetUserId?: string;
+  summary: string;
+  createdAt: string;
+}
+
 export interface SyncMetadata {
   branchId?: string;
   createdBy?: string;

@@ -1,4 +1,4 @@
-import type { DeviceSession, HistoryLog, KphLog, ManagedDevice, ManagedEmployee, ServerEndpoint } from '../domain/types';
+import type { ActivityEvent, DeviceSession, HistoryLog, KphLog, ManagedDevice, ManagedEmployee, ServerEndpoint } from '../domain/types';
 
 interface WireBlob {
   __coopBlob: true;
@@ -18,6 +18,14 @@ interface SyncResponse {
   historyLogs: HistoryLog[];
   cursor: string;
   acceptedChangeIds: string[];
+  activityEvents: ActivityEvent[];
+}
+
+export function subscribeToBranchEvents(endpoint: ServerEndpoint, session: DeviceSession, onChange: () => void): EventSource {
+  const url = apiUrl(endpoint, `/v1/events?access_token=${encodeURIComponent(session.accessToken)}`);
+  const source = new EventSource(url);
+  source.addEventListener('branch-changed', onChange);
+  return source;
 }
 
 interface WireSyncResponse extends Omit<SyncResponse, 'kphLogs'> {

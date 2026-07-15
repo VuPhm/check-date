@@ -32,14 +32,17 @@ hàng và mã tham gia ban đầu là `1234`.
    **Quản trị cửa hàng**, đổi mã tham gia hoặc mật khẩu nếu muốn.
 3. Ở cửa sổ thứ hai, chọn **Nhân viên**, nhập họ tên/mã NV, cửa hàng `0001` và
    mã tham gia hiện tại. Nhân viên vào ngay, không có bước duyệt.
-4. Trên nhân viên tạo phiếu KPH, bấm lưu. CHT bấm **Đồng bộ ngay** và sẽ nhận
-   phiếu. CHT duyệt phiếu, rồi đồng bộ lại ở nhân viên.
+4. Trên nhân viên tạo phiếu KPH, bấm lưu. CHT sẽ tự nhận phiếu trong lúc app
+   đang mở (SSE; polling 30 giây là phương án dự phòng); vẫn có nút **Đồng bộ
+   ngay**. CHT duyệt phiếu, nhân viên sẽ nhận cập nhật tương tự.
 5. Khi phiếu còn chờ duyệt, nhân viên tạo phiếu của mình có thể xoá. Sau khi
    CHT duyệt/không duyệt, nút xoá bị từ chối. CHT vẫn có thể xoá mọi phiếu.
 6. Trong DevTools chọn Offline, tạo phiếu, sau đó bật lại mạng. Trạng thái sẽ
    tự đồng bộ; có thể bấm **Đồng bộ ngay** để ép chạy tức thì.
 7. CHT thu hồi thiết bị hoặc xoá nhân viên. Thiết bị đó sẽ bị server từ chối ở
    lần gọi API tiếp theo.
+8. Mở phần **Hoạt động gần đây** trong Cửa hàng & đồng bộ để xem ai đã tạo,
+   duyệt, không duyệt hoặc xoá phiếu. Các thay đổi mới cũng hiện toast gộp.
 
 ## Giới hạn của demo
 

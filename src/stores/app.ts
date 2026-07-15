@@ -1,14 +1,18 @@
 import { defineStore } from 'pinia';
-import type { DeviceSession, ServerEndpoint, SyncStatus } from '../domain/types';
+import type { ActivityEvent, DeviceSession, ServerEndpoint, SyncStatus } from '../domain/types';
 import { deviceSessionSchema, serverEndpointSchema } from '../domain/schemas';
 import { acknowledgeChanges, assignUnboundRecords, getPendingChanges, getSyncCursor, mergeSyncSnapshot, setSyncCursor } from '../repositories/localDatabase';
-import { checkSyncServer, syncWithServer } from '../services/syncApi';
+import { checkSyncServer, subscribeToBranchEvents, syncWithServer } from '../services/syncApi';
 
 const SESSION_STORAGE_KEY = 'coop_device_session';
 const BRANCH_STORAGE_KEY = 'coop_branch_identity';
 const ENDPOINT_STORAGE_KEY = 'coop_sync_endpoint';
 const LAST_SYNC_STORAGE_KEY = 'coop_last_synced_at';
+const SEEN_ACTIVITY_STORAGE_KEY = 'coop_seen_activity';
+const KNOWN_ACTIVITY_STORAGE_KEY = 'coop_known_activity';
 const defaultEndpoint: ServerEndpoint = { basePath: '/api' };
+let branchEvents: EventSource | null = null;
+let syncTimer: number | null = null;
 
 export const useAppStore = defineStore('app', {
   state: () => ({
@@ -17,12 +21,24 @@ export const useAppStore = defineStore('app', {
     syncStatus: (navigator.onLine ? 'idle' : 'offline') as SyncStatus,
     lastSyncedAt: null as string | null,
     syncError: null as string | null,
+    activityEvents: [] as ActivityEvent[],
+    seenActivityIds: [] as string[],
+    knownActivityIds: [] as string[],
   }),
   getters: {
     branch: (state) => state.session ? {
       id: state.session.branchId, code: state.session.branchId, name: state.session.displayName,
     } : null,
     isManager: (state) => state.session?.role === 'manager',
+    actionableEvents: (state): ActivityEvent[] => {
+      if (!state.session) return [];
+      return state.activityEvents.filter((event) => state.session?.role === 'manager'
+        ? event.actorRole === 'employee' && (event.type === 'kph.created' || event.type === 'kph.deleted')
+        : event.targetUserId === state.session?.id && (event.type === 'kph.approved' || event.type === 'kph.rejected'));
+    },
+    unreadActionableEvents(): ActivityEvent[] {
+      return this.actionableEvents.filter((event) => !this.seenActivityIds.includes(event.id));
+    },
   },
   actions: {
     hydrateSettings() {
@@ -48,15 +64,21 @@ export const useAppStore = defineStore('app', {
     setSession(session: DeviceSession) {
       const validated = deviceSessionSchema.parse(session);
       this.session = validated;
+      try { this.seenActivityIds = JSON.parse(localStorage.getItem(`${SEEN_ACTIVITY_STORAGE_KEY}:${validated.id}`) || '[]'); } catch { this.seenActivityIds = []; }
+      try { this.knownActivityIds = JSON.parse(localStorage.getItem(`${KNOWN_ACTIVITY_STORAGE_KEY}:${validated.id}`) || '[]'); } catch { this.knownActivityIds = []; }
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(validated));
       localStorage.setItem(BRANCH_STORAGE_KEY, JSON.stringify({
         id: validated.branchId, code: validated.branchId, name: validated.branchId,
       }));
+      this.startLiveSync();
     },
     clearSession() {
       this.session = null;
+      this.seenActivityIds = [];
+      this.knownActivityIds = [];
       localStorage.removeItem(SESSION_STORAGE_KEY);
       localStorage.removeItem(BRANCH_STORAGE_KEY);
+      branchEvents?.close(); branchEvents = null;
     },
     bindConnectivityEvents() {
       window.addEventListener('online', () => {
@@ -64,6 +86,22 @@ export const useAppStore = defineStore('app', {
         if (this.session) void this.syncNow().catch(() => undefined);
       });
       window.addEventListener('offline', () => { this.syncStatus = 'offline'; });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && this.session) void this.syncNow().catch(() => undefined);
+      });
+      if (syncTimer === null) syncTimer = window.setInterval(() => {
+        if (document.visibilityState === 'visible' && this.session && navigator.onLine) void this.syncNow().catch(() => undefined);
+      }, 30_000);
+    },
+    startLiveSync() {
+      branchEvents?.close();
+      if (!this.session || typeof EventSource === 'undefined') return;
+      branchEvents = subscribeToBranchEvents(this.endpoint, this.session, () => void this.syncNow().catch(() => undefined));
+    },
+    markActivityRead(ids: string[]) {
+      if (!this.session || !ids.length) return;
+      this.seenActivityIds = [...new Set([...this.seenActivityIds, ...ids])].slice(-500);
+      localStorage.setItem(`${SEEN_ACTIVITY_STORAGE_KEY}:${this.session.id}`, JSON.stringify(this.seenActivityIds));
     },
     async testConnection() {
       this.syncError = null;
@@ -94,6 +132,16 @@ export const useAppStore = defineStore('app', {
         await mergeSyncSnapshot(snapshot.kphLogs, snapshot.historyLogs);
         await Promise.all([acknowledgeChanges(snapshot.acceptedChangeIds), setSyncCursor(this.session.branchId, snapshot.cursor)]);
         this.lastSyncedAt = snapshot.serverTime;
+        if (snapshot.activityEvents.length) {
+          const known = new Set(this.knownActivityIds);
+          const fresh = snapshot.activityEvents.filter((event) => !known.has(event.id));
+          this.activityEvents = snapshot.activityEvents.slice(0, 50);
+          const hasBaseline = this.knownActivityIds.length > 0;
+          this.knownActivityIds = [...new Set([...snapshot.activityEvents.map((event) => event.id), ...this.knownActivityIds])].slice(0, 500);
+          localStorage.setItem(`${KNOWN_ACTIVITY_STORAGE_KEY}:${this.session.id}`, JSON.stringify(this.knownActivityIds));
+          const actionableFresh = fresh.filter((event) => this.actionableEvents.some((item) => item.id === event.id) && !this.seenActivityIds.includes(event.id));
+          if (hasBaseline && actionableFresh.length) window.dispatchEvent(new CustomEvent('coop:sync-summary', { detail: actionableFresh }));
+        }
         localStorage.setItem(LAST_SYNC_STORAGE_KEY, snapshot.serverTime);
         this.syncStatus = 'synced';
         window.dispatchEvent(new CustomEvent('coop:remote-sync'));

@@ -520,15 +520,16 @@ export function showAppleToast(message, type = 'info', duration = 3000) {
     const icon = document.createElement('div');
     icon.className = 'apple-toast-icon';
     
-    let iconStr = 'ℹ️';
-    if (type === 'success') iconStr = '✅';
-    else if (type === 'warning') iconStr = '⚠️';
-    else if (type === 'error') iconStr = '❌';
+    let iconStr = 'i';
+    if (type === 'success') iconStr = '✓';
+    else if (type === 'warning') iconStr = '!';
+    else if (type === 'error') iconStr = '×';
     icon.textContent = iconStr;
     
     const messageEl = document.createElement('div');
     messageEl.className = 'apple-toast-message';
-    messageEl.textContent = message;
+    // Legacy callers may prefix an emoji; toast uses its own consistent icon.
+    messageEl.textContent = String(message).replace(/^[⚠✅❌ℹ][\uFE0F]?\s*/u, '');
     
     toast.appendChild(icon);
     toast.appendChild(messageEl);

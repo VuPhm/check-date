@@ -15,16 +15,17 @@ const stores = persisted.stores || defaultStores;
 const storeData = new Map();
 const devices = new Map();
 const employees = new Map();
+const eventClients = new Map();
 
 for (const employee of persisted.employees || []) employees.set(employee.id, employee);
 for (const [branchId, value] of Object.entries(persisted.storeData || {})) {
-  storeData.set(branchId, { kph: new Map(value.kph || []), history: new Map(value.history || []), revision: value.revision || 0 });
+  storeData.set(branchId, { kph: new Map(value.kph || []), history: new Map(value.history || []), activity: value.activity || [], revision: value.revision || 0 });
 }
 function persist() {
   mkdirSync(dirname(dataFile), { recursive: true });
   writeFileSync(dataFile, JSON.stringify({
     stores, employees: [...employees.values()],
-    storeData: Object.fromEntries([...storeData].map(([branchId, value]) => [branchId, { revision: value.revision, kph: [...value.kph], history: [...value.history] }])),
+    storeData: Object.fromEntries([...storeData].map(([branchId, value]) => [branchId, { revision: value.revision, kph: [...value.kph], history: [...value.history], activity: value.activity || [] }])),
   }, null, 2));
 }
 
@@ -117,11 +118,33 @@ function sessionFrom(request) {
   return token ? devices.get(token) : null;
 }
 
+function publishBranchChange(branchId) {
+  for (const response of eventClients.get(branchId) || []) response.write('event: branch-changed\ndata: {}\n\n');
+}
+
+function activityFor(change, session, record, now) {
+  const name = record.tenHang || record.sku || 'phiếu KPH';
+  const previous = change.previous;
+  const status = record.trangThaiDuyet;
+  const type = record.deletedAt ? 'kph.deleted' : status === 'da_duyet' ? 'kph.approved' : status === 'khong_duyet' ? 'kph.rejected' : 'kph.created';
+  const verb = type === 'kph.deleted' ? 'đã xóa' : type === 'kph.approved' ? 'đã duyệt' : type === 'kph.rejected' ? 'đã không duyệt' : previous ? 'đã cập nhật' : 'đã tạo';
+  return { id: randomUUID(), branchId: session.branchId, type, recordId: record.id, actorName: session.displayName, actorRole: session.role, targetUserId: record.createdBy, summary: `${session.displayName} ${verb} phiếu: ${name}`, createdAt: now };
+}
+
 createServer(async (request, response) => {
   const url = new URL(request.url || '/', `http://${request.headers.host}`);
   const pathname = url.pathname.replace(/^\/api/, '') || '/';
   if (request.method === 'OPTIONS') return send(response, 204, {});
   if (request.method === 'GET' && pathname === '/health') return send(response, 200, { ok: true, branchCount: stores.length, mode: 'mock-central-api' });
+  if (request.method === 'GET' && pathname === '/v1/events') {
+    const session = devices.get(url.searchParams.get('access_token') || '');
+    if (!session) return send(response, 401, { error: 'Phiên đăng nhập không hợp lệ.' });
+    response.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive', 'access-control-allow-origin': '*' });
+    response.write(': connected\n\n');
+    const clients = eventClients.get(session.branchId) || new Set(); clients.add(response); eventClients.set(session.branchId, clients);
+    request.on('close', () => clients.delete(response));
+    return;
+  }
 
   try {
     if (request.method === 'POST' && pathname === '/v1/auth/manager/login') {
@@ -153,7 +176,7 @@ createServer(async (request, response) => {
       if (!session) return send(response, 401, { error: 'Thiết bị chưa được ghép hoặc đã bị thu hồi.' });
       const body = await readJson(request);
       const serverTime = new Date().toISOString();
-      const data = storeData.get(session.branchId) || { kph: new Map(), history: new Map(), revision: 0 };
+      const data = storeData.get(session.branchId) || { kph: new Map(), history: new Map(), activity: [], revision: 0 };
       const changes = Array.isArray(body.changes) ? body.changes : [];
       const kphChanges = changes.filter((change) => change?.kind === 'kph');
       const permittedKph = kphChanges.map((change) => change.record).filter((record) => {
@@ -173,11 +196,17 @@ createServer(async (request, response) => {
         ...kphChanges.filter((change) => permittedKph.includes(change.record)).map((change) => change.id),
         ...changes.filter((change) => change?.kind === 'history' && permittedHistory.includes(change.record)).map((change) => change.id),
       ];
+      const activityEvents = [];
+      for (const change of kphChanges.filter((change) => permittedKph.includes(change.record))) {
+        const previous = data.kph.get(change.record.id);
+        activityEvents.push(activityFor({ ...change, previous }, session, change.record, serverTime));
+      }
+      if (activityEvents.length) data.activity = [...activityEvents, ...(data.activity || [])].slice(0, 100);
       const nextRevision = () => ++data.revision;
-      merge(data.kph, permittedKph, serverTime, nextRevision); merge(data.history, permittedHistory, serverTime, nextRevision); storeData.set(session.branchId, data); persist();
+      merge(data.kph, permittedKph, serverTime, nextRevision); merge(data.history, permittedHistory, serverTime, nextRevision); storeData.set(session.branchId, data); persist(); if (acceptedChangeIds.length) publishBranchChange(session.branchId);
       const cursorRevision = Number(body.cursor || 0) || 0;
       const changedSince = (record) => Number(record.serverRevision || 0) > cursorRevision;
-      const snapshot = { branchId: session.branchId, serverTime, cursor: String(data.revision), acceptedChangeIds, kphLogs: [...data.kph.values()].filter(changedSince), historyLogs: [...data.history.values()].filter(changedSince) };
+      const snapshot = { branchId: session.branchId, serverTime, cursor: String(data.revision), acceptedChangeIds, activityEvents: (data.activity || []).slice(0, 50), kphLogs: [...data.kph.values()].filter(changedSince), historyLogs: [...data.history.values()].filter(changedSince) };
       session.lastSyncedAt = serverTime;
       pruneAcknowledgedDeletions(session.branchId, data);
       return send(response, 200, snapshot);

@@ -23,20 +23,9 @@ export function updateNotificationStats() {
     
     const totalPendingKph = pendingTpcn + pendingTpts;
     const totalHistoryNotif = warningCount + dangerCount + expiredCount;
-    const totalBadgeCount = totalPendingKph + totalHistoryNotif;
-    
-    // 3. Update Notification Badge in header
-    const badge = document.querySelector('#btnNotification .notification-badge');
-    if (badge) {
-        badge.innerText = totalBadgeCount;
-        if (totalBadgeCount > 0) {
-            badge.style.display = 'flex';
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-    
-    // 4. Update Sidebar Statistics counts
+    // Header badge is Vue-owned: it only counts unread activity relevant to
+    // the current role, rather than all pending records/history warnings.
+    // Update Sidebar Statistics counts
     const valKphTpcn = document.querySelector('.val-kph-tpcn');
     const valKphTpts = document.querySelector('.val-kph-tpts');
     const valTracuuWarning = document.querySelector('.val-tracuu-warning');
