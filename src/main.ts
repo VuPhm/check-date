@@ -49,7 +49,7 @@ mountComponent(KphList, '#vue-kph-list-root');
 mountComponent(KphApprovalForm, '#kphApproveForm');
 mountComponent(KphCreateForm, '#kphForm');
 mountComponent(NotificationContent, '#notificationModalBody');
-mountComponent(SyncConfig, '#vue-sync-config-root');
+mountComponent(SyncConfig, window.matchMedia('(min-width: 1024px)').matches ? '#vue-sync-config-root' : '#vue-sync-config-mobile-root');
 mountComponent(FirstRunSetup, '#vue-first-run-root');
 
 const runtimeRoot = document.getElementById('vue-app-runtime');

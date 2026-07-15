@@ -72,7 +72,11 @@ export function getKphLogImages(log) {
 // Điều hướng Tab
 export function switchTab(tabId) {
     activeTab = tabId;
+    document.querySelector('.app-container')?.classList.remove('system-workspace-active');
+    document.querySelectorAll('[data-sidebar-tab], [data-sidebar-panel]').forEach(element => element.classList.remove('active'));
+    document.querySelectorAll('[data-sidebar-tab]').forEach(element => element.setAttribute('aria-selected', 'false'));
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll(`[data-workspace="${tabId}"]`).forEach(btn => btn.classList.add('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active-tab'));
 
     if (tabId === 'tracuu') {
@@ -275,25 +279,6 @@ export function updateCharCount(inputId, countId) {
     }
 }
 
-// Quản lý cấu hình cửa hàng
-export function saveStoreSettings() {
-    const cf = document.getElementById('kphCoopFood').value.trim();
-    const store = document.getElementById('kphStore').value.trim();
-    const cht = document.getElementById('kphCht') ? document.getElementById('kphCht').value.trim() : '';
-    localStorage.setItem('kph_coop_food', cf);
-    localStorage.setItem('kph_store', store);
-    localStorage.setItem('kph_cht', cht);
-    updateStoreSettingsLabels(cf, store, cht);
-
-    // Đồng bộ ngược lại sidebar
-    const sidebarCf = document.getElementById('sidebarCoopFood');
-    const sidebarStore = document.getElementById('sidebarStore');
-    const sidebarCht = document.getElementById('sidebarCht');
-    if (sidebarCf) sidebarCf.value = cf;
-    if (sidebarStore) sidebarStore.value = store;
-    if (sidebarCht) sidebarCht.value = cht;
-}
-
 export function saveNguoiPhatHien() {
     const name = document.getElementById('kphNguoiPhatHien').value.trim();
     localStorage.setItem('kph_nguoi_phat_hien', name);
@@ -301,19 +286,12 @@ export function saveNguoiPhatHien() {
 
 // Hàm tải thiết lập cửa hàng khi khởi động tab KPH hoặc app
 export function loadStoreSettings() {
-    const cf = localStorage.getItem('kph_coop_food') || '';
-    const store = localStorage.getItem('kph_store') || '';
+    const cf = localStorage.getItem('kph_coop_food') || '0001';
+    const store = localStorage.getItem('kph_store') || `Co.op Food ${cf}`;
     const cht = localStorage.getItem('kph_cht') || '';
     const name = localStorage.getItem('kph_nguoi_phat_hien') || '';
-
-    const kphCf = document.getElementById('kphCoopFood');
-    const kphStore = document.getElementById('kphStore');
-    const kphCht = document.getElementById('kphCht');
     const kphName = document.getElementById('kphNguoiPhatHien');
 
-    if (kphCf) kphCf.value = cf;
-    if (kphStore) kphStore.value = store;
-    if (kphCht) kphCht.value = cht;
     if (kphName) kphName.value = name;
 
     // Prefill sidebar inputs
@@ -324,7 +302,8 @@ export function loadStoreSettings() {
     if (sidebarStore) sidebarStore.value = store;
     if (sidebarCht) sidebarCht.value = cht;
 
-    updateStoreSettingsLabels(cf, store, cht);
+    localStorage.setItem('kph_coop_food', cf);
+    localStorage.setItem('kph_store', store);
 }
 
 // Lưu thiết lập cửa hàng từ Sidebar và đồng bộ ngược về tab KPH
@@ -341,16 +320,6 @@ export function saveSidebarSettings() {
     localStorage.setItem('kph_store', store);
     localStorage.setItem('kph_cht', cht);
 
-    // Đồng bộ về tab KPH
-    const kphCf = document.getElementById('kphCoopFood');
-    const kphStore = document.getElementById('kphStore');
-    const kphCht = document.getElementById('kphCht');
-
-    if (kphCf) kphCf.value = cf;
-    if (kphStore) kphStore.value = store;
-    if (kphCht) kphCht.value = cht;
-
-    updateStoreSettingsLabels(cf, store, cht);
 }
 
 function readImageFile(file) {
@@ -1465,8 +1434,8 @@ export async function exportKphToExcel() {
         worksheet.getCell('A1').font = { name: 'Times New Roman', bold: true, size: 9 };
         worksheet.getCell('A1').alignment = { horizontal: 'left', wrapText: false };
 
-        const coopFoodVal = document.getElementById('kphCoopFood').value.trim();
-        const storeVal = document.getElementById('kphStore').value.trim();
+        const coopFoodVal = document.getElementById('sidebarCoopFood')?.value.trim() || localStorage.getItem('kph_coop_food') || '0001';
+        const storeVal = document.getElementById('sidebarStore')?.value.trim() || localStorage.getItem('kph_store') || '';
 
         worksheet.getCell('A2').value = `CO.OP FOOD: ${coopFoodVal || '................................'}`;
         worksheet.getCell('A2').font = { name: 'Times New Roman', bold: true, size: 9 };
@@ -1748,29 +1717,6 @@ export function closeKphCreateModal() {
     if (modal) {
         modal.classList.remove('active');
     }
-}
-
-export function toggleStoreSettingsEdit(editMode) {
-    const compact = document.getElementById('kphStoreSettingsCompact');
-    const expanded = document.getElementById('kphStoreSettingsExpanded');
-    if (compact && expanded) {
-        if (editMode) {
-            compact.classList.add('hidden');
-            expanded.classList.remove('hidden');
-        } else {
-            compact.classList.remove('hidden');
-            expanded.classList.add('hidden');
-        }
-    }
-}
-
-export function updateStoreSettingsLabels(cf, store, cht) {
-    const lblCf = document.getElementById('lblCoopFood');
-    const lblStore = document.getElementById('lblStore');
-    const lblCht = document.getElementById('lblCht');
-    if (lblCf) lblCf.textContent = cf || 'Chưa thiết lập';
-    if (lblStore) lblStore.textContent = store || 'Chưa thiết lập';
-    if (lblCht) lblCht.textContent = cht || 'Chưa thiết lập';
 }
 
 export function openKphApproveModal(id) {

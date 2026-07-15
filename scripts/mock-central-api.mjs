@@ -150,7 +150,7 @@ createServer(async (request, response) => {
     if (request.method === 'POST' && pathname === '/v1/auth/manager/login') {
       const body = await readJson(request); const store = findStore(body.storeCode);
       if (!store || body.password !== store.password) return send(response, 401, { error: 'Mã cửa hàng hoặc mật khẩu không đúng.' });
-      return send(response, 200, { session: createSession(store, String(body.deviceName || 'Thiết bị CHT'), 'manager', { id: `manager:${store.id}`, displayName: `CHT ${store.code}` }) });
+      return send(response, 200, { session: createSession(store, String(body.deviceName || 'Thiết bị CHT'), 'manager', { id: `manager:${store.id}`, displayName: String(body.displayName || '').trim() || `CHT ${store.code}` }) });
     }
     if (request.method === 'POST' && pathname === '/v1/auth/employee/join') {
       const body = await readJson(request); const store = findStore(body.storeCode);

@@ -87,11 +87,3 @@ window.closeNotificationModal = closeNotificationModal;
 window.handleNotificationHistoryClick = handleNotificationHistoryClick;
 window.handleNotificationKphClick = handleNotificationKphClick;
 window.updateNotificationStats = updateNotificationStats;
-window.closeSidebar = () => {
-    const sidebar = document.getElementById('appSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    if (sidebar && overlay) {
-        sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-    }
-};

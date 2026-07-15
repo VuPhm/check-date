@@ -244,7 +244,7 @@ main.js (Entry Point)
   * Lọc tìm kiếm theo khoảng ngày phát hiện, lọc theo trạng thái duyệt (`toggleKphFilterChoDuyet`).
   * Sắp xếp danh sách phiếu KPH theo các cột thông tin (ngày, số lượng, trạng thái duyệt).
   * Modal tạo phiếu mới: `openKphCreateModal(type)`, `closeKphCreateModal()`.
-  * Quản lý cài đặt cửa hàng/người phát hiện: `saveStoreSettings()`, `loadStoreSettings()`, `saveSidebarSettings()`.
+  * Quản lý cài đặt cửa hàng/người phát hiện: `loadStoreSettings()`, `saveSidebarSettings()`.
   * Xuất báo cáo Excel (.xlsx) bằng `ExcelJS`, `Blob` và URL tải tạm của trình duyệt.
 
 ### Điểm cần lưu ý khi nâng cấp hệ thống (Dành cho AI Agent)

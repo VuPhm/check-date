@@ -56,7 +56,6 @@ import {
     toggleTinhTrangRadio,
     toggleBienPhapRadio,
     updateCharCount,
-    saveStoreSettings,
     saveNguoiPhatHien,
     handleKphImageUpload,
     clearKphImage,
@@ -77,7 +76,6 @@ import {
     initKphFlatpickrs,
     openKphCreateModal,
     closeKphCreateModal,
-    toggleStoreSettingsEdit,
     openKphApproveModal,
     closeKphApproveModal,
     openKphApproveNgayXuLyPicker,
@@ -665,8 +663,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.addEventListener('touchstart', stopPropagationHandler, { passive: true });
     });
 
-    // Fallback cho header compact khi cuộn trang (nếu trình duyệt không hỗ trợ scroll-driven animations)
-    if (!CSS.supports('(animation-timeline: scroll()) and (animation-range: 0% 100%)')) {
+    // Fallback cho header compact trên mobile khi cuộn trang (nếu trình duyệt không hỗ trợ scroll-driven animations)
+    if (window.matchMedia('(max-width: 1023px)').matches && !CSS.supports('(animation-timeline: scroll()) and (animation-range: 0% 100%)')) {
         const header = document.querySelector('.app-header');
         if (header) {
             window.addEventListener('scroll', () => {
@@ -868,33 +866,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             closeScanner();
             closeAppUpdateModal();
             closeInstallHelpModal();
-            document.getElementById('appSidebar')?.classList.remove('active');
-            document.getElementById('sidebarOverlay')?.classList.remove('active');
         }
     });
 
-    // 5. Khởi tạo Sidebar Cấu hình & Cá nhân
-    (function initSidebar() {
-        const sidebar = document.getElementById('appSidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        const btnOpen = document.getElementById('btnOpenSidebar');
-        const btnClose = document.getElementById('btnCloseSidebar');
-        
-        if (sidebar && overlay && btnOpen && btnClose) {
-            const openSidebar = () => {
-                sidebar.classList.add('active');
-                overlay.classList.add('active');
-            };
-            
-            const closeSidebar = () => {
-                sidebar.classList.remove('active');
-                overlay.classList.remove('active');
-            };
-            
-            btnOpen.addEventListener('click', openSidebar);
-            btnClose.addEventListener('click', closeSidebar);
-            overlay.addEventListener('click', closeSidebar);
-        }
+    // 5. Khởi tạo các tab tích hợp trên sidebar trái
+    (function initIntegratedSidebar() {
+        document.querySelectorAll('[data-sidebar-tab]').forEach((tab) => {
+            tab.addEventListener('click', () => {
+                const target = tab.dataset.sidebarTab;
+                document.querySelectorAll('.tab-btn').forEach((item) => item.classList.remove('active'));
+                document.querySelectorAll('[data-sidebar-tab]').forEach((item) => {
+                    item.classList.toggle('active', item === tab);
+                    item.setAttribute('aria-selected', String(item === tab));
+                });
+                document.querySelectorAll('[data-sidebar-panel]').forEach((panel) => {
+                    panel.classList.toggle('active', panel.dataset.sidebarPanel === target);
+                });
+                document.querySelector('.app-container')?.classList.add('system-workspace-active');
+            });
+        });
         
         // Tải cấu hình khi khởi động app
         loadStoreSettings();
@@ -922,7 +912,6 @@ window.refreshCalculationForm = refreshCalculationForm;
 window.clearAllHistory = clearAllHistory;
 window.setFilter = setFilter;
 window.togglePrioritySort = togglePrioritySort;
-window.saveStoreSettings = saveStoreSettings;
 window.openKphNgayPicker = openKphNgayPicker;
 window.openFilterTuNgayPicker = openFilterTuNgayPicker;
 window.openFilterDenNgayPicker = openFilterDenNgayPicker;
@@ -961,7 +950,6 @@ window.closeAppUpdateModal = closeAppUpdateModal;
 window.closeInstallHelpModal = closeInstallHelpModal;
 window.openKphCreateModal = openKphCreateModal;
 window.closeKphCreateModal = closeKphCreateModal;
-window.toggleStoreSettingsEdit = toggleStoreSettingsEdit;
 window.closeResultModal = closeResultModal;
 window.openResultModal = openResultModal;
 

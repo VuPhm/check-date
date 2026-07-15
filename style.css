@@ -502,6 +502,7 @@ button.notif-item {
         transition: padding 0.25s ease;
     }
 
+    @media (max-width: 1023px) {
     .app-header.app-header--compact {
         padding-top: 6px;
         padding-bottom: 6px;
@@ -519,7 +520,9 @@ button.notif-item {
     .app-header.app-header--compact .apple-chrono-line {
         font-size: 11px;
     }
+    }
 
+    @media (max-width: 1023px) {
     @supports ((animation-timeline: scroll()) and (animation-range: 0% 100%)) {
         @keyframes shrink-header {
             to {
@@ -570,6 +573,7 @@ button.notif-item {
             animation-timeline: scroll(block root);
             animation-range: 0px 80px;
         }
+    }
     }
 
     .header-inner {
@@ -780,7 +784,7 @@ button.notif-item {
         padding: 0 14px;
         display: inline-flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 6px;
         white-space: nowrap;
     }
@@ -892,7 +896,7 @@ button.notif-item {
         cursor: pointer;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         color: var(--brand-primary);
         outline: none;
         transition: opacity 0.2s;
@@ -5462,3 +5466,173 @@ button.notif-item {
 .first-run-card h2 { margin: 0 0 10px; font-size: 22px; }
 .first-run-card > p { color: var(--text-secondary); line-height: 1.5; margin: 0 0 16px; }
 .first-run-card .sync-config-field { margin: 12px 0; }
+
+/* ====================================================================
+   DESKTOP NAVIGATION & PROFILE HEADER
+   ==================================================================== */
+.desktop-nav-sidebar { display: none; }
+
+.profile-summary {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 8px 4px 4px;
+    border: 0;
+    border-radius: 12px;
+    color: #fff;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color .2s ease, transform .1s ease;
+}
+
+.profile-summary:hover { background: rgba(255,255,255,.12); }
+.profile-summary:active { transform: scale(.98); }
+.profile-summary__avatar {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--brand-primary);
+    font-size: 14px;
+    font-weight: 800;
+}
+.profile-summary__details { display: grid; gap: 1px; min-width: 0; }
+.profile-summary__details strong { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 1.25; }
+.profile-summary__details small { color: rgba(255,255,255,.75); font-size: 10px; font-weight: 600; line-height: 1.25; }
+.mobile-sidebar-profile { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid rgba(0,66,33,.1); color: var(--text-main); }
+.mobile-sidebar-profile > div { display: grid; gap: 2px; min-width: 0; }
+.mobile-sidebar-profile strong { font-size: 14px; }
+.mobile-sidebar-profile small { color: var(--text-sub); font-size: 11px; }
+
+@media (min-width: 1024px) {
+    :root { --desktop-sidebar-width: 244px; --desktop-sidebar-collapsed-width: 72px; --desktop-header-height: 64px; }
+
+    .desktop-nav-sidebar {
+        position: fixed;
+        z-index: 1201;
+        top: calc(var(--desktop-header-height) + 12px);
+        bottom: 16px;
+        left: 16px;
+        display: flex;
+        flex-direction: column;
+        width: var(--desktop-sidebar-width);
+        background: var(--surface);
+        border: 1px solid rgba(0,66,33,.1);
+        border-radius: 18px;
+        box-shadow: 8px 0 24px rgba(0,53,28,.08);
+        transition: width .24s cubic-bezier(.25, 1, .5, 1);
+    }
+    .desktop-nav-sidebar__brand {
+        display: flex;
+        align-items: center;
+        height: 48px;
+        padding: 8px 14px;
+    }
+    .desktop-sidebar-collapse { display: flex; align-items: center; width: 100%; height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: var(--text-sub); cursor: pointer; font-size: 12px; font-weight: 700; transition: color .2s ease, width .24s ease; }
+    .desktop-sidebar-collapse:hover { color: var(--brand-primary); }
+    .desktop-sidebar-collapse svg { width: 19px; height: 19px; flex: none; transition: transform .24s ease; }
+    .desktop-sidebar-collapse span { margin-left: 8px; white-space: nowrap; }
+    .desktop-nav-sidebar__content { display: flex; flex: 1; min-height: 0; flex-direction: column; padding: 20px 14px; overflow-y: auto; }
+    .desktop-primary-nav { display: grid; gap: 5px; padding-top: 4px; }
+    .desktop-nav-tab {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 44px;
+        min-height: 0;
+        gap: 12px;
+        padding: 10px 12px;
+        border: 0;
+        border-radius: 10px;
+        color: var(--text-sub);
+        font-size: 13px;
+        font-weight: 700;
+        text-align: left;
+        cursor: pointer;
+        transition: background .2s ease, color .2s ease;
+    }
+    .desktop-nav-tab svg { width: 19px; height: 19px; flex: none; }
+    .desktop-nav-tab:hover { background: rgba(0,102,51,.07); color: var(--brand-primary); }
+    .desktop-nav-tab.active { background: var(--brand-primary); color: #fff; box-shadow: 0 5px 12px rgba(0,102,51,.2); }
+    .desktop-nav-tab[data-first-system="true"] { margin-top: 28px; }
+    .desktop-nav-tab[data-first-system="true"]::after { display: block; content: ''; position: absolute; top: -14px; right: 8px; left: 8px; height: 2px; border-radius: 999px; background: rgba(0,102,51,.16); }
+    .desktop-panel-button { width: 100%; min-height: 34px; margin-top: 12px; padding: 7px 9px; border: 0; border-radius: 8px; background: var(--brand-primary); color: #fff; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .desktop-nav-sidebar__footer { margin-top: auto; padding-top: 18px; }
+    .desktop-install-card { padding: 12px; border: 1px solid rgba(0,102,51,.14); border-radius: 10px; background: rgba(0,102,51,.045); color: var(--text-main); }
+    .desktop-install-card .app-version-row { margin-bottom: 8px; }
+    .desktop-install-card .app-version-row strong { color: var(--text-main); }
+    .desktop-install-card .app-install-status { margin: 0; color: var(--text-sub); font-size: 11px; }
+    .desktop-install-card .desktop-panel-button { display: flex; align-items: center; justify-content: center; gap: 7px; background: var(--brand-primary); color: #fff; transition: width .24s ease, padding .24s ease; }
+    .desktop-install-card .desktop-panel-button svg { width: 16px; height: 16px; flex: none; }
+    .desktop-system-workspace { display: none; width: 100%; }
+    .app-container.system-workspace-active .workspace { display: none; }
+    .app-container.system-workspace-active .desktop-system-workspace { display: block; }
+    .desktop-workspace-panel { display: none; max-width: 1440px; margin: 0 auto; padding: 20px 24px; border: 1px solid rgba(0,102,51,.12); border-radius: var(--radius-box); background: var(--surface); box-shadow: var(--shadow); }
+    .desktop-workspace-panel.active { display: block; }
+    .desktop-workspace-panel__intro { margin-bottom: 18px; }
+    .desktop-workspace-panel__intro p { margin: 0 0 3px; color: var(--brand-primary); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .desktop-workspace-panel__intro h2 { font-size: 20px; }
+    .desktop-workspace-panel__body { display: block; }
+    .desktop-workspace-panel__body .sync-config-section { margin: 0; padding: 0; border-top: 0; }
+    .store-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+    .sync-config-section__title { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(0,66,33,.1); }
+    .desktop-workspace-panel__body--stats { grid-template-columns: repeat(2, minmax(180px, 300px)); }
+    .desktop-workspace-panel__body--stats .sidebar-stat-group { padding: 14px; border-radius: 10px; background: rgba(0,102,51,.045); }
+
+    .app-header {
+        position: sticky;
+        margin-left: 0;
+        width: 100%;
+        min-height: var(--desktop-header-height);
+        padding: 10px 28px;
+        background: var(--brand-primary);
+        border-bottom-color: rgba(255,255,255,.14);
+        box-shadow: 0 3px 16px rgba(0,66,33,.18);
+    }
+    .header-inner { display: grid; max-width: none; grid-template-columns: 1fr auto; align-items: center; gap: 18px; }
+    .brand-header-apple { display: flex; }
+    .brand-apple-logo { height: 38px; }
+    .apple-tab-bar { display: none; }
+    .header-right { width: auto; gap: 12px; }
+    .header-right .apple-chrono-line { display: flex; margin-right: 10px; }
+    .header-action-btn { width: 38px; height: 38px; background: rgba(255,255,255,.1); }
+    .header-action-btn:hover { background: rgba(255,255,255,.18); }
+    .notification-badge { border-color: var(--brand-primary); }
+    .mobile-sidebar-overlay,
+    .mobile-app-sidebar { display: none; }
+    .app-container { max-width: 1440px; width: calc(100% - var(--desktop-sidebar-width) - 32px); margin-left: calc(var(--desktop-sidebar-width) + 32px); padding: 28px; transition: width .24s ease, margin-left .24s ease; }
+    .workspace { max-width: none; }
+
+    .desktop-nav-sidebar.is-collapsed { width: var(--desktop-sidebar-collapsed-width); }
+    .desktop-nav-sidebar.is-collapsed .desktop-sidebar-collapse svg { transform: rotate(180deg); }
+    .desktop-nav-sidebar.is-collapsed .desktop-sidebar-collapse { justify-content: center; padding-right: 0; padding-left: 0; }
+    .desktop-nav-sidebar.is-collapsed .desktop-sidebar-collapse span { display: none; }
+    .desktop-nav-sidebar.is-collapsed .desktop-nav-tab { justify-content: center; gap: 0; padding-right: 10px; padding-left: 10px; }
+    .desktop-nav-sidebar.is-collapsed .desktop-nav-tab span { display: none; }
+    .desktop-nav-sidebar.is-collapsed .desktop-nav-tab[data-first-system="true"]::after { display: block; content: ''; position: absolute; top: -14px; right: 9px; left: 9px; height: 2px; border-radius: 999px; background: rgba(0,102,51,.22); }
+    .desktop-nav-sidebar.is-collapsed .desktop-primary-nav { gap: 5px; }
+    .desktop-nav-sidebar.is-collapsed .desktop-install-card { padding: 0; border: 0; background: transparent; }
+    .desktop-nav-sidebar.is-collapsed .desktop-install-card .app-version-row,
+    .desktop-nav-sidebar.is-collapsed .desktop-install-card .app-install-status,
+    .desktop-nav-sidebar.is-collapsed .desktop-install-card .desktop-panel-button span { display: none; }
+    .desktop-nav-sidebar.is-collapsed .desktop-install-card .desktop-panel-button { width: 44px; min-height: 44px; margin: 0 auto; padding: 0; border-radius: 10px; }
+    .desktop-nav-sidebar.is-collapsed:hover { width: var(--desktop-sidebar-width); }
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-sidebar-collapse { justify-content: flex-start; padding-right: 12px; padding-left: 12px; }
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-nav-tab { justify-content: flex-start; gap: 12px; padding-right: 12px; padding-left: 12px; }
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-nav-tab span,
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-sidebar-collapse span { display: inline; }
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-install-card { display: block; padding: 12px; border: 1px solid rgba(0,102,51,.14); background: rgba(0,102,51,.045); }
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-install-card .app-version-row,
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-install-card .app-install-status { display: flex; }
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-install-card .desktop-panel-button { width: 100%; min-height: 34px; margin-top: 12px; padding: 7px 9px; border-radius: 8px; }
+    .desktop-nav-sidebar.is-collapsed:hover .desktop-install-card .desktop-panel-button span { display: inline; }
+    body.desktop-sidebar-collapsed .app-container { width: calc(100% - var(--desktop-sidebar-collapsed-width) - 32px); margin-left: calc(var(--desktop-sidebar-collapsed-width) + 32px); }
+}
+
+@media (max-width: 1023px) {
+    .profile-summary { padding: 0; width: 36px; height: 36px; border-radius: 50%; justify-content: center; }
+    .profile-summary__details { display: none; }
+}

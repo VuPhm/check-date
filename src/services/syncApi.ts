@@ -90,7 +90,7 @@ export async function checkSyncServer(endpoint: ServerEndpoint): Promise<{ branc
 }
 
 export async function loginManager(
-  endpoint: ServerEndpoint, input: { storeCode: string; password: string; deviceName: string },
+  endpoint: ServerEndpoint, input: { storeCode: string; password: string; displayName?: string; deviceName: string },
 ): Promise<DeviceSession> {
   const response = await requestJson<{ session: DeviceSession }>(apiUrl(endpoint, '/v1/auth/manager/login'), {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input),
