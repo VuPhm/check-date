@@ -14,6 +14,19 @@ function switchWorkspace(tab: 'tracuu' | 'kph') {
   handler?.(tab);
 }
 
+function openSettingsWorkspace() {
+  document.querySelectorAll('.tab-btn').forEach((button) => button.classList.remove('active'));
+  document.querySelectorAll('[data-workspace="settings"]').forEach((button) => button.classList.add('active'));
+  document.querySelectorAll('.tab-content').forEach((content) => content.classList.remove('active-tab'));
+  document.querySelectorAll('[data-sidebar-panel]').forEach((panel) => panel.classList.toggle('active', panel.getAttribute('data-sidebar-panel') === 'settings'));
+  document.querySelectorAll('[data-sidebar-tab]').forEach((tab) => {
+    const isActive = tab.getAttribute('data-sidebar-tab') === 'settings';
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+  document.querySelector('.app-container')?.classList.add('system-workspace-active');
+}
+
 function openNotifications() {
   const handler = (window as typeof window & { openNotificationModal?: () => void }).openNotificationModal;
   handler?.();
@@ -24,15 +37,6 @@ function toggleDesktopSidebar() {
   document.body.classList.toggle('desktop-sidebar-collapsed', isSidebarCollapsed.value);
 }
 
-const isMobileSidebarOpen = ref(false);
-
-function openMobileSidebar() {
-  isMobileSidebarOpen.value = true;
-}
-
-function closeMobileSidebar() {
-  isMobileSidebarOpen.value = false;
-}
 </script>
 
 <template>
@@ -92,21 +96,6 @@ function closeMobileSidebar() {
     </section>
   </Teleport>
 
-  <div class="sidebar-overlay mobile-sidebar-overlay" :class="{ active: isMobileSidebarOpen }" aria-hidden="true" @click="closeMobileSidebar"></div>
-  <aside id="mobileSidebar" class="app-sidebar mobile-app-sidebar" :class="{ active: isMobileSidebarOpen }" aria-label="Tài khoản và cấu hình" :aria-hidden="!isMobileSidebarOpen">
-    <div class="sidebar-header">
-      <h2 class="sidebar-title">Tài khoản & cấu hình</h2>
-      <button class="sidebar-close-btn" type="button" aria-label="Đóng sidebar" @click="closeMobileSidebar">×</button>
-    </div>
-    <div class="sidebar-content">
-      <div class="mobile-sidebar-profile">
-        <span class="profile-summary__avatar" aria-hidden="true">{{ profileName.charAt(0).toUpperCase() }}</span>
-        <div><strong>{{ profileName }}</strong><small>{{ profileRole }} / {{ profileCode }}</small></div>
-      </div>
-      <div id="vue-sync-config-mobile-root"></div>
-    </div>
-  </aside>
-
   <div class="header-inner">
     <div class="brand-header-apple">
       <img class="brand-apple-logo" :src="logoUrl" alt="Co.op Food Logo">
@@ -147,6 +136,10 @@ function closeMobileSidebar() {
         </svg>
         <span>Hàng KPH</span>
       </button>
+      <button class="tab-btn" data-workspace="settings" type="button" aria-label="Cấu hình" @click="openSettingsWorkspace">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" /><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none" /><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none" /></svg>
+        <span>Cấu hình</span>
+      </button>
     </nav>
 
     <div class="header-right">
@@ -168,13 +161,13 @@ function closeMobileSidebar() {
         </svg>
         <span class="notification-badge" :style="{ display: unreadCount ? 'flex' : 'none' }">{{ unreadCount }}</span>
       </button>
-      <button class="profile-summary" type="button" aria-label="Mở tài khoản và cấu hình" :aria-expanded="isMobileSidebarOpen" aria-controls="mobileSidebar" @click="openMobileSidebar">
+      <div class="profile-summary" aria-label="Thông tin tài khoản">
         <span class="profile-summary__avatar" aria-hidden="true">{{ profileName.charAt(0).toUpperCase() }}</span>
         <span class="profile-summary__details">
           <strong>{{ profileName }}</strong>
           <small>{{ profileRole }} / {{ profileCode }}</small>
         </span>
-      </button>
+      </div>
     </div>
   </div>
 </template>
