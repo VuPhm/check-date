@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { processReturnBusinessLogic } from '../../domain/business';
+import { MS_PER_DAY, parseLocalDate } from '../../domain/date';
+import { isAnonymousLookupSupersededByBarcode, validateLookupCalculation, type LookupHistoryIdentity } from '../../domain/lookup';
+import { formatRemainingText } from '../../../js/helpers.js';
+import { historyData, removeHistoryItem, saveHistoryToStorage, setSelectedHistoryId, updateHistoryUI } from '../../../js/history.js';
+import { drawTimelineDiagram } from '../../../js/timeline.js';
 
 type LegacyHandler = (...args: unknown[]) => unknown;
 const barcodeFormats = [
@@ -20,6 +26,10 @@ const form = reactive({
   hsdDays: '',
   hsdMonths: '',
 });
+const isForwardMode = ref(true);
+const resultClass = ref('calc-board__result-wrapper');
+const resultMarkup = ref('');
+const resultVisible = ref(false);
 const activeFormatsText = computed(() => barcodeFormats
   .filter((format) => selectedBarcodeFormats.value.includes(format.id))
   .map((format) => format.label)
@@ -48,6 +58,7 @@ function syncFormAfterLegacyInput() {
 }
 
 function handleModeChange(event: Event) {
+  isForwardMode.value = (event.currentTarget as HTMLInputElement).checked;
   invoke('handleToggleMode', event.currentTarget as HTMLInputElement);
 }
 
@@ -61,15 +72,145 @@ function toggleBarcodeFormat(id: string) {
   }
 }
 
+function setCalcFocusTheme(theme: string) {
+  const focusZone = document.querySelector('.calc-focus-zone');
+  if (focusZone instanceof HTMLElement) focusZone.dataset.theme = theme;
+}
+
+function showResultModal(detail: unknown) {
+  window.dispatchEvent(new CustomEvent('coop:result-modal-open', { detail }));
+}
+
+function userFriendlyError(error: Error) {
+  if (error.message.includes('Vui lòng nhập Ngày sản xuất')) return '⚠️ <b>Thiếu Ngày sản xuất:</b> Vui lòng điền ngày in trên bao bì (hoặc bật lịch chọn) trước khi tra cứu.';
+  if (error.message.includes('Ngày sản xuất không đúng định dạng')) return '⚠️ <b>Sai Ngày sản xuất:</b> Định dạng chuẩn là Ngày/Tháng/Năm (Ví dụ: 10/06/2026).';
+  if (error.message.includes('Vui lòng nhập Hạn sử dụng')) return '⚠️ <b>Thiếu Hạn sử dụng:</b> Hãy nhập 1 trong 3 ô: Chọn Ngày cụ thể, điền Số ngày, hoặc điền Số tháng.';
+  if (error.message.includes('Hạn sử dụng không đúng định dạng')) return '⚠️ <b>Sai định dạng Ngày HSD:</b> Vui lòng kiểm tra lại ô Ngày HSD (Ví dụ: 25/06/2026).';
+  if (error.message.includes('Hạn sử dụng phải lớn hơn')) return '⚠️ <b>Lỗi biên ngày:</b> Hạn sử dụng bắt buộc phải nằm sau Ngày sản xuất. Vui lòng kiểm tra lại năm hoặc tháng.';
+  if (error.message.includes('chưa thể tính ngược')) return '⚠️ <b>Thiếu dữ liệu tra ngược:</b> Hãy nhập Ngày HSD kèm theo Số ngày (hoặc Số tháng) để hệ thống tìm ra Ngày sản xuất.';
+  return error.message;
+}
+
+function executeCalculation(saveToHistory = true) {
+  syncFormFromDom();
+  try {
+    validateLookupCalculation({ mode: isForwardMode.value ? 'forward' : 'backward', ...form });
+    const output = processReturnBusinessLogic(form.nsx, form.hsdDate);
+    drawTimelineDiagram(form.nsx, form.hsdDate, output.dateStr);
+    resultClass.value = `calc-board__result-wrapper ${output.alert.class}`;
+
+    const mainLabel = output.isExpiredProduct || output.isShortProduct ? 'Hạn sử dụng' : 'Ngày lùi hàng';
+    const mainText = `${mainLabel}: <strong>${output.dateStr}</strong>`;
+    const subLines = output.isExpiredProduct
+      ? [`[${output.alert.label}]`]
+      : output.isShortProduct
+        ? [`[${output.alert.label}]`, `Sử dụng đến hết ngày ${output.dateStr}`]
+        : [`[${output.alert.label}]`, `HSD còn ${output.daysRemaining} ngày`];
+    resultMarkup.value = `${mainText}<br><small>${subLines.join('<br>')}</small>`;
+    resultVisible.value = true;
+
+    const alertType = output.isShortProduct ? 'other' : output.alert.type;
+    setCalcFocusTheme(alertType);
+    const quantity = form.quantity === '' || Number.isNaN(Number(form.quantity)) ? '' : Number(form.quantity);
+    const quantityDetail = quantity === '' ? 'Chưa nhập' : `${quantity} ${form.dvt}`;
+    const remainingDetail = output.isExpiredProduct ? 'Đã hết HSD' : formatRemainingText(output.daysRemaining);
+    showResultModal({
+      theme: alertType,
+      title: 'Kết quả tra cứu',
+      mainLabel,
+      mainValue: output.dateStr,
+      subLines,
+      kphType: output.isShortProduct ? 'TPTS' : 'TPCN',
+      details: [
+        { label: 'Tên hàng', value: form.tenHang || 'Chưa nhập' }, { label: 'Barcode', value: form.barcode || 'Tra cứu không mã' },
+        { label: 'Số lượng', value: quantityDetail }, { label: 'NSX', value: form.nsx },
+        { label: 'HSD', value: output.formattedHsd }, { label: mainLabel, value: output.dateStr, highlight: true },
+        { label: 'Trạng thái', value: `${output.alert.label} · ${remainingDetail}` },
+      ],
+    });
+
+    if (!saveToHistory) return;
+    const historyPayload = {
+      nsx: form.nsx,
+      rawHsdDate: form.hsdDate,
+      rawHsdDays: form.hsdDays || Math.round((parseLocalDate(form.hsdDate).getTime() - parseLocalDate(form.nsx).getTime()) / MS_PER_DAY) + 1,
+      formattedHsd: output.formattedHsd,
+      result: output.dateStr,
+      daysRemaining: output.daysRemaining,
+      alertClass: output.alert.class,
+      alertLabel: output.alert.label,
+      alertType,
+      alertWeight: output.alert.weight,
+      isShortProduct: output.isShortProduct,
+      isExpiredProduct: output.isExpiredProduct,
+      barcode: form.barcode,
+      tenHang: form.tenHang,
+      quantity,
+      dvt: form.dvt,
+      checkedAt: new Date().toISOString(),
+    };
+    // A later barcode identifies the otherwise anonymous lookup. Do not remove
+    // other barcode lookups: those can legitimately be different products.
+    historyData
+      .filter((item: Record<string, unknown>) => isAnonymousLookupSupersededByBarcode(item as unknown as LookupHistoryIdentity, historyPayload))
+      .forEach((item: Record<string, unknown>) => removeHistoryItem(item.id as string));
+    const existing = historyData.find((item: Record<string, unknown>) => item.nsx === historyPayload.nsx
+      && item.rawHsdDate === historyPayload.rawHsdDate && String(item.rawHsdDays) === String(historyPayload.rawHsdDays)
+      && item.formattedHsd === historyPayload.formattedHsd && item.barcode === historyPayload.barcode
+      && item.tenHang === historyPayload.tenHang && String(item.quantity ?? '') === String(historyPayload.quantity ?? '') && item.dvt === historyPayload.dvt);
+    if (existing) {
+      setSelectedHistoryId(existing.id);
+    } else {
+      const item = { id: `item_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`, ...historyPayload };
+      historyData.unshift(item);
+      void saveHistoryToStorage(item);
+      setSelectedHistoryId(item.id);
+    }
+    updateHistoryUI();
+  } catch (reason) {
+    const error = reason instanceof Error ? reason : new Error('Không thể tra cứu.');
+    const message = userFriendlyError(error);
+    setCalcFocusTheme('danger');
+    resultClass.value = 'calc-board__result-wrapper state-danger';
+    resultMarkup.value = `<div style="line-height: 1.6; font-size: 13px; color: #e20514; font-weight: 600;">${message}</div>`;
+    resultVisible.value = true;
+    const board = document.getElementById('diagramBoard');
+    if (board instanceof HTMLElement) { delete board.dataset.ready; board.style.display = 'none'; }
+    const container = document.getElementById('svgContainer');
+    if (container) container.innerHTML = '';
+    showResultModal({ theme: 'danger', title: 'Lỗi tra cứu', mainLabel: 'Thông tin chưa đúng', subLines: [message.replace(/<[^>]+>/g, '').replace('⚠️ ', '')] });
+  }
+}
+
+function handleCalculationRequest(event: Event) {
+  const detail = (event as CustomEvent<{ saveToHistory?: boolean }>).detail;
+  executeCalculation(detail?.saveToHistory ?? true);
+}
+
+function refreshCalculationForm() {
+  Object.assign(form, { tenHang: '', barcode: '', quantity: '', dvt: 'EA', nsx: '', hsdDate: '', hsdDays: '', hsdMonths: '' });
+  resultClass.value = 'calc-board__result-wrapper';
+  resultMarkup.value = '';
+  resultVisible.value = false;
+  setCalcFocusTheme('safe');
+  invoke('refreshCalculationForm');
+}
+
 onMounted(() => {
   syncFormFromDom();
+  const toggle = document.getElementById('calcModeToggle') as HTMLInputElement | null;
+  isForwardMode.value = toggle?.checked ?? true;
+  document.getElementById('vue-lookup-root')?.setAttribute('data-vue-ready', 'true');
   window.addEventListener('coop:lookup-loaded', syncFormFromDom);
   window.addEventListener('coop:lookup-dom-changed', syncFormFromDom);
+  window.addEventListener('coop:lookup-execute', handleCalculationRequest);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('coop:lookup-loaded', syncFormFromDom);
   window.removeEventListener('coop:lookup-dom-changed', syncFormFromDom);
+  window.removeEventListener('coop:lookup-execute', handleCalculationRequest);
+  document.getElementById('vue-lookup-root')?.removeAttribute('data-vue-ready');
 });
 </script>
 
@@ -195,14 +336,14 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="calc-focus-zone__actions">
-        <button id="btnSubmit" class="btn-action" type="button" @click="invoke('executeCalculation')">
+        <button id="btnSubmit" class="btn-action" type="button" @click="executeCalculation()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="6" />
             <path d="m20 20-4.2-4.2" />
           </svg>
           Tra cứu
         </button>
-        <button id="btnRefreshCalc" class="btn-secondary btn-refresh-calc" type="button" @click="invoke('refreshCalculationForm')">
+        <button id="btnRefreshCalc" class="btn-secondary btn-refresh-calc" type="button" @click="refreshCalculationForm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16" />
             <path d="M3 12a9 9 0 0 1 15.5-6.2L21 8" />
@@ -214,8 +355,8 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <div id="resultWrapper" class="calc-board__result-wrapper">
-      <div id="resultText" class="calc-board__result-text" />
+    <div id="resultWrapper" :class="resultClass">
+      <div id="resultText" class="calc-board__result-text" :class="{ 'calc-board__result-text--visible': resultVisible }" v-html="resultMarkup" />
     </div>
   </main>
 

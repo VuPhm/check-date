@@ -26,7 +26,7 @@ import {
     processReturnBusinessLogic
 } from './business.js';
 
-import { syncLookupDates } from '../src/domain/lookup.ts';
+import { isAnonymousLookupSupersededByBarcode, syncLookupDates } from '../src/domain/lookup.ts';
 
 import {
     drawTimelineDiagram
@@ -250,6 +250,10 @@ export function closeResultModal() {
 }
 
 export function executeCalculation(saveToHistory = true) {
+    if (document.getElementById('vue-lookup-root')?.dataset.vueReady === 'true') {
+        window.dispatchEvent(new CustomEvent('coop:lookup-execute', { detail: { saveToHistory } }));
+        return;
+    }
     const nsxVal = document.getElementById('nsx').value.trim();
     const hsdDateVal = document.getElementById('hsdDate').value.trim();
     const hsdDaysVal = document.getElementById('hsdDays').value.trim();
@@ -360,6 +364,11 @@ export function executeCalculation(saveToHistory = true) {
             };
 
             if (saveToHistory) {
+                // A later barcode identifies the temporary anonymous lookup;
+                // keep any records that already have their own barcode.
+                historyData
+                    .filter(item => isAnonymousLookupSupersededByBarcode(item, historyPayload))
+                    .forEach(item => removeHistoryItem(item.id));
                 // History is immutable: an identical lookup points to the old record,
                 // while any changed linked field creates a genuinely new record.
                 const existingItem = historyData.find(item =>

@@ -1615,11 +1615,11 @@ button.notif-item {
         color: #2b4539;
     }
 
-    .result-theme-safe #btnResultModalCreateKph {
+    .result-theme-safe .result-modal-action {
         background-color: var(--brand-primary) !important;
         color: white !important;
     }
-    .result-theme-safe #btnResultModalCreateKph:hover {
+    .result-theme-safe .result-modal-action:hover {
         background-color: #005229 !important;
     }
 
@@ -1640,11 +1640,11 @@ button.notif-item {
         color: #614113;
     }
 
-    .result-theme-warning #btnResultModalCreateKph {
+    .result-theme-warning .result-modal-action {
         background-color: var(--brand-accent-orange) !important;
         color: white !important;
     }
-    .result-theme-warning #btnResultModalCreateKph:hover {
+    .result-theme-warning .result-modal-action:hover {
         background-color: #d17e00 !important;
     }
 
@@ -1665,11 +1665,11 @@ button.notif-item {
         color: #5c181c;
     }
 
-    .result-theme-danger #btnResultModalCreateKph {
+    .result-theme-danger .result-modal-action {
         background-color: var(--brand-accent-red) !important;
         color: white !important;
     }
-    .result-theme-danger #btnResultModalCreateKph:hover {
+    .result-theme-danger .result-modal-action:hover {
         background-color: #bd0410 !important;
     }
 
@@ -1690,11 +1690,11 @@ button.notif-item {
         color: #4a544a;
     }
 
-    .result-theme-other #btnResultModalCreateKph {
+    .result-theme-other .result-modal-action {
         background-color: #667366 !important;
         color: white !important;
     }
-    .result-theme-other #btnResultModalCreateKph:hover {
+    .result-theme-other .result-modal-action:hover {
         background-color: #4f5a4f !important;
     }
 
@@ -1715,13 +1715,20 @@ button.notif-item {
         color: #555555;
     }
 
-    .result-theme-expired #btnResultModalCreateKph {
+    .result-theme-expired .result-modal-action {
         background-color: #555555 !important;
         color: white !important;
     }
-    .result-theme-expired #btnResultModalCreateKph:hover {
+    .result-theme-expired .result-modal-action:hover {
         background-color: #3e3e3e !important;
     }
+
+    .result-theme-safe .result-modal-dismiss { color: var(--brand-primary); background: rgba(0, 102, 51, .10); border: 1px solid rgba(0, 102, 51, .24); }
+    .result-theme-warning .result-modal-dismiss { color: var(--brand-accent-orange); background: rgba(242, 146, 0, .12); border: 1px solid rgba(242, 146, 0, .28); }
+    .result-theme-danger .result-modal-dismiss { color: var(--brand-accent-red); background: rgba(226, 5, 20, .10); border: 1px solid rgba(226, 5, 20, .24); }
+    .result-theme-other .result-modal-dismiss { color: #4a544a; background: rgba(102, 115, 102, .12); border: 1px solid rgba(102, 115, 102, .28); }
+    .result-theme-expired .result-modal-dismiss { color: #555; background: rgba(85, 85, 85, .10); border: 1px solid rgba(85, 85, 85, .25); }
+    .result-modal-dismiss:hover { filter: brightness(.94); }
 
     /* --- Component: Barcode Camera Scanner --- */
     .scanner-container {
@@ -5038,10 +5045,8 @@ button.notif-item {
 .btn-delete-selected svg { width: 14px; height: 14px; margin-right: 5px; }
 
 .image-modal { z-index: 10000; }
-.image-modal__content { position: relative; max-width: 90%; padding: 34px 0 0; background: transparent; box-shadow: none; border: none; text-align: center; }
-.image-modal__image { max-width: 100%; max-height: 80vh; width: auto; height: auto; object-fit: contain; border-radius: var(--radius-item); border: 2px solid rgba(255, 255, 255, 0.2); }
-.image-modal__close { position: absolute; top: 0; right: -2px; z-index: 1; display: grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 1px solid rgba(255, 255, 255, .45); border-radius: 50%; background: rgba(0, 0, 0, .65); color: white; font: 28px/1 Arial, sans-serif; cursor: pointer; }
-.image-modal__close:hover { background: rgba(190, 20, 20, .88); }
+.image-modal__content { max-width: 90%; padding: 0; background: transparent; box-shadow: none; border: none; text-align: center; }
+.image-modal__image { max-width: 100%; max-height: 80vh; width: auto; height: auto; object-fit: contain; border-radius: var(--radius-item); }
 
 /* Clear-filter control has its own stable layout: desktop shows its label,
    while the compact mobile toolbar keeps a touch-sized icon-only button. */

@@ -10,10 +10,59 @@ export interface LookupDateFields {
   hsdMonths: string;
 }
 
+export interface LookupCalculationInput extends LookupDateFields {
+  mode: LookupMode;
+}
+
+export interface LookupHistoryIdentity {
+  nsx: string;
+  rawHsdDate: string;
+  rawHsdDays: string | number;
+  formattedHsd: string;
+  barcode?: string;
+  tenHang?: string;
+}
+
+/**
+ * A lookup saved before product identification is supplied is only a temporary
+ * placeholder. Once that same date lookup is saved with a barcode, discard the
+ * anonymous placeholder while retaining every barcode-specific lookup.
+ */
+export function isAnonymousLookupSupersededByBarcode(
+  candidate: LookupHistoryIdentity,
+  identifiedLookup: LookupHistoryIdentity,
+): boolean {
+  return Boolean(identifiedLookup.barcode?.trim())
+    && !candidate.barcode?.trim()
+    && !candidate.tenHang?.trim()
+    && candidate.nsx === identifiedLookup.nsx
+    && candidate.rawHsdDate === identifiedLookup.rawHsdDate
+    && String(candidate.rawHsdDays) === String(identifiedLookup.rawHsdDays)
+    && candidate.formattedHsd === identifiedLookup.formattedHsd;
+}
+
 function isValidDateString(value: string): boolean {
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) return false;
   const parsed = parseLocalDate(value);
   return !Number.isNaN(parsed.getTime()) && formatLocalDate(parsed) === value;
+}
+
+export function validateLookupCalculation(input: LookupCalculationInput): void {
+  const { mode, nsx, hsdDate, hsdDays, hsdMonths } = input;
+  if (mode === 'forward') {
+    if (!nsx) throw new Error('Vui lòng nhập Ngày sản xuất (NSX).');
+    if (!isValidDateString(nsx)) throw new Error('Ngày sản xuất không đúng định dạng (dd/mm/yyyy).');
+    if (!hsdDate && !hsdDays && !hsdMonths) throw new Error('Vui lòng nhập Hạn sử dụng (chọn Ngày, điền Số ngày hoặc Số tháng).');
+    if (hsdDate && !isValidDateString(hsdDate)) throw new Error('Hạn sử dụng không đúng định dạng ngày (dd/mm/yyyy).');
+  } else {
+    if (!hsdDate && !hsdDays && !hsdMonths) throw new Error('Vui lòng nhập dữ liệu Hạn sử dụng để tra ngược về NSX.');
+    if (hsdDate && !isValidDateString(hsdDate)) throw new Error('Hạn sử dụng đã nhập không đúng định dạng ngày (dd/mm/yyyy).');
+    if (!nsx) throw new Error('Hệ thống chưa thể tính ngược ra Ngày sản xuất. Vui lòng kiểm tra lại số liệu.');
+  }
+
+  if (isValidDateString(nsx) && isValidDateString(hsdDate) && parseLocalDate(hsdDate) <= parseLocalDate(nsx)) {
+    throw new Error('Hạn sử dụng phải lớn hơn Ngày sản xuất ít nhất 1 ngày.');
+  }
 }
 
 function positiveInteger(value: string): number | null {

@@ -60,8 +60,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="kph-form-actions result-modal-actions">
-        <button v-if="result.kphType" class="btn-action" :class="{ 'btn-create-kph-tpts': result.kphType === 'TPTS' }" type="button" @click="createKph">Tạo phiếu KPH ({{ result.kphType }})</button>
-        <button :class="result.title === 'Lỗi tra cứu' ? 'btn-action btn-danger result-modal-close-full' : 'btn-secondary'" type="button" @click="close">Đồng ý</button>
+        <button v-if="result.kphType" class="btn-action result-modal-action" :class="{ 'btn-create-kph-tpts': result.kphType === 'TPTS' }" type="button" @click="createKph">Tạo phiếu KPH ({{ result.kphType }})</button>
+        <button class="btn-secondary result-modal-dismiss" :class="{ 'result-modal-close-full': result.title === 'Lỗi tra cứu' }" type="button" @click="close">Đồng ý</button>
       </div>
     </div>
   </div>
