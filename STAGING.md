@@ -1,27 +1,43 @@
-# Demo đồng bộ cửa hàng
+# Demo và staging đồng bộ cửa hàng
 
-## Khởi động
+Tài liệu này dành cho việc thử luồng CHT/nhân viên trên nhiều cửa sổ hoặc thiết
+bị. Mock API chỉ phục vụ phát triển, không phải backend production.
 
-```sh
-npm install
+## Chạy demo local
+
+```bash
+npm ci
 npm run demo
 ```
 
-Mở `http://localhost:5173`. Lệnh trên chạy cả PWA lẫn mock API; dừng bằng
-`Ctrl+C`. Dữ liệu demo được lưu ở `data/mock-central-api.json`, nên không mất
-khi khởi động lại. Để làm sạch hoàn toàn dữ liệu test:
+Mở <http://localhost:5173>. Lệnh này chạy đồng thời:
 
-```sh
+- Vite frontend trên cổng `5173`;
+- mock API trên cổng `8787`, được Vite proxy qua `/api`.
+
+Dừng bằng `Ctrl+C`. Mock API lưu trạng thái tại
+`data/mock-central-api.json` (đã được gitignore). Đặt lại dữ liệu bằng:
+
+```bash
 npm run demo:reset
 ```
 
-## Test camera và offline không cần tunnel
+## Tài khoản demo
 
-`npm run demo` là HTTP nên chỉ phù hợp test nghiệp vụ. Để test camera và
-Service Worker trên PC/điện thoại cùng Wi-Fi, tạo certificate LAN một lần trên
-MacBook rồi dùng URL HTTPS cố định.
+| Vai trò | Thông tin |
+| --- | --- |
+| CHT | Mã cửa hàng `0001`, mật khẩu `0001` |
+| Nhân viên | Mã cửa hàng `0001`, mã tham gia `1234`; tự nhập họ tên và mã NV |
 
-```sh
+Mock API tạo sẵn cửa hàng `0001`–`0300`. Mật khẩu CHT ban đầu bằng mã cửa hàng;
+mã tham gia ban đầu là `1234`.
+
+## Thử camera, cài PWA và offline trong LAN
+
+Camera và service worker cần secure context. HTTP local chỉ phù hợp thử nghiệp
+vụ; để dùng điện thoại/PC cùng Wi-Fi, tạo certificate LAN trên macOS:
+
+```bash
 brew install mkcert
 mkcert -install
 IP=$(ipconfig getifaddr en0)
@@ -29,54 +45,70 @@ mkcert -key-file dev-key.pem -cert-file dev-cert.pem "$IP" localhost 127.0.0.1
 npm run demo:lan
 ```
 
-Mở `https://IP_LAN_CUA_MACBOOK:5173` trên PC CHT và điện thoại. Để điện thoại
-tin certificate, lấy file `rootCA.pem` từ thư mục in bởi `mkcert -CAROOT`, gửi
-sang điện thoại, cài profile rồi bật **Full Trust for Root Certificates** trong
-cài đặt hệ thống. Đây là thao tác một lần cho mạng/CA test này.
+Nếu máy dùng interface khác `en0`, thay `IP` bằng địa chỉ LAN thực tế. Mở
+`https://IP_LAN_CUA_MAY:5173` trên các thiết bị. Điện thoại phải tin root CA của
+`mkcert`; đường dẫn được in bởi `mkcert -CAROOT`. Trên iOS, sau khi cài profile
+cần bật **Full Trust for Root Certificates**.
 
-Sau khi app đã mở hoàn chỉnh một lần qua HTTPS, tắt mạng và tải lại để kiểm tra
-offline. `npm run demo:pwa` chỉ dùng để test PWA trên chính MacBook qua
-`localhost`; `npm run demo` vẫn là chế độ phát triển HTTP thông thường.
+Các certificate development (`*.pem`, `*.key`) đã được gitignore và không được
+commit. Sau khi app tải hoàn chỉnh một lần qua HTTPS, chuyển thiết bị sang
+offline rồi mở lại để thử cache.
 
-## Tài khoản demo
+`npm run demo:pwa` phù hợp thử service worker trên chính máy qua localhost.
 
-| Vai trò | Thông tin |
-| --- | --- |
-| CHT | Mã cửa hàng `0001`, mật khẩu `0001` |
-| Nhân viên | Mã cửa hàng `0001`, mã tham gia `1234`, tự chọn họ tên và mã NV |
+## Kịch bản kiểm thử đồng bộ
 
-Có sẵn mã cửa hàng từ `0001` đến `0300`; mật khẩu CHT ban đầu luôn bằng mã cửa
-hàng và mã tham gia ban đầu là `1234`.
+1. Mở một cửa sổ thường và một cửa sổ ẩn danh, hoặc dùng hai thiết bị.
+2. Thiết bị thứ nhất đăng nhập CHT bằng `0001 / 0001`.
+3. Thiết bị thứ hai tham gia với mã cửa hàng `0001`, mã `1234`, họ tên và mã NV.
+4. Nhân viên tạo phiếu KPH. CHT phải nhận được phiếu qua SSE; polling 30 giây
+   là dự phòng. Có thể bấm **Đồng bộ ngay** để ép đồng bộ.
+5. CHT duyệt hoặc không duyệt. Thiết bị nhân viên phải nhận thay đổi và hoạt
+   động mới.
+6. Khi phiếu còn chờ duyệt, người tạo được xóa phiếu của mình. Sau khi xử lý,
+   nhân viên không được xóa; CHT vẫn được xóa.
+7. Chuyển DevTools sang Offline, tạo dữ liệu rồi bật mạng. Outbox phải được gửi
+   mà không tạo bản ghi trùng.
+8. CHT thu hồi thiết bị hoặc xóa nhân viên. Session đó phải bị API từ chối ở
+   lần gọi kế tiếp.
+9. Kiểm tra **Hoạt động gần đây**, toast gộp, lịch sử tra cứu và ảnh KPH trên cả
+   hai thiết bị.
 
-## Kịch bản tự test
+## Kiểm tra trước khi tạo artifact
 
-1. Mở một cửa sổ thường và một cửa sổ ẩn danh (hoặc hai thiết bị) tại app.
-2. Ở cửa sổ thứ nhất, chọn **CHT**, đăng nhập `0001 / 0001`. Kiểm tra phần
-   **Quản trị cửa hàng**, đổi mã tham gia hoặc mật khẩu nếu muốn.
-3. Ở cửa sổ thứ hai, chọn **Nhân viên**, nhập họ tên/mã NV, cửa hàng `0001` và
-   mã tham gia hiện tại. Nhân viên vào ngay, không có bước duyệt.
-4. Trên nhân viên tạo phiếu KPH, bấm lưu. CHT sẽ tự nhận phiếu trong lúc app
-   đang mở (SSE; polling 30 giây là phương án dự phòng); vẫn có nút **Đồng bộ
-   ngay**. CHT duyệt phiếu, nhân viên sẽ nhận cập nhật tương tự.
-5. Khi phiếu còn chờ duyệt, nhân viên tạo phiếu của mình có thể xoá. Sau khi
-   CHT duyệt/không duyệt, nút xoá bị từ chối. CHT vẫn có thể xoá mọi phiếu.
-6. Trong DevTools chọn Offline, tạo phiếu, sau đó bật lại mạng. Trạng thái sẽ
-   tự đồng bộ; có thể bấm **Đồng bộ ngay** để ép chạy tức thì.
-7. CHT thu hồi thiết bị hoặc xoá nhân viên. Thiết bị đó sẽ bị server từ chối ở
-   lần gọi API tiếp theo.
-8. Mở phần **Hoạt động gần đây** trong Cửa hàng & đồng bộ để xem ai đã tạo,
-   duyệt, không duyệt hoặc xoá phiếu. Các thay đổi mới cũng hiện toast gộp.
+```bash
+npm test
+npm run build
+npm run preview
+```
 
-## Giới hạn của demo
+Khi kiểm tra PWA production, dùng tab Application của DevTools để xác nhận
+service worker active, app shell có trong precache và navigation `/api` không bị
+fallback thành `index.html`.
 
-Mock API phục vụ mục đích thử UX/nghiệp vụ: JSON trên đĩa, token RAM và ảnh
-Base64 trong request sync. Không dùng nó cho production. Bản production cần
-API HTTPS, PostgreSQL, hash mật khẩu/token hết hạn, object storage cho ảnh và
-backup/quan sát vận hành.
+## Giới hạn của mock API
+
+Mock API lưu JSON trên đĩa, giữ token trong RAM và truyền ảnh Base64 trong request
+sync. Khởi động lại server sẽ làm session cũ mất hiệu lực dù dữ liệu JSON còn.
+
+Backend production cần tối thiểu: HTTPS, database bền vững, mật khẩu đã hash,
+token có hạn dùng/thu hồi, object storage cho ảnh, giới hạn payload, backup,
+logging và monitoring.
 
 ## Staging thật
 
-Build frontend bằng `npm run build`, host `dist` trên HTTPS và reverse proxy
-`/api` tới API trung tâm. Mẫu [Caddyfile.example](deploy/Caddyfile.example)
-minh họa cấu hình đó. Không để trình duyệt PWA HTTPS gọi trực tiếp API HTTP/IP
-do brand cấp.
+Build frontend rồi host nội dung `dist/` trên HTTPS:
+
+```bash
+npm ci
+npm test
+npm run build
+```
+
+Reverse proxy `/api` cùng origin tới API trung tâm. Mẫu
+[`deploy/Caddyfile.example`](deploy/Caddyfile.example) minh họa cấu hình. Không
+để PWA HTTPS gọi trực tiếp API HTTP hoặc địa chỉ IP nội bộ do mixed-content và
+rủi ro vận hành.
+
+Workflow `.github/workflows/staging.yml` chỉ xác minh và upload artifact khi push
+nhánh `staging` (hoặc chạy thủ công); nó không triển khai backend.
