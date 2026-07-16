@@ -10,6 +10,7 @@ const ENDPOINT_STORAGE_KEY = 'coop_sync_endpoint';
 const LAST_SYNC_STORAGE_KEY = 'coop_last_synced_at';
 const SEEN_ACTIVITY_STORAGE_KEY = 'coop_seen_activity';
 const KNOWN_ACTIVITY_STORAGE_KEY = 'coop_known_activity';
+const AUTH_NOTICE_STORAGE_KEY = 'coop_auth_notice';
 const defaultEndpoint: ServerEndpoint = { basePath: '/api' };
 let branchEvents: EventSource | null = null;
 let syncTimer: number | null = null;
@@ -23,6 +24,7 @@ export const useAppStore = defineStore('app', {
     syncError: null as string | null,
     managerName: '' as string,
     storeName: 'CO.OP FOOD' as string,
+    authNotice: '' as string,
     activityEvents: [] as ActivityEvent[],
     seenActivityIds: [] as string[],
     knownActivityIds: [] as string[],
@@ -51,6 +53,7 @@ export const useAppStore = defineStore('app', {
       this.lastSyncedAt = localStorage.getItem(LAST_SYNC_STORAGE_KEY) || null;
       this.managerName = localStorage.getItem('kph_cht') || '';
       this.storeName = localStorage.getItem('kph_store') || 'CO.OP FOOD';
+      this.authNotice = localStorage.getItem(AUTH_NOTICE_STORAGE_KEY) || '';
     },
     setEndpoint(basePath: string) {
       this.endpoint = serverEndpointSchema.parse({ basePath });
@@ -68,6 +71,8 @@ export const useAppStore = defineStore('app', {
     setSession(session: DeviceSession) {
       const validated = deviceSessionSchema.parse(session);
       this.session = validated;
+      this.authNotice = '';
+      localStorage.removeItem(AUTH_NOTICE_STORAGE_KEY);
       if (validated.role === 'manager') this.managerName = validated.displayName;
       try { this.seenActivityIds = JSON.parse(localStorage.getItem(`${SEEN_ACTIVITY_STORAGE_KEY}:${validated.id}`) || '[]'); } catch { this.seenActivityIds = []; }
       try { this.knownActivityIds = JSON.parse(localStorage.getItem(`${KNOWN_ACTIVITY_STORAGE_KEY}:${validated.id}`) || '[]'); } catch { this.knownActivityIds = []; }
@@ -77,8 +82,10 @@ export const useAppStore = defineStore('app', {
       }));
       this.startLiveSync();
     },
-    clearSession() {
+    clearSession(reason = '') {
       this.session = null;
+      this.authNotice = reason;
+      if (reason) localStorage.setItem(AUTH_NOTICE_STORAGE_KEY, reason); else localStorage.removeItem(AUTH_NOTICE_STORAGE_KEY);
       this.seenActivityIds = [];
       this.knownActivityIds = [];
       localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -164,9 +171,13 @@ export const useAppStore = defineStore('app', {
         localStorage.setItem(LAST_SYNC_STORAGE_KEY, snapshot.serverTime);
         this.syncStatus = 'synced';
         window.dispatchEvent(new CustomEvent('coop:remote-sync'));
-        if (snapshot.revoked) this.clearSession();
+        if (snapshot.revoked) this.clearSession('Tài khoản nhân viên đã bị CHT thu hồi. Hãy đăng nhập hoặc tham gia lại cửa hàng nếu cần.');
         return snapshot;
       } catch (error) {
+        if (/\b401\b/.test(error instanceof Error ? error.message : '')) {
+          this.clearSession('Phiên thiết bị không còn hiệu lực. Hãy đăng nhập hoặc tham gia lại cửa hàng.');
+          error = new Error('Phiên thiết bị không còn hiệu lực. Hãy đăng nhập lại.');
+        }
         this.syncStatus = 'error';
         this.syncError = error instanceof Error ? error.message : 'Đồng bộ thất bại.';
         throw error;

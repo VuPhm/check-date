@@ -30,6 +30,7 @@ const statusLabel = computed(() => ({ idle: 'Sẵn sàng đồng bộ', offline:
 const lastSync = computed(() => appStore.lastSyncedAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(appStore.lastSyncedAt)) : 'Chưa từng đồng bộ');
 const statusMessage = computed(() => {
   if (message.value) return message.value;
+  if (appStore.authNotice) return appStore.authNotice;
   if (appStore.syncStatus === 'offline') return 'Thiết bị sẽ đồng bộ lại khi có mạng.';
   if (appStore.syncStatus === 'syncing') return 'Đang cập nhật dữ liệu cửa hàng.';
   if (appStore.syncStatus === 'error') return appStore.syncError || 'Không thể đồng bộ. Hãy thử lại sau.';
@@ -87,7 +88,12 @@ async function refreshAdmin() {
   } catch (error) { message.value = friendlyError(error, 'Không tải được quản trị cửa hàng.'); }
 }
 async function syncNow() {
-  try { busy.value = true; message.value = ''; await appStore.syncNow(); await refreshAdmin(); message.value = 'Dữ liệu cửa hàng đã được cập nhật.'; }
+  try {
+    busy.value = true; message.value = '';
+    if (appStore.isManager) appStore.setStoreName(storeName.value);
+    if (appStore.session && displayName.value.trim() && displayName.value.trim() !== appStore.session.displayName) appStore.updateSessionDisplayName(displayName.value);
+    await appStore.syncNow(); await refreshAdmin(); message.value = 'Dữ liệu cửa hàng đã được cập nhật.';
+  }
   catch (error) { message.value = friendlyError(error, 'Đồng bộ thất bại.'); }
   finally { busy.value = false; }
 }
@@ -113,6 +119,7 @@ async function dropDevice(id: string) { if (appStore.session) { await revokeDevi
 async function dropEmployee(id: string) { if (appStore.session) { await removeEmployee(appStore.endpoint, appStore.session, id); await refreshAdmin(); } }
 async function saveEmployeeName() { try { busy.value = true; appStore.updateSessionDisplayName(displayName.value); await appStore.syncNow(); message.value = 'Đã đồng bộ tên nhân viên.'; } catch (error) { message.value = friendlyError(error, 'Không thể đổi tên nhân viên.'); } finally { busy.value = false; } }
 async function saveManagerName() { try { busy.value = true; appStore.updateSessionDisplayName(displayName.value); await appStore.syncNow(); message.value = 'Đã đồng bộ tên CHT.'; } catch (error) { message.value = friendlyError(error, 'Không thể đổi tên CHT.'); } finally { busy.value = false; } }
+function refreshAfterRemoteSync() { if (appStore.isManager) void refreshAdmin(); }
 
 onMounted(() => {
   storeCode.value = appStore.session?.branchId || '';
@@ -121,10 +128,11 @@ onMounted(() => {
   storeNameCommitted.value = Boolean(savedStoreName?.trim());
   displayName.value = appStore.session?.displayName || '';
   void refreshAdmin();
+  window.addEventListener('coop:remote-sync', refreshAfterRemoteSync);
   refreshTimer = window.setInterval(() => void refreshAdmin(), 30_000);
 });
 watch(() => appStore.storeName, (value) => { if (!appStore.isManager) storeName.value = value; });
-onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(refreshTimer); });
+onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(refreshTimer); window.removeEventListener('coop:remote-sync', refreshAfterRemoteSync); });
 </script>
 
 <template>
