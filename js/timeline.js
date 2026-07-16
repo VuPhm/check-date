@@ -3,6 +3,7 @@ import { parseLocalDate, formatLocalDate, getCleanToday, MS_PER_DAY } from './he
 export function drawTimelineDiagram(nsxStr, hsdStr, returnStr) {
     const board = document.getElementById('diagramBoard');
     const container = document.getElementById('svgContainer');
+    board.dataset.ready = 'true';
     board.style.display = 'block';
 
     const nsx = parseLocalDate(nsxStr);

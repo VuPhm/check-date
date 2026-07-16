@@ -17,6 +17,21 @@ chính, nhưng quá trình chuyển đổi chưa hoàn tất:
 Không thực hiện rewrite diện rộng chỉ để “làm sạch”. Chuyển từng lát chức năng,
 giữ hành vi và dữ liệu cũ hoạt động trong suốt quá trình.
 
+### Hợp đồng bảo tồn trong giai đoạn chuyển Vue
+
+- Giữ nguyên bố cục và thứ tự thao tác của màn Tra cứu cho tới khi toàn bộ state,
+  validation và event của màn này đã thuộc Vue và có kiểm thử hồi quy.
+- Phong cách hiện hành là Apple-inspired tinh giản: nền nhẹ, surface trắng, bo
+  góc, shadow mềm, chuyển động ngắn và điều khiển chạm rõ ràng. Không thay design
+  direction trong cùng patch với migration framework.
+- Kết quả nghiệp vụ phải tương thích: tính ngày, tra xuôi/tra ngược, timeline,
+  trạng thái, lịch sử, duyệt KPH, ảnh và quyền theo vai trò.
+- Export Excel là output contract. Phải giữ tên sheet, thứ tự/cấu trúc cột, giá
+  trị, định dạng ngày/số, ảnh và phạm vi bản ghi được xuất; thay đổi có chủ đích
+  cần fixture hoặc kiểm tra hồi quy tương ứng.
+- Một lát chuyển đổi chỉ được xóa bridge/markup legacy sau khi Vue replacement đã
+  chạy song song ổn định và `npm test`, `npm run build` đều đạt.
+
 ## Bản đồ source of truth
 
 | Mối quan tâm | Nơi sở hữu chính |

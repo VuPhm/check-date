@@ -4320,7 +4320,7 @@ button.notif-item {
     #tab-tracuu .calc-focus-zone > .form-field,
     #tab-tracuu .calc-focus-zone > .apple-input-row { margin-bottom: 10px; }
     #tab-tracuu .calc-focus-zone > .divider-or { margin: -2px 0 10px; }
-    #tab-tracuu .diagram-board { display: block; align-self: start; padding: 16px 20px; overflow: hidden; }
+    #tab-tracuu .diagram-board[data-ready="true"] { display: block; align-self: start; padding: 16px 20px; overflow: hidden; }
     #tab-tracuu #svgContainer { max-height: 145px; overflow: hidden; line-height: 0; }
 
     #tab-tracuu .history-wrapper {

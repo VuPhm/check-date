@@ -26,6 +26,8 @@ import {
     processReturnBusinessLogic
 } from './business.js';
 
+import { syncLookupDates } from '../src/domain/lookup.ts';
+
 import {
     drawTimelineDiagram
 } from './timeline.js';
@@ -115,6 +117,10 @@ export function openHsdPicker() {
     if (hsdFlatpickr) hsdFlatpickr.open();
 }
 
+function notifyLookupDomChanged() {
+    window.dispatchEvent(new CustomEvent('coop:lookup-dom-changed'));
+}
+
 // --- HỆ THỐNG ĐỒNG BỘ CÓ TƯỜNG NGĂN (GUARDED SYNCHRONIZATION) --- 
 export function syncFromDateToDays() {
     if (isSyncing) return;
@@ -122,15 +128,11 @@ export function syncFromDateToDays() {
     const nsxVal = document.getElementById('nsx').value.trim();
     const hsdDateVal = document.getElementById('hsdDate').value.trim();
     const hsdDaysInput = document.getElementById('hsdDays');
-    if (isValidDateStr(nsxVal) && isValidDateStr(hsdDateVal)) {
-        const nsxDate = parseLocalDate(nsxVal);
-        const hsdDate = parseLocalDate(hsdDateVal);
-        const diffDays = Math.round((hsdDate - nsxDate) / MS_PER_DAY) + 1;
-        hsdDaysInput.value = diffDays > 0 ? diffDays : "";
-    } else {
-        hsdDaysInput.value = "";
-    }
+    const synced = syncLookupDates({ nsx: nsxVal, hsdDate: hsdDateVal, hsdDays: hsdDaysInput.value, hsdMonths: document.getElementById('hsdMonths').value }, calcMode, 'date');
+    hsdDaysInput.value = synced.hsdDays;
+    document.getElementById('hsdMonths').value = synced.hsdMonths;
     isSyncing = false;
+    notifyLookupDomChanged();
 }
 
 export function syncFromDaysToDate() {
@@ -139,25 +141,14 @@ export function syncFromDaysToDate() {
     const nsxInput = document.getElementById('nsx');
     const hsdDateInput = document.getElementById('hsdDate');
     const hsdDaysVal = document.getElementById('hsdDays').value.trim();
-    document.getElementById('hsdMonths').value = "";
-    const days = parseInt(hsdDaysVal, 10);
-
-    if (calcMode === 'forward') {
-        const nsxVal = nsxInput.value.trim();
-        if (isValidDateStr(nsxVal) && days > 0) {
-            const computedHsdDate = new Date(parseLocalDate(nsxVal).getTime() + (days - 1) * MS_PER_DAY);
-            hsdDateInput.value = formatLocalDate(computedHsdDate);
-            if (hsdFlatpickr) hsdFlatpickr.setDate(computedHsdDate, false);
-        } else { hsdDateInput.value = ""; if (hsdFlatpickr) hsdFlatpickr.clear(); }
-    } else {
-        const hsdDateVal = hsdDateInput.value.trim();
-        if (isValidDateStr(hsdDateVal) && days > 0) {
-            const computedNsxDate = new Date(parseLocalDate(hsdDateVal).getTime() - (days - 1) * MS_PER_DAY);
-            nsxInput.value = formatLocalDate(computedNsxDate);
-            if (nsxFlatpickr) nsxFlatpickr.setDate(computedNsxDate, false);
-        } else { nsxInput.value = ""; if (nsxFlatpickr) nsxFlatpickr.clear(); }
-    }
+    const synced = syncLookupDates({ nsx: nsxInput.value.trim(), hsdDate: hsdDateInput.value.trim(), hsdDays: hsdDaysVal, hsdMonths: document.getElementById('hsdMonths').value }, calcMode, 'days');
+    nsxInput.value = synced.nsx;
+    hsdDateInput.value = synced.hsdDate;
+    document.getElementById('hsdMonths').value = synced.hsdMonths;
+    if (hsdFlatpickr) synced.hsdDate ? hsdFlatpickr.setDate(synced.hsdDate, false) : hsdFlatpickr.clear();
+    if (nsxFlatpickr) synced.nsx ? nsxFlatpickr.setDate(synced.nsx, false) : nsxFlatpickr.clear();
     isSyncing = false;
+    notifyLookupDomChanged();
 }
 
 export function syncFromMonthsToDate() {
@@ -167,34 +158,14 @@ export function syncFromMonthsToDate() {
     const hsdDateInput = document.getElementById('hsdDate');
     const hsdDaysInput = document.getElementById('hsdDays');
     const hsdMonthsVal = document.getElementById('hsdMonths').value.trim();
-    const months = parseInt(hsdMonthsVal, 10);
-
-    if (calcMode === 'forward') {
-        const nsxVal = nsxInput.value.trim();
-        if (isValidDateStr(nsxVal) && months > 0) {
-            const nsxDate = parseLocalDate(nsxVal);
-            let finalHsdDate = new Date(nsxDate.getFullYear(), nsxDate.getMonth() + months, nsxDate.getDate());
-            if (finalHsdDate.getMonth() !== (nsxDate.getMonth() + months) % 12) {
-                finalHsdDate = new Date(nsxDate.getFullYear(), nsxDate.getMonth() + months + 1, 0);
-            }
-            hsdDateInput.value = formatLocalDate(finalHsdDate);
-            if (hsdFlatpickr) hsdFlatpickr.setDate(finalHsdDate, false);
-            hsdDaysInput.value = Math.round((finalHsdDate - nsxDate) / MS_PER_DAY) + 1;
-        } else { hsdDateInput.value = ""; hsdDaysInput.value = ""; if (hsdFlatpickr) hsdFlatpickr.clear(); }
-    } else {
-        const hsdDateVal = hsdDateInput.value.trim();
-        if (isValidDateStr(hsdDateVal) && months > 0) {
-            const hsdDate = parseLocalDate(hsdDateVal);
-            let finalNsxDate = new Date(hsdDate.getFullYear(), hsdDate.getMonth() - months, hsdDate.getDate());
-            if (finalNsxDate.getDate() !== hsdDate.getDate()) {
-                finalNsxDate = new Date(hsdDate.getFullYear(), hsdDate.getMonth() - months + 1, 0);
-            }
-            nsxInput.value = formatLocalDate(finalNsxDate);
-            if (nsxFlatpickr) nsxFlatpickr.setDate(finalNsxDate, false);
-            hsdDaysInput.value = Math.round((hsdDate - finalNsxDate) / MS_PER_DAY) + 1;
-        } else { nsxInput.value = ""; hsdDaysInput.value = ""; if (nsxFlatpickr) nsxFlatpickr.clear(); }
-    }
+    const synced = syncLookupDates({ nsx: nsxInput.value.trim(), hsdDate: hsdDateInput.value.trim(), hsdDays: hsdDaysInput.value, hsdMonths: hsdMonthsVal }, calcMode, 'months');
+    nsxInput.value = synced.nsx;
+    hsdDateInput.value = synced.hsdDate;
+    hsdDaysInput.value = synced.hsdDays;
+    if (hsdFlatpickr) synced.hsdDate ? hsdFlatpickr.setDate(synced.hsdDate, false) : hsdFlatpickr.clear();
+    if (nsxFlatpickr) synced.nsx ? nsxFlatpickr.setDate(synced.nsx, false) : nsxFlatpickr.clear();
     isSyncing = false;
+    notifyLookupDomChanged();
 }
 
 // --- ĐIỀU HƯỚNG CHẾ ĐỘ QUA CÔNG TẮC GẠT TRƯỢT APPLE ---
@@ -227,6 +198,7 @@ export function handleToggleMode(toggleElement) {
             btnNsx.style.opacity = '1';
         }
     }
+    notifyLookupDomChanged();
 }
 
 export function refreshCalculationForm() {
@@ -248,7 +220,10 @@ export function refreshCalculationForm() {
         text.classList.remove('calc-board__result-text--visible');
     }
     const diagramBoard = document.getElementById('diagramBoard');
-    if (diagramBoard) diagramBoard.style.display = 'none';
+    if (diagramBoard) {
+        delete diagramBoard.dataset.ready;
+        diagramBoard.style.display = 'none';
+    }
     const svgContainer = document.getElementById('svgContainer');
     if (svgContainer) svgContainer.innerHTML = '';
     setCalcFocusTheme('safe');
@@ -258,6 +233,7 @@ export function refreshCalculationForm() {
         module.updateHistoryUI();
     });
     document.getElementById('tenHang')?.focus();
+    notifyLookupDomChanged();
 }
 
 export function setCalcFocusTheme(theme = 'safe') {
@@ -442,7 +418,10 @@ export function executeCalculation(saveToHistory = true) {
             const container = document.getElementById('svgContainer');
             if (container) container.innerHTML = '';
             const board = document.getElementById('diagramBoard');
-            if (board) board.style.display = 'none';
+            if (board) {
+                delete board.dataset.ready;
+                board.style.display = 'none';
+            }
         }
 
         if (text) {
@@ -741,29 +720,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (e.key === 'Enter') { e.preventDefault(); executeCalculation(); }
         });
     }
-
-    // 6. Định dạng tag EAN & Cập nhật note chuẩn quét
-    function updateActiveFormatsNote() {
-        const activeTags = [];
-        document.querySelectorAll('.format-tag.active').forEach(tag => {
-            activeTags.push(tag.textContent.trim());
-        });
-        const textEl = document.getElementById('activeFormatsText');
-        if (textEl) {
-            textEl.textContent = activeTags.join(', ');
-        }
-    }
-
-    document.querySelectorAll('.format-tag').forEach(tag => {
-        tag.addEventListener('click', () => {
-            tag.classList.toggle('active');
-            const active = document.querySelectorAll('.format-tag.active');
-            if (active.length === 0) {
-                tag.classList.add('active');
-            }
-            updateActiveFormatsNote();
-        });
-    });
 
     // Khởi tạo app versioning & offline
     initAppVersion();

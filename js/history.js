@@ -217,6 +217,7 @@ export function loadHistoryItem(nsx, hsdDate, hsdDays, barcode = "", quantity = 
             if (calcDvtRadio) calcDvtRadio.checked = true;
             
             document.getElementById('quantity').value = quantity;
+            window.dispatchEvent(new CustomEvent('coop:lookup-loaded'));
             module.executeCalculation(false);
         });
     }
