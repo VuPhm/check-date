@@ -286,8 +286,8 @@ export function saveNguoiPhatHien() {
 
 // Hàm tải thiết lập cửa hàng khi khởi động tab KPH hoặc app
 export function loadStoreSettings() {
-    const cf = localStorage.getItem('kph_coop_food') || '0001';
-    const store = localStorage.getItem('kph_store') || `Co.op Food ${cf}`;
+    const cf = localStorage.getItem('coop_device_session') ? (localStorage.getItem('kph_coop_food') || '') : '';
+    const store = localStorage.getItem('kph_store') || 'CO.OP FOOD';
     const cht = localStorage.getItem('kph_cht') || '';
     const name = localStorage.getItem('kph_nguoi_phat_hien') || '';
     const kphName = document.getElementById('kphNguoiPhatHien');
@@ -302,7 +302,7 @@ export function loadStoreSettings() {
     if (sidebarStore) sidebarStore.value = store;
     if (sidebarCht) sidebarCht.value = cht;
 
-    localStorage.setItem('kph_coop_food', cf);
+    if (cf) localStorage.setItem('kph_coop_food', cf);
     localStorage.setItem('kph_store', store);
 }
 
@@ -1426,7 +1426,7 @@ export async function exportKphToExcel() {
         worksheet.getCell('A1').font = { name: 'Times New Roman', bold: true, size: 9 };
         worksheet.getCell('A1').alignment = { horizontal: 'left', wrapText: false };
 
-        const coopFoodVal = document.getElementById('sidebarCoopFood')?.value.trim() || localStorage.getItem('kph_coop_food') || '0001';
+        const coopFoodVal = document.getElementById('sidebarCoopFood')?.value.trim() || localStorage.getItem('kph_coop_food') || '';
         const storeVal = document.getElementById('sidebarStore')?.value.trim() || localStorage.getItem('kph_store') || '';
 
         worksheet.getCell('A2').value = `CO.OP FOOD: ${coopFoodVal || '................................'}`;

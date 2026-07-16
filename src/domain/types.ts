@@ -47,7 +47,7 @@ export interface ManagedEmployee {
 export interface ActivityEvent {
   id: string;
   branchId: string;
-  type: 'kph.created' | 'kph.approved' | 'kph.rejected' | 'kph.deleted';
+  type: 'kph.created' | 'kph.approved' | 'kph.rejected' | 'kph.deleted' | 'employee.joined' | 'employee.removed';
   recordId: string;
   actorName: string;
   actorRole: BranchRole;

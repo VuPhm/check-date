@@ -6,19 +6,21 @@ import { joinEmployee, loginManager } from '../../services/syncApi';
 const KEY = 'coop_first_run_setup_complete';
 const appStore = useAppStore();
 const open = ref(false); const role = ref<'employee' | 'manager'>('employee');
-const storeCode = ref('0001'); const storePassword = ref('0001');
+const storeCode = ref(''); const storePassword = ref('');
 const joinCode = ref(''); const displayName = ref(''); const employeeCode = ref(''); const deviceName = ref(''); const busy = ref(false); const message = ref('');
 function clean(value: string) { return value.replace(/\D/g, '').slice(0, 4); }
 function dismiss() { localStorage.setItem(KEY, '1'); open.value = false; }
 async function connect() {
   try {
     busy.value = true;
-    const configuredStoreCode = storeCode.value.trim() || '0001';
-    const configuredStorePassword = storePassword.value || configuredStoreCode;
+    const configuredStoreCode = storeCode.value.trim();
+    const configuredStorePassword = storePassword.value;
+    if (configuredStoreCode.length !== 4) throw new Error('Nhập đủ 4 số mã cửa hàng.');
+    if (role.value === 'manager' && !configuredStorePassword) throw new Error('Nhập mật khẩu cửa hàng.');
     storeCode.value = configuredStoreCode;
     localStorage.setItem('kph_coop_food', configuredStoreCode);
     localStorage.setItem('kph_store_password', configuredStorePassword);
-    if (!localStorage.getItem('kph_store')) localStorage.setItem('kph_store', `Co.op Food ${configuredStoreCode}`);
+    if (!localStorage.getItem('kph_store')) localStorage.setItem('kph_store', 'CO.OP FOOD');
     if (role.value === 'manager') {
       localStorage.setItem('kph_cht', displayName.value.trim());
     }
@@ -29,8 +31,8 @@ async function connect() {
   } catch (error) { message.value = error instanceof Error ? error.message : 'Không thể kết nối cửa hàng.'; } finally { busy.value = false; }
 }
 onMounted(() => {
-  storeCode.value = localStorage.getItem('kph_coop_food') || '0001';
-  storePassword.value = localStorage.getItem('kph_store_password') || storeCode.value;
+  storeCode.value = localStorage.getItem('kph_coop_food') || '';
+  storePassword.value = localStorage.getItem('kph_store_password') || '';
   open.value = !localStorage.getItem(KEY) && !appStore.session;
   window.addEventListener('coop:open-setup', () => { message.value = ''; open.value = true; });
 });

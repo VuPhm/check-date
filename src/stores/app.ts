@@ -21,6 +21,8 @@ export const useAppStore = defineStore('app', {
     syncStatus: (navigator.onLine ? 'idle' : 'offline') as SyncStatus,
     lastSyncedAt: null as string | null,
     syncError: null as string | null,
+    managerName: '' as string,
+    storeName: 'CO.OP FOOD' as string,
     activityEvents: [] as ActivityEvent[],
     seenActivityIds: [] as string[],
     knownActivityIds: [] as string[],
@@ -33,8 +35,8 @@ export const useAppStore = defineStore('app', {
     actionableEvents: (state): ActivityEvent[] => {
       if (!state.session) return [];
       return state.activityEvents.filter((event) => state.session?.role === 'manager'
-        ? event.actorRole === 'employee' && (event.type === 'kph.created' || event.type === 'kph.deleted')
-        : event.targetUserId === state.session?.id && (event.type === 'kph.approved' || event.type === 'kph.rejected'));
+        ? event.actorRole === 'employee' && (event.type === 'kph.created' || event.type === 'kph.deleted' || event.type === 'employee.joined')
+        : event.targetUserId === state.session?.id && (event.type === 'kph.approved' || event.type === 'kph.rejected' || event.type === 'employee.removed'));
     },
     unreadActionableEvents(): ActivityEvent[] {
       return this.actionableEvents.filter((event) => !this.seenActivityIds.includes(event.id));
@@ -47,6 +49,8 @@ export const useAppStore = defineStore('app', {
         try { this.endpoint = serverEndpointSchema.parse(JSON.parse(endpoint)); } catch { localStorage.removeItem(ENDPOINT_STORAGE_KEY); }
       }
       this.lastSyncedAt = localStorage.getItem(LAST_SYNC_STORAGE_KEY) || null;
+      this.managerName = localStorage.getItem('kph_cht') || '';
+      this.storeName = localStorage.getItem('kph_store') || 'CO.OP FOOD';
     },
     setEndpoint(basePath: string) {
       this.endpoint = serverEndpointSchema.parse({ basePath });
@@ -64,6 +68,7 @@ export const useAppStore = defineStore('app', {
     setSession(session: DeviceSession) {
       const validated = deviceSessionSchema.parse(session);
       this.session = validated;
+      if (validated.role === 'manager') this.managerName = validated.displayName;
       try { this.seenActivityIds = JSON.parse(localStorage.getItem(`${SEEN_ACTIVITY_STORAGE_KEY}:${validated.id}`) || '[]'); } catch { this.seenActivityIds = []; }
       try { this.knownActivityIds = JSON.parse(localStorage.getItem(`${KNOWN_ACTIVITY_STORAGE_KEY}:${validated.id}`) || '[]'); } catch { this.knownActivityIds = []; }
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(validated));
@@ -80,6 +85,13 @@ export const useAppStore = defineStore('app', {
       localStorage.removeItem(BRANCH_STORAGE_KEY);
       branchEvents?.close(); branchEvents = null;
     },
+    updateSessionDisplayName(displayName: string) {
+      if (!this.session) return;
+      const validated = deviceSessionSchema.parse({ ...this.session, displayName: displayName.trim() });
+      this.session = validated; localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(validated));
+      if (validated.role === 'manager') { this.managerName = validated.displayName; localStorage.setItem('kph_cht', validated.displayName); }
+    },
+    setStoreName(storeName: string) { this.storeName = storeName.trim() || 'CO.OP FOOD'; localStorage.setItem('kph_store', this.storeName); },
     bindConnectivityEvents() {
       window.addEventListener('online', () => {
         this.syncStatus = 'idle';
@@ -129,6 +141,12 @@ export const useAppStore = defineStore('app', {
         await assignUnboundRecords(this.session.branchId, this.session.id);
         const [cursor, changes] = await Promise.all([getSyncCursor(this.session.branchId), getPendingChanges(this.session.branchId)]);
         const snapshot = await syncWithServer(this.endpoint, this.session, cursor, changes);
+        if (snapshot.profile?.displayName && snapshot.profile.displayName !== this.session.displayName) {
+          this.session = deviceSessionSchema.parse({ ...this.session, displayName: snapshot.profile.displayName });
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(this.session));
+        }
+        if (snapshot.profile?.managerName) { this.managerName = snapshot.profile.managerName; localStorage.setItem('kph_cht', snapshot.profile.managerName); }
+        if (snapshot.profile?.storeName) this.setStoreName(snapshot.profile.storeName);
         await mergeSyncSnapshot(snapshot.kphLogs, snapshot.historyLogs);
         await Promise.all([acknowledgeChanges(snapshot.acceptedChangeIds), setSyncCursor(this.session.branchId, snapshot.cursor)]);
         this.lastSyncedAt = snapshot.serverTime;
@@ -140,11 +158,13 @@ export const useAppStore = defineStore('app', {
           this.knownActivityIds = [...new Set([...snapshot.activityEvents.map((event) => event.id), ...this.knownActivityIds])].slice(0, 500);
           localStorage.setItem(`${KNOWN_ACTIVITY_STORAGE_KEY}:${this.session.id}`, JSON.stringify(this.knownActivityIds));
           const actionableFresh = fresh.filter((event) => this.actionableEvents.some((item) => item.id === event.id) && !this.seenActivityIds.includes(event.id));
-          if (hasBaseline && actionableFresh.length) window.dispatchEvent(new CustomEvent('coop:sync-summary', { detail: actionableFresh }));
+          const importantNotice = actionableFresh.filter((event) => event.type === 'employee.joined' || event.type === 'employee.removed');
+          if ((hasBaseline && actionableFresh.length) || importantNotice.length) window.dispatchEvent(new CustomEvent('coop:sync-summary', { detail: actionableFresh }));
         }
         localStorage.setItem(LAST_SYNC_STORAGE_KEY, snapshot.serverTime);
         this.syncStatus = 'synced';
         window.dispatchEvent(new CustomEvent('coop:remote-sync'));
+        if (snapshot.revoked) this.clearSession();
         return snapshot;
       } catch (error) {
         this.syncStatus = 'error';

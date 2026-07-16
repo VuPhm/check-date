@@ -150,7 +150,9 @@ createServer(async (request, response) => {
     if (request.method === 'POST' && pathname === '/v1/auth/manager/login') {
       const body = await readJson(request); const store = findStore(body.storeCode);
       if (!store || body.password !== store.password) return send(response, 401, { error: 'Mã cửa hàng hoặc mật khẩu không đúng.' });
-      return send(response, 200, { session: createSession(store, String(body.deviceName || 'Thiết bị CHT'), 'manager', { id: `manager:${store.id}`, displayName: String(body.displayName || '').trim() || `CHT ${store.code}` }) });
+      if (String(body.displayName || '').trim()) store.managerName = String(body.displayName).trim();
+      const manager = { id: `manager:${store.id}`, displayName: store.managerName || `CHT ${store.code}` };
+      persist(); return send(response, 200, { session: createSession(store, String(body.deviceName || 'Thiết bị CHT'), 'manager', manager) });
     }
     if (request.method === 'POST' && pathname === '/v1/auth/employee/join') {
       const body = await readJson(request); const store = findStore(body.storeCode);
@@ -158,8 +160,25 @@ createServer(async (request, response) => {
       const displayName = String(body.displayName || '').trim(); const employeeCode = String(body.employeeCode || '').trim();
       if (!displayName || !employeeCode) return send(response, 400, { error: 'Cần nhập họ tên và mã nhân viên.' });
       let employee = storeEmployees(store.id).find((item) => item.employeeCode === employeeCode);
-      if (!employee) { employee = { id: randomUUID(), branchId: store.id, displayName, employeeCode, active: true }; employees.set(employee.id, employee); persist(); }
+      if (!employee) {
+        employee = { id: randomUUID(), branchId: store.id, displayName, employeeCode, active: true };
+        employees.set(employee.id, employee);
+        const data = storeData.get(store.id) || { kph: new Map(), history: new Map(), activity: [], revision: 0 };
+        data.revision += 1;
+        data.activity = [{ id: randomUUID(), branchId: store.id, type: 'employee.joined', recordId: employee.id, actorName: displayName, actorRole: 'employee', summary: `${displayName} đã tham gia cửa hàng.`, createdAt: new Date().toISOString() }, ...(data.activity || [])].slice(0, 100);
+        storeData.set(store.id, data); persist(); publishBranchChange(store.id);
+      } else if (employee.displayName !== displayName) { employee.displayName = displayName; for (const device of devices.values()) if (device.id === employee.id) device.displayName = displayName; persist(); publishBranchChange(store.id); }
       return send(response, 200, { session: createSession(store, String(body.deviceName || 'Thiết bị nhân viên'), 'employee', employee) });
+    }
+    if (request.method === 'PATCH' && pathname === '/v1/session/profile') {
+      const session = sessionFrom(request); const store = session && findStore(session.branchId); const body = await readJson(request); const displayName = String(body.displayName || '').trim();
+      if (!session || !store || !displayName) return send(response, 400, { error: 'Tên hiển thị không hợp lệ.' });
+      if (session.role === 'employee' && !employees.get(session.id)?.active) return send(response, 403, { error: 'Tài khoản nhân viên đã bị xóa.' });
+      session.displayName = displayName;
+      for (const device of devices.values()) if (device.id === session.id) device.displayName = displayName;
+      if (session.role === 'manager') store.managerName = displayName;
+      else { const employee = employees.get(session.id); if (employee) employee.displayName = displayName; }
+      persist(); publishBranchChange(session.branchId); return send(response, 200, { session });
     }
     if (pathname === '/v1/store/administration') {
       const session = sessionFrom(request); const store = session && findStore(session.branchId);
@@ -170,16 +189,39 @@ createServer(async (request, response) => {
     const deviceMatch = pathname.match(/^\/v1\/store\/devices\/([^/]+)$/);
     if (request.method === 'DELETE' && deviceMatch) { const session = sessionFrom(request); const target = [...devices.entries()].find(([, value]) => value.deviceId === deviceMatch[1]); if (!session || session.role !== 'manager' || !target || target[1].branchId !== session.branchId) return send(response, 403, { error: 'Không có quyền thu hồi thiết bị.' }); devices.delete(target[0]); return send(response, 200, { ok: true }); }
     const employeeMatch = pathname.match(/^\/v1\/store\/employees\/([^/]+)$/);
-    if (request.method === 'DELETE' && employeeMatch) { const session = sessionFrom(request); const employee = employees.get(employeeMatch[1]); if (!session || session.role !== 'manager' || !employee || employee.branchId !== session.branchId) return send(response, 403, { error: 'Không có quyền xoá nhân viên.' }); employee.active = false; for (const [token, device] of devices) if (device.id === employee.id) devices.delete(token); persist(); return send(response, 200, { ok: true }); }
+    if (request.method === 'DELETE' && employeeMatch) {
+      const session = sessionFrom(request); const employee = employees.get(employeeMatch[1]);
+      if (!session || session.role !== 'manager' || !employee || employee.branchId !== session.branchId) return send(response, 403, { error: 'Không có quyền xoá nhân viên.' });
+      employee.active = false;
+      const data = storeData.get(session.branchId) || { kph: new Map(), history: new Map(), activity: [], revision: 0 };
+      data.revision += 1;
+      data.activity = [{ id: randomUUID(), branchId: session.branchId, type: 'employee.removed', recordId: employee.id, actorName: session.displayName, actorRole: 'manager', targetUserId: employee.id, summary: 'Tài khoản nhân viên của bạn đã bị CHT xóa khỏi cửa hàng.', createdAt: new Date().toISOString() }, ...(data.activity || [])].slice(0, 100);
+      storeData.set(session.branchId, data); persist(); publishBranchChange(session.branchId); return send(response, 200, { ok: true });
+    }
     if (request.method === 'POST' && pathname === '/v1/sync') {
       const session = sessionFrom(request);
       if (!session) return send(response, 401, { error: 'Thiết bị chưa được ghép hoặc đã bị thu hồi.' });
+      const store = findStore(session.branchId);
+      if (!store) return send(response, 404, { error: 'Không tìm thấy cửa hàng.' });
       const body = await readJson(request);
+      const profile = body.profile || {};
+      const displayName = String(profile.displayName || '').trim();
+      let profileChanged = false;
+      if (displayName && displayName !== session.displayName) {
+        profileChanged = true;
+        session.displayName = displayName;
+        for (const device of devices.values()) if (device.id === session.id) device.displayName = displayName;
+        if (session.role === 'manager') store.managerName = displayName;
+        else { const currentEmployee = employees.get(session.id); if (currentEmployee?.active) currentEmployee.displayName = displayName; }
+      }
+      if (session.role === 'manager' && String(profile.storeName || '').trim() && store.name !== String(profile.storeName).trim()) { store.name = String(profile.storeName).trim(); profileChanged = true; }
       const serverTime = new Date().toISOString();
       const data = storeData.get(session.branchId) || { kph: new Map(), history: new Map(), activity: [], revision: 0 };
+      const employee = session.role === 'employee' ? employees.get(session.id) : null;
+      const revoked = Boolean(employee && !employee.active);
       const changes = Array.isArray(body.changes) ? body.changes : [];
       const kphChanges = changes.filter((change) => change?.kind === 'kph');
-      const permittedKph = kphChanges.map((change) => change.record).filter((record) => {
+      const permittedKph = (revoked ? [] : kphChanges.map((change) => change.record)).filter((record) => {
         const existing = data.kph.get(record?.id);
         if (session.role === 'manager') return true;
         if (!existing) {
@@ -190,7 +232,7 @@ createServer(async (request, response) => {
         // and every change after an approval are server-rejected.
         return Boolean(record.deletedAt) && existing.createdBy === session.id && (existing.trangThaiDuyet || 'cho_duyet') === 'cho_duyet';
       });
-      const permittedHistory = changes.filter((change) => change?.kind === 'history').map((change) => change.record)
+      const permittedHistory = (revoked ? [] : changes.filter((change) => change?.kind === 'history').map((change) => change.record))
         .filter((record) => record && (!record.branchId || record.branchId === session.branchId));
       const acceptedChangeIds = [
         ...kphChanges.filter((change) => permittedKph.includes(change.record)).map((change) => change.id),
@@ -203,10 +245,10 @@ createServer(async (request, response) => {
       }
       if (activityEvents.length) data.activity = [...activityEvents, ...(data.activity || [])].slice(0, 100);
       const nextRevision = () => ++data.revision;
-      merge(data.kph, permittedKph, serverTime, nextRevision); merge(data.history, permittedHistory, serverTime, nextRevision); storeData.set(session.branchId, data); persist(); if (acceptedChangeIds.length) publishBranchChange(session.branchId);
+      merge(data.kph, permittedKph, serverTime, nextRevision); merge(data.history, permittedHistory, serverTime, nextRevision); storeData.set(session.branchId, data); persist(); if (acceptedChangeIds.length || profileChanged) publishBranchChange(session.branchId);
       const cursorRevision = Number(body.cursor || 0) || 0;
       const changedSince = (record) => Number(record.serverRevision || 0) > cursorRevision;
-      const snapshot = { branchId: session.branchId, serverTime, cursor: String(data.revision), acceptedChangeIds, activityEvents: (data.activity || []).slice(0, 50), kphLogs: [...data.kph.values()].filter(changedSince), historyLogs: [...data.history.values()].filter(changedSince) };
+      const snapshot = { branchId: session.branchId, serverTime, cursor: String(data.revision), acceptedChangeIds, activityEvents: (data.activity || []).slice(0, 50), kphLogs: [...data.kph.values()].filter(changedSince), historyLogs: [...data.history.values()].filter(changedSince), profile: { displayName: session.displayName, managerName: store.managerName || '', storeName: store.name || 'CO.OP FOOD' }, revoked };
       session.lastSyncedAt = serverTime;
       pruneAcknowledgedDeletions(session.branchId, data);
       return send(response, 200, snapshot);

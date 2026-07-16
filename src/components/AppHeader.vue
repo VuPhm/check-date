@@ -5,7 +5,7 @@ const logoUrl = `${import.meta.env.BASE_URL}coopfood-logo.png`;
 const appStore = useAppStore();
 const unreadCount = computed(() => appStore.unreadActionableEvents.length);
 const profileName = computed(() => appStore.session?.displayName || 'Nhân viên');
-const profileCode = computed(() => appStore.session?.employeeCode || appStore.session?.branchId || 'CHT-0001');
+const profileCode = computed(() => appStore.session?.employeeCode || appStore.session?.branchId || 'Chưa liên kết');
 const profileRole = computed(() => appStore.session?.role === 'manager' ? 'Cửa hàng trưởng' : 'Nhân viên');
 const isSidebarCollapsed = ref(false);
 
@@ -161,13 +161,13 @@ function toggleDesktopSidebar() {
         </svg>
         <span class="notification-badge" :style="{ display: unreadCount ? 'flex' : 'none' }">{{ unreadCount }}</span>
       </button>
-      <div class="profile-summary" aria-label="Thông tin tài khoản">
+      <button class="profile-summary" type="button" aria-label="Mở cấu hình tài khoản" @click="openSettingsWorkspace">
         <span class="profile-summary__avatar" aria-hidden="true">{{ profileName.charAt(0).toUpperCase() }}</span>
         <span class="profile-summary__details">
           <strong>{{ profileName }}</strong>
           <small>{{ profileRole }} / {{ profileCode }}</small>
         </span>
-      </div>
+      </button>
     </div>
   </div>
 </template>

@@ -19,6 +19,8 @@ interface SyncResponse {
   cursor: string;
   acceptedChangeIds: string[];
   activityEvents: ActivityEvent[];
+  profile?: { displayName: string; managerName?: string; storeName?: string };
+  revoked?: boolean;
 }
 
 export function subscribeToBranchEvents(endpoint: ServerEndpoint, session: DeviceSession, onChange: () => void): EventSource {
@@ -137,6 +139,7 @@ export async function syncWithServer(
 ): Promise<SyncResponse> {
   const payload = {
     cursor,
+    profile: { displayName: session.displayName, storeName: localStorage.getItem('kph_store') || 'CO.OP FOOD' },
     changes: await Promise.all(changes.map(async (change) => ({
       ...change, record: change.kind === 'kph' ? await toWireLog(change.record as KphLog) : change.record,
     }))),
