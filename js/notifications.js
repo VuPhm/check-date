@@ -42,19 +42,11 @@ export function updateNotificationStats() {
 }
 
 export function openNotificationModal() {
-    const modal = document.getElementById('notificationModal');
-    if (modal) {
-        modal.classList.add('active');
-        // Force update to get the latest data when opening
-        updateNotificationStats();
-    }
+    window.dispatchEvent(new CustomEvent('coop:notification-modal-open'));
 }
 
 export function closeNotificationModal() {
-    const modal = document.getElementById('notificationModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
+    window.dispatchEvent(new CustomEvent('coop:notification-modal-close'));
 }
 
 export function handleNotificationHistoryClick(nsx, hsdDate, hsdDays, barcode, quantity, dvt, tenHang, id) {

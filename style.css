@@ -5023,6 +5023,77 @@ button.notif-item {
     cursor: pointer;
 }
 
+.kph-create-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.kph-create-main:first-child { box-shadow: 0 4px 14px rgba(0, 102, 51, 0.2); }
+.kph-create-main svg { width: 18px; height: 18px; }
+.kph-selected-count { font-weight: 700; }
+.btn-export-excel svg { width: 15px; height: 15px; margin-right: 5px; }
+.btn-delete-selected svg { width: 14px; height: 14px; margin-right: 5px; }
+
+.image-modal { z-index: 10000; }
+.image-modal__content { position: relative; max-width: 90%; padding: 34px 0 0; background: transparent; box-shadow: none; border: none; text-align: center; }
+.image-modal__image { max-width: 100%; max-height: 80vh; width: auto; height: auto; object-fit: contain; border-radius: var(--radius-item); border: 2px solid rgba(255, 255, 255, 0.2); }
+.image-modal__close { position: absolute; top: 0; right: -2px; z-index: 1; display: grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 1px solid rgba(255, 255, 255, .45); border-radius: 50%; background: rgba(0, 0, 0, .65); color: white; font: 28px/1 Arial, sans-serif; cursor: pointer; }
+.image-modal__close:hover { background: rgba(190, 20, 20, .88); }
+
+/* Clear-filter control has its own stable layout: desktop shows its label,
+   while the compact mobile toolbar keeps a touch-sized icon-only button. */
+.kph-filter-row.compact-filter .kph-filter-btn--clear {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: auto;
+    min-width: 0;
+    height: 36px;
+    padding: 0 12px !important;
+    border: 1px solid rgba(181, 36, 36, .28);
+    border-radius: var(--radius-item);
+    background: rgba(218, 54, 51, .08);
+    color: #b42318;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.kph-filter-row.compact-filter .kph-filter-btn--clear svg {
+    display: block;
+    flex: 0 0 16px;
+    width: 16px !important;
+    min-width: 16px;
+    height: 16px !important;
+    margin: 0 !important;
+}
+
+.kph-filter-row.compact-filter .kph-filter-btn--clear .kph-btn-text {
+    display: inline !important;
+}
+
+.kph-filter-row.compact-filter .kph-filter-btn--clear:hover {
+    background: rgba(218, 54, 51, .14);
+}
+
+@media (max-width: 600px) {
+    .kph-filter-row.compact-filter .kph-filter-btn--clear {
+        width: 36px;
+        min-width: 36px;
+        padding: 0 !important;
+    }
+
+    .kph-filter-row.compact-filter .kph-filter-btn--clear .kph-btn-text {
+        display: none !important;
+    }
+}
+
 /* Settings workspace follows the section, field and action patterns used in KPH forms. */
 .settings-workspace { display: grid; gap: 20px; }
 .settings-section-group { margin: 0 !important; }
@@ -5151,31 +5222,6 @@ button.notif-item {
     max-width: 580px;
     margin: 0 auto 20px auto;
 }
-
-.kph-guide-link-row {
-    display: flex;
-    justify-content: flex-end;
-    width: 100%;
-    max-width: 580px;
-    margin: -4px auto 8px;
-}
-
-.kph-guide-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 10px;
-    border: 1px solid rgba(0, 102, 51, .16);
-    border-radius: 999px;
-    color: var(--brand-primary);
-    background: rgba(0, 102, 51, .045);
-    font-size: 12px;
-    font-weight: 700;
-    text-decoration: none;
-}
-
-.kph-guide-link:hover { background: rgba(0, 102, 51, .09); }
-.kph-guide-link svg { width: 15px; height: 15px; }
 
 @media (max-width: 600px) {
     .kph-main-actions-group {
@@ -5455,27 +5501,44 @@ button.notif-item {
 }
 
 /* Compact Notification Modal Overrides */
-#notificationModal .apple-modal-header {
+.notification-modal__content {
+    max-width: 480px;
+    max-height: 90vh;
+}
+
+.notification-modal__header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface);
+}
+
+.notification-modal__body {
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.notification-modal .apple-modal-header {
     padding: 10px 16px;
 }
-#notificationModal .apple-modal-title {
+.notification-modal .apple-modal-title {
     font-size: 15px;
 }
-#notificationModal .apple-modal-body {
+.notification-modal .apple-modal-body {
     padding: 10px 16px 16px 16px;
 }
-#notificationModal .notif-section-title {
+.notification-modal .notif-section-title {
     font-size: 12px;
     margin-bottom: 8px;
     padding-bottom: 4px;
 }
-#notificationModal .notif-stat-card {
+.notification-modal .notif-stat-card {
     padding: 6px 8px;
 }
-#notificationModal .notif-stat-card__val {
+.notification-modal .notif-stat-card__val {
     font-size: 15px;
 }
-#notificationModal .notif-stat-card__label {
+.notification-modal .notif-stat-card__label {
     font-size: 9.5px;
 }
 

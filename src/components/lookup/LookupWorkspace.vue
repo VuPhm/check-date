@@ -1,8 +1,6 @@
 <script setup lang="ts">
 type LegacyHandler = (...args: unknown[]) => unknown;
 
-const guideUrl = `${import.meta.env.BASE_URL}docs/huong-dan/huong-dan-tra-han-lui.html`;
-
 function invoke(name: string, ...args: unknown[]) {
   const handler = (window as typeof window & Record<string, LegacyHandler | undefined>)[name];
   handler?.(...args);
@@ -15,14 +13,6 @@ function handleModeChange(event: Event) {
 
 <template>
   <main class="calc-board">
-    <div class="lookup-guide-link-row">
-      <a class="lookup-guide-link" :href="guideUrl" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-2.9 2-2.9 4" /><path d="M12 18h.01" /></svg>
-        Hướng dẫn sử dụng
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></svg>
-      </a>
-    </div>
-
     <div class="form-field" style="margin-bottom: 12px;">
       <label class="form-label" for="tenHang">Tên hàng hóa</label>
       <div class="form-input-wrapper">
@@ -174,26 +164,4 @@ function handleModeChange(event: Event) {
   font-family: inherit;
 }
 
-.lookup-guide-link-row {
-  display: flex;
-  justify-content: flex-end;
-  margin: -4px 0 12px;
-}
-
-.lookup-guide-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 10px;
-  border: 1px solid rgba(0, 102, 51, .16);
-  border-radius: 999px;
-  color: var(--brand-primary);
-  background: rgba(0, 102, 51, .045);
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.lookup-guide-link:hover { background: rgba(0, 102, 51, .09); }
-.lookup-guide-link svg { width: 15px; height: 15px; }
 </style>

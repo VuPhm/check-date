@@ -1330,19 +1330,11 @@ function _doUpdateKphLogsUI() {
 
 
 export function zoomImage(src) {
-    const modal = document.getElementById('imageModal');
-    const img = document.getElementById('modalImg');
-    if (modal && img) {
-        img.src = src;
-        modal.classList.add('active');
-    }
+    window.dispatchEvent(new CustomEvent('coop:image-modal-open', { detail: src }));
 }
 
 export function closeImageModal() {
-    const modal = document.getElementById('imageModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
+    window.dispatchEvent(new CustomEvent('coop:image-modal-close'));
 }
 
 // XUẤT FILE EXCEL ĐÚNG MẪU BM-331.CF CỦA SAIGON CO.OP
