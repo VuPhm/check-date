@@ -2,7 +2,6 @@
 
 Ứng dụng Progressive Web App (PWA) gọn nhẹ, hoạt động độc lập và tối ưu cho thiết bị di động, giúp nhân viên/quản lý tại các cửa hàng bán lẻ (CoopFood) tra cứu nhanh thời hạn lùi hàng (ngày phải thu hồi hoặc giảm giá sản phẩm) dựa trên Ngày Sản Xuất (NSX) và Hạn Sử Dụng (HSD).
 
-* **Bản chạy trực tuyến (Production Build):** [vuphm.github.io/coop-date](https://vuphm.github.io/coop-date/)
 * **Nền tảng phát triển:** Vite, Vue 3, TypeScript, Pinia, Dexie và Vanilla CSS (Apple HIG Design).
 * **Phiên bản hiện tại:** `2.22.0` (16/07/2026)
 
