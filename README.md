@@ -4,7 +4,7 @@
 
 * **Bản chạy trực tuyến (Production Build):** [vuphm.github.io/coop-date](https://vuphm.github.io/coop-date/)
 * **Nền tảng phát triển:** Vite, Vue 3, TypeScript, Pinia, Dexie và Vanilla CSS (Apple HIG Design).
-* **Phiên bản hiện tại:** `2.20.0` (15/07/2026)
+* **Phiên bản hiện tại:** `2.22.0` (16/07/2026)
 
 ---
 

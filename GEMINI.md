@@ -11,7 +11,7 @@
 | **Tên** | Check Date CoopFood |
 | **Loại** | Progressive Web App (PWA) |
 | **Production URL** | https://vuphm.github.io/coop-date/ |
-| **Phiên bản** | `2.20.0` (15/07/2026) |
+| **Phiên bản** | `2.22.0` (16/07/2026) |
 | **Nền tảng** | Vite + Vue 3 + TypeScript + Vanilla CSS |
 | **Framework** | Vue 3, chuyển đổi tăng dần từ giao diện legacy |
 | **CSS Framework** | Không dùng (Tailwind/Bootstrap) — Vanilla CSS theo Apple HIG |

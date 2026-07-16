@@ -5143,6 +5143,31 @@ button.notif-item {
     margin: 0 auto 20px auto;
 }
 
+.kph-guide-link-row {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    max-width: 580px;
+    margin: -4px auto 8px;
+}
+
+.kph-guide-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border: 1px solid rgba(0, 102, 51, .16);
+    border-radius: 999px;
+    color: var(--brand-primary);
+    background: rgba(0, 102, 51, .045);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.kph-guide-link:hover { background: rgba(0, 102, 51, .09); }
+.kph-guide-link svg { width: 15px; height: 15px; }
+
 @media (max-width: 600px) {
     .kph-main-actions-group {
         flex-direction: row;

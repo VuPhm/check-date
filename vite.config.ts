@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
@@ -47,6 +48,11 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
+      input: {
+        app: resolve(process.cwd(), 'index.html'),
+        lookupGuide: resolve(process.cwd(), 'docs/huong-dan/huong-dan-tra-han-lui.html'),
+        kphGuide: resolve(process.cwd(), 'docs/huong-dan/huong-dan-kph.html'),
+      },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/html5-qrcode')) return 'scanner-vendor';
