@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useAppStore } from '../stores/app';
+import TaskWorkspace from './notifications/TaskWorkspace.vue';
 const logoUrl = `${import.meta.env.BASE_URL}coopfood-logo.png`;
 const appStore = useAppStore();
 const unreadCount = computed(() => appStore.unreadActionableEvents.length);
@@ -8,13 +9,16 @@ const profileName = computed(() => appStore.session?.displayName || 'Nhân viên
 const profileCode = computed(() => appStore.session?.employeeCode || appStore.session?.branchId || 'Chưa liên kết');
 const profileRole = computed(() => appStore.session?.role === 'manager' ? 'Cửa hàng trưởng' : 'Nhân viên');
 const isSidebarCollapsed = ref(false);
+const isProfileSettingsOpen = ref(false);
 
 function switchWorkspace(tab: 'tracuu' | 'kph') {
+  closeProfileSettings();
   const handler = (window as typeof window & { switchTab?: (value: string) => void }).switchTab;
   handler?.(tab);
 }
 
 function openSettingsWorkspace() {
+  closeProfileSettings();
   document.querySelectorAll('.tab-btn').forEach((button) => button.classList.remove('active'));
   document.querySelectorAll('[data-workspace="settings"]').forEach((button) => button.classList.add('active'));
   document.querySelectorAll('.tab-content').forEach((content) => content.classList.remove('active-tab'));
@@ -27,6 +31,46 @@ function openSettingsWorkspace() {
   document.querySelector('.app-container')?.classList.add('system-workspace-active');
 }
 
+function openTasksWorkspace() {
+  closeProfileSettings();
+  document.querySelectorAll('.tab-btn').forEach((button) => button.classList.remove('active'));
+  document.querySelectorAll('[data-sidebar-tab]').forEach((button) => {
+    const active = button.getAttribute('data-sidebar-tab') === 'tasks';
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+  });
+  document.querySelectorAll('[data-sidebar-panel]').forEach((panel) => panel.classList.toggle('active', panel.getAttribute('data-sidebar-panel') === 'tasks'));
+  document.querySelector('.app-container')?.classList.add('system-workspace-active');
+}
+
+function openProfileSettings() {
+  if (window.matchMedia('(min-width: 1024px)').matches) {
+    if (isProfileSettingsOpen.value) {
+      closeProfileSettings();
+      return;
+    }
+    const settingsPanel = document.querySelector<HTMLElement>('[data-sidebar-panel="settings"]');
+    const isSettingsWorkspaceOpen = document.querySelector('.app-container')?.classList.contains('system-workspace-active') && settingsPanel?.classList.contains('active');
+    if (isSettingsWorkspaceOpen) return;
+    isProfileSettingsOpen.value = true;
+    document.getElementById('desktopSystemWorkspace')?.classList.add('profile-settings-host');
+    return;
+  }
+  openSettingsWorkspace();
+}
+
+function closeProfileSettings() {
+  isProfileSettingsOpen.value = false;
+  document.getElementById('desktopSystemWorkspace')?.classList.remove('profile-settings-host');
+}
+
+function closeProfileSettingsOnOutsideClick(event: PointerEvent) {
+  if (!isProfileSettingsOpen.value) return;
+  const target = event.target as Element | null;
+  if (target?.closest('.profile-summary, .desktop-workspace-panel.is-profile-floating')) return;
+  closeProfileSettings();
+}
+
 function openNotifications() {
   const handler = (window as typeof window & { openNotificationModal?: () => void }).openNotificationModal;
   handler?.();
@@ -36,6 +80,10 @@ function toggleDesktopSidebar() {
   isSidebarCollapsed.value = !isSidebarCollapsed.value;
   document.body.classList.toggle('desktop-sidebar-collapsed', isSidebarCollapsed.value);
 }
+
+onMounted(() => document.addEventListener('pointerdown', closeProfileSettingsOnOutsideClick));
+onMounted(() => window.addEventListener('coop:open-tasks', openTasksWorkspace));
+onBeforeUnmount(() => { document.removeEventListener('pointerdown', closeProfileSettingsOnOutsideClick); window.removeEventListener('coop:open-tasks', openTasksWorkspace); });
 
 </script>
 
@@ -58,11 +106,11 @@ function toggleDesktopSidebar() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
           <span>Hàng KPH</span>
         </button>
-      <button class="tab-btn desktop-nav-tab" data-nav-group="system" data-first-system="true" type="button" role="tab" aria-selected="false" data-sidebar-tab="settings">
+      <button class="tab-btn desktop-nav-tab" data-nav-group="system" data-first-system="true" type="button" role="tab" aria-selected="false" data-sidebar-tab="settings" @click="openSettingsWorkspace">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" /><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none" /><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none" /><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none" /></svg>
         <span>Cấu hình & đồng bộ</span>
       </button>
-      <button class="tab-btn desktop-nav-tab" data-nav-group="system" type="button" role="tab" aria-selected="false" data-sidebar-tab="tasks">
+      <button class="tab-btn desktop-nav-tab" data-nav-group="system" type="button" role="tab" aria-selected="false" data-sidebar-tab="tasks" @click="openTasksWorkspace">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h12" /></svg>
         <span>Việc cần xử lý</span>
       </button>
@@ -79,20 +127,16 @@ function toggleDesktopSidebar() {
   </aside>
 
   <Teleport to="#desktopSystemWorkspace">
-    <section class="desktop-workspace-panel" data-sidebar-panel="settings">
-      <div class="desktop-workspace-panel__intro"><p>Cấu hình</p><h2>Cấu hình & đồng bộ</h2></div>
+    <div v-if="isProfileSettingsOpen" class="profile-settings-backdrop" @click="closeProfileSettings"></div>
+    <section class="desktop-workspace-panel" :class="{ 'is-profile-floating': isProfileSettingsOpen }" data-sidebar-panel="settings">
+      <div class="desktop-workspace-panel__intro"><p>Cấu hình</p><h2>Cấu hình & đồng bộ</h2><button v-if="isProfileSettingsOpen" class="profile-settings-close" type="button" aria-label="Đóng cấu hình" @click="closeProfileSettings">×</button></div>
       <div class="desktop-workspace-panel__body">
         <div id="vue-sync-config-root"></div>
       </div>
       </section>
 
     <section class="desktop-workspace-panel" data-sidebar-panel="tasks">
-      <div class="desktop-workspace-panel__intro"><p>Tiến độ</p><h2>Việc cần xử lý</h2></div>
-      <div class="desktop-workspace-panel__body desktop-workspace-panel__body--stats">
-        <div class="sidebar-stat-group"><div class="sidebar-stat-group-title">Phiếu KPH chờ duyệt</div><div class="sidebar-stat-row"><span class="sidebar-stat-label">TPCN</span><span class="sidebar-stat-val val-kph-tpcn">0</span></div><div class="sidebar-stat-row"><span class="sidebar-stat-label">TPTS</span><span class="sidebar-stat-val val-kph-tpts">0</span></div></div>
-        <div class="sidebar-stat-group"><div class="sidebar-stat-group-title">Tra cứu đã lưu</div><div class="sidebar-stat-row"><span class="sidebar-stat-label">Sắp đến hạn</span><span class="sidebar-stat-val val-tracuu-warning">0</span></div><div class="sidebar-stat-row"><span class="sidebar-stat-label">Quá hạn lùi</span><span class="sidebar-stat-val val-tracuu-danger">0</span></div><div class="sidebar-stat-row"><span class="sidebar-stat-label">Hết HSD</span><span class="sidebar-stat-val val-tracuu-expired">0</span></div></div>
-      </div>
-      <button type="button" class="desktop-panel-button" @click="openNotifications">Xem chi tiết</button>
+      <TaskWorkspace />
     </section>
   </Teleport>
 
@@ -161,7 +205,7 @@ function toggleDesktopSidebar() {
         </svg>
         <span class="notification-badge" :style="{ display: unreadCount ? 'flex' : 'none' }">{{ unreadCount }}</span>
       </button>
-      <button class="profile-summary" type="button" aria-label="Mở cấu hình tài khoản" @click="openSettingsWorkspace">
+      <button class="profile-summary" type="button" aria-label="Mở cấu hình tài khoản" @click="openProfileSettings">
         <span class="profile-summary__avatar" aria-hidden="true">{{ profileName.charAt(0).toUpperCase() }}</span>
         <span class="profile-summary__details">
           <strong>{{ profileName }}</strong>

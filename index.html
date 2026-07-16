@@ -45,7 +45,7 @@
 <body>
 
   <header class="app-header" id="vue-header-root">
-    <div class="vue-loading-fallback vue-loading-fallback--header">Đang tải ứng dụng…</div>
+    <div class="app-loading app-loading--header" role="status" aria-label="Đang tải ứng dụng"><span class="app-loading__spinner" aria-hidden="true"></span></div>
   </header>
 
   <div class="app-container">
@@ -53,13 +53,10 @@
       <!-- Tab 1: Tra cứu Hạn lùi -->
       <div id="tab-tracuu" class="tab-content active-tab">
         <div id="vue-lookup-root">
-          <div class="vue-loading-fallback">
-            <strong>Đang khởi động giao diện…</strong>
-            <span>Nếu thông báo này không biến mất, hãy chạy ứng dụng bằng <code>npm run dev</code> thay cho Python HTTP server.</span>
-          </div>
+          <div class="app-loading" role="status"><span class="app-loading__spinner" aria-hidden="true"></span><span>Đang tải giao diện…</span></div>
         </div>
         <div id="vue-history-root">
-          <div class="vue-loading-fallback">Đang tải lịch sử…</div>
+          <div class="app-loading" role="status"><span class="app-loading__spinner" aria-hidden="true"></span><span>Đang tải lịch sử…</span></div>
         </div>
       </div>
 

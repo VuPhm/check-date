@@ -63,6 +63,16 @@ export function handleNotificationHistoryClick(nsx, hsdDate, hsdDays, barcode, q
     }, 120);
 }
 
+export function handleNotificationHistoryStateClick(alertType) {
+    closeNotificationModal();
+    switchTab('tracuu');
+    // Reset first so this shortcut always opens exactly the chosen state.
+    if (typeof window.setFilter === 'function') {
+        window.setFilter('all');
+        window.setFilter(alertType);
+    }
+}
+
 export function handleNotificationKphClick(subTabId) {
     closeNotificationModal();
     switchTab('kph');
@@ -77,5 +87,6 @@ export function handleNotificationKphClick(subTabId) {
 window.openNotificationModal = openNotificationModal;
 window.closeNotificationModal = closeNotificationModal;
 window.handleNotificationHistoryClick = handleNotificationHistoryClick;
+window.handleNotificationHistoryStateClick = handleNotificationHistoryStateClick;
 window.handleNotificationKphClick = handleNotificationKphClick;
 window.updateNotificationStats = updateNotificationStats;

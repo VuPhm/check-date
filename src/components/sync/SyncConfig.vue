@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useAppStore } from '../../stores/app';
 import { getStoreAdministration, joinEmployee, loginManager, removeEmployee, revokeDevice, updateStoreAdministration } from '../../services/syncApi';
 import type { ManagedDevice, ManagedEmployee } from '../../domain/types';
+import ActivityLog from '../activity/ActivityLog.vue';
 
 const appStore = useAppStore();
 const authModal = ref<'manager' | 'employee' | null>(null);
@@ -120,6 +121,7 @@ async function dropEmployee(id: string) { if (appStore.session) { await removeEm
 async function saveEmployeeName() { try { busy.value = true; appStore.updateSessionDisplayName(displayName.value); await appStore.syncNow(); message.value = 'Đã đồng bộ tên nhân viên.'; } catch (error) { message.value = friendlyError(error, 'Không thể đổi tên nhân viên.'); } finally { busy.value = false; } }
 async function saveManagerName() { try { busy.value = true; appStore.updateSessionDisplayName(displayName.value); await appStore.syncNow(); message.value = 'Đã đồng bộ tên CHT.'; } catch (error) { message.value = friendlyError(error, 'Không thể đổi tên CHT.'); } finally { busy.value = false; } }
 function refreshAfterRemoteSync() { if (appStore.isManager) void refreshAdmin(); }
+function openFullActivityLog() { window.dispatchEvent(new CustomEvent('coop:open-tasks')); }
 
 onMounted(() => {
   storeCode.value = appStore.session?.branchId || '';
@@ -168,6 +170,11 @@ onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(ref
     </section>
 
     <button v-if="appStore.session" class="sync-logout" type="button" @click="confirmAction = 'logout'">{{ appStore.isManager ? 'Đăng xuất CHT' : 'Đăng xuất' }}</button>
+
+    <section v-if="appStore.session" class="sync-card sync-activity-card">
+      <div class="sync-activity-card__heading"><div><h3 class="sync-card__title">Nhật ký cửa hàng</h3><p>5 hoạt động gần đây từ cửa hàng.</p></div><button type="button" class="sync-activity-card__link" @click="openFullActivityLog">Xem tất cả</button></div>
+      <ActivityLog :events="appStore.activityEvents" :limit="5" compact />
+    </section>
 
     <div v-if="authModal" class="apple-modal active sync-modal" role="dialog" aria-modal="true" :aria-label="authModal === 'manager' ? 'Đăng nhập CHT' : 'Tham gia cửa hàng'" @click.self="closeAuth">
       <div class="apple-modal-content sync-modal__content"><div class="apple-modal-header"><h3 class="apple-modal-title">{{ authModal === 'manager' ? 'Đăng nhập CHT' : 'Tham gia cửa hàng' }}</h3><button class="apple-modal-close-btn" type="button" aria-label="Đóng" @click="closeAuth">×</button></div><div class="apple-modal-body sync-modal__body">
