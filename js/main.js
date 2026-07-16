@@ -265,76 +265,12 @@ export function setCalcFocusTheme(theme = 'safe') {
     if (focusZone) focusZone.dataset.theme = theme;
 }
 
-export function openResultModal(theme, title, mainText, subText, iconHtml, detailsHtml = '') {
-    const modal = document.getElementById('resultModal');
-    if (!modal) return;
-    const content = modal.querySelector('.result-modal-content');
-    const titleEl = document.getElementById('resultModalTitle');
-    const mainEl = document.getElementById('resultModalMainText');
-    const subEl = document.getElementById('resultModalSubText');
-    const iconEl = document.getElementById('resultModalIcon');
-    const detailsEl = document.getElementById('resultModalDetails');
-    const btnCreateKph = document.getElementById('btnResultModalCreateKph');
-    const btnClose = document.getElementById('btnResultModalClose');
-
-    // Reset themes
-    if (content) {
-        content.className = 'apple-modal-content result-modal-content';
-        content.classList.add(`result-theme-${theme}`);
-    }
-
-    if (titleEl) titleEl.textContent = title;
-    if (mainEl) mainEl.innerHTML = mainText;
-    if (subEl) subEl.innerHTML = subText;
-    if (iconEl) iconEl.innerHTML = iconHtml;
-    if (detailsEl) {
-        detailsEl.innerHTML = detailsHtml;
-        detailsEl.hidden = !detailsHtml;
-    }
-
-    // Toggle button layout based on status/error
-    if (theme === 'danger' && title === 'Lỗi tra cứu') {
-        if (btnCreateKph) btnCreateKph.style.display = 'none';
-        if (btnClose) {
-            btnClose.className = 'btn-action btn-danger';
-            btnClose.style.width = '100%';
-        }
-    } else {
-        if (btnCreateKph) {
-            btnCreateKph.style.display = 'flex';
-            // Tính toán hạn sử dụng (shelf life) để tự động quyết định loại hàng
-            let shelfLife = 0;
-            const isModeHsdDate = document.getElementById('calcModeToggle') ? document.getElementById('calcModeToggle').checked : true;
-            if (isModeHsdDate) {
-                const nsxStr = document.getElementById('nsx') ? document.getElementById('nsx').value.trim() : '';
-                const hsdStr = document.getElementById('hsdDate') ? document.getElementById('hsdDate').value.trim() : '';
-                if (isValidDateStr(nsxStr) && isValidDateStr(hsdStr)) {
-                    const nsxDate = parseLocalDate(nsxStr);
-                    const hsdDate = parseLocalDate(hsdStr);
-                    shelfLife = Math.round((hsdDate - nsxDate) / MS_PER_DAY) + 1;
-                }
-            } else {
-                const daysVal = document.getElementById('hsdDays') ? document.getElementById('hsdDays').value.trim() : '';
-                shelfLife = parseInt(daysVal, 10) || 0;
-            }
-            const isTpts = (shelfLife > 0 && shelfLife < 10);
-            btnCreateKph.classList.toggle('btn-create-kph-tpts', isTpts);
-            btnCreateKph.textContent = `Tạo phiếu KPH (${isTpts ? 'TPTS' : 'TPCN'})`;
-        }
-        if (btnClose) {
-            btnClose.className = 'btn-secondary';
-            btnClose.style.width = 'auto';
-        }
-    }
-
-    modal.classList.add('active');
+export function openResultModal(result) {
+    window.dispatchEvent(new CustomEvent('coop:result-modal-open', { detail: result }));
 }
 
 export function closeResultModal() {
-    const modal = document.getElementById('resultModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
+    window.dispatchEvent(new CustomEvent('coop:result-modal-close'));
 }
 
 export function executeCalculation(saveToHistory = true) {
@@ -384,18 +320,24 @@ export function executeCalculation(saveToHistory = true) {
 
             let mainText = "";
             let subText = "";
-            let labelTitle = "";
+            let mainLabel = "";
+            let subLines = [];
 
             if (output.isExpiredProduct) {
-                labelTitle = output.isShortProduct ? 'Hạn sử dụng' : 'Ngày lùi hàng';
-                mainText = `${labelTitle}: <strong>${output.dateStr}</strong>`;
+                mainLabel = output.isShortProduct ? 'Hạn sử dụng' : 'Ngày lùi hàng';
+                mainText = `${mainLabel}: <strong>${output.dateStr}</strong>`;
                 subText = `<span style="font-weight: 800;">[${output.alert.label}]</span>`;
+                subLines = [`[${output.alert.label}]`];
             } else if (output.isShortProduct) {
                 mainText = `Hạn sử dụng: <strong>${output.dateStr}</strong>`;
                 subText = `<span style="font-weight: 600;">[${output.alert.label}]</span><br>Sử dụng đến hết ngày ${output.dateStr}`;
+                mainLabel = 'Hạn sử dụng';
+                subLines = [`[${output.alert.label}]`, `Sử dụng đến hết ngày ${output.dateStr}`];
             } else {
                 mainText = `Ngày lùi hàng: <strong>${output.dateStr}</strong>`;
                 subText = `<span style="font-weight: 600;">[${output.alert.label}]</span><br>HSD còn ${output.daysRemaining} ngày`;
+                mainLabel = 'Ngày lùi hàng';
+                subLines = [`[${output.alert.label}]`, `HSD còn ${output.daysRemaining} ngày`];
             }
 
             if (text) {
@@ -406,33 +348,20 @@ export function executeCalculation(saveToHistory = true) {
             const alertType = output.isShortProduct ? 'other' : output.alert.type;
             const theme = alertType; // 'safe', 'warning', 'danger', 'other', 'expired'
             setCalcFocusTheme(theme);
-            let iconHtml = '';
-            if (theme === 'safe') {
-                iconHtml = `<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
-            } else if (theme === 'warning') {
-                iconHtml = `<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
-            } else if (theme === 'danger') {
-                iconHtml = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
-            } else if (theme === 'other') {
-                iconHtml = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
-            } else if (theme === 'expired') {
-                iconHtml = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
-            }
-
             const quantityDetail = quantityVal !== '' ? `${quantityVal} ${calcDvtVal}` : 'Chưa nhập';
             const barcodeDetail = barcodeVal || 'Tra cứu không mã';
             const resultLabel = output.isShortProduct ? 'Hạn sử dụng' : 'Ngày lùi';
             const remainingDetail = output.isExpiredProduct ? 'Đã hết HSD' : formatRemainingText(output.daysRemaining);
-            const detailsHtml = `
-                <div class="result-modal-details__row"><span>Tên hàng</span><strong>${tenHangVal || 'Chưa nhập'}</strong></div>
-                <div class="result-modal-details__row"><span>Barcode</span><strong>${barcodeDetail}</strong></div>
-                <div class="result-modal-details__row"><span>Số lượng</span><strong>${quantityDetail}</strong></div>
-                <div class="result-modal-details__row"><span>NSX</span><strong>${nsxVal}</strong></div>
-                <div class="result-modal-details__row"><span>HSD</span><strong>${output.formattedHsd}</strong></div>
-                <div class="result-modal-details__row result-modal-details__row--result"><span>${resultLabel}</span><strong>${output.dateStr}</strong></div>
-                <div class="result-modal-details__row"><span>Trạng thái</span><strong>${output.alert.label} · ${remainingDetail}</strong></div>`;
-
-            openResultModal(theme, 'Kết quả tra cứu', mainText, subText, iconHtml, detailsHtml);
+            openResultModal({
+                theme, title: 'Kết quả tra cứu', mainLabel, mainValue: output.dateStr, subLines,
+                kphType: output.isShortProduct ? 'TPTS' : 'TPCN',
+                details: [
+                    { label: 'Tên hàng', value: tenHangVal || 'Chưa nhập' }, { label: 'Barcode', value: barcodeDetail },
+                    { label: 'Số lượng', value: quantityDetail }, { label: 'NSX', value: nsxVal },
+                    { label: 'HSD', value: output.formattedHsd }, { label: resultLabel, value: output.dateStr, highlight: true },
+                    { label: 'Trạng thái', value: `${output.alert.label} · ${remainingDetail}` },
+                ],
+            });
 
             const historyPayload = {
                 nsx: nsxVal,
@@ -507,8 +436,8 @@ export function executeCalculation(saveToHistory = true) {
             }
 
             // Open popup result modal for validation error
-            const errorIcon = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
-            openResultModal('danger', 'Lỗi tra cứu', 'Thông tin chưa đúng', userFriendlyMessage, errorIcon);
+            const plainMessage = userFriendlyMessage.replace(/<[^>]+>/g, '').replace('⚠️ ', '');
+            openResultModal({ theme: 'danger', title: 'Lỗi tra cứu', mainLabel: 'Thông tin chưa đúng', subLines: [plainMessage] });
 
             const container = document.getElementById('svgContainer');
             if (container) container.innerHTML = '';
@@ -1017,3 +946,4 @@ export function createKphFromCalculation() {
     }
 }
 window.createKphFromCalculation = createKphFromCalculation;
+window.addEventListener('coop:create-kph-from-calculation', createKphFromCalculation);

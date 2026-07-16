@@ -4,4 +4,5 @@ dist/
 .DS_Store
 dev-cert.pem
 dev-key.pem
+certs/
 data/mock-central-api.json

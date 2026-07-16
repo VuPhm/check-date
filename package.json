@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "dev:pwa": "VITE_ENABLE_DEV_SW=true vite --host 0.0.0.0",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "mock:api": "node scripts/mock-central-api.mjs",
     "demo": "node scripts/demo.mjs",
+    "demo:pwa": "DEMO_PWA=1 node scripts/demo.mjs",
+    "demo:lan": "DEMO_PWA=1 LOCAL_HTTPS=true node scripts/demo.mjs",
     "demo:reset": "node scripts/reset-demo-data.mjs",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -11,6 +11,8 @@ import KphApprovalForm from './components/kph/KphApprovalForm.vue';
 import KphCreateForm from './components/kph/KphCreateForm.vue';
 import NotificationContent from './components/notifications/NotificationContent.vue';
 import LookupWorkspace from './components/lookup/LookupWorkspace.vue';
+import ResultModal from './components/lookup/ResultModal.vue';
+import ScannerModal from './components/scanner/ScannerModal.vue';
 import SyncConfig from './components/sync/SyncConfig.vue';
 import FirstRunSetup from './components/setup/FirstRunSetup.vue';
 import { useAppStore } from './stores/app';
@@ -44,6 +46,8 @@ function mountComponent(component: Parameters<typeof createApp>[0], target: stri
 
 mountComponent(AppHeader, '#vue-header-root');
 mountComponent(LookupWorkspace, '#vue-lookup-root');
+mountComponent(ResultModal, '#vue-result-modal-root');
+mountComponent(ScannerModal, '#vue-scanner-modal-root');
 mountComponent(HistoryBoard, '#vue-history-root');
 mountComponent(KphList, '#vue-kph-list-root');
 mountComponent(KphApprovalForm, '#kphApproveForm');

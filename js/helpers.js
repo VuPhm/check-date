@@ -45,7 +45,8 @@ export async function registerServiceWorker() {
 
     // Vite chỉ sinh sw.js trong production build. Ở dev, xóa đăng ký cũ để
     // Service Worker production không cache/chặn các module HMR trên localhost.
-    if (import.meta.env.DEV) {
+    const allowDevServiceWorker = import.meta.env.VITE_ENABLE_DEV_SW === 'true';
+    if (import.meta.env.DEV && !allowDevServiceWorker) {
         const registrations = await navigator.serviceWorker.getRegistrations();
         await Promise.all(registrations
             .filter((registration) => registration.scope.startsWith(window.location.origin))

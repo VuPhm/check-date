@@ -754,28 +754,8 @@
     </div>
   </div>
 
-  <!-- Modal báo kết quả tra cứu -->
-  <div id="resultModal" class="apple-modal" onclick="closeResultModal()">
-    <div class="apple-modal-content result-modal-content" onclick="event.stopPropagation()">
-      <div class="result-modal-header" id="resultModalHeader">
-        <h3 class="apple-modal-title" id="resultModalTitle">Kết quả tra cứu</h3>
-        <button class="apple-modal-close-btn" onclick="closeResultModal()">&times;</button>
-      </div>
-      <div class="result-modal-body" id="resultModalBody">
-        <div class="result-modal-icon-container" id="resultModalIcon"></div>
-        <div class="result-modal-main-text" id="resultModalMainText"></div>
-        <div class="result-modal-sub-text" id="resultModalSubText"></div>
-        <div class="result-modal-details" id="resultModalDetails" hidden></div>
-      </div>
-      <div class="kph-form-actions"
-        style="margin-top: 0; padding: 16px 20px; border-top: 1px solid #f2f2f7; background: var(--surface);">
-        <button class="btn-action" onclick="createKphFromCalculation()" id="btnResultModalCreateKph"
-          style="margin: 0; display: none;">Tạo phiếu KPH</button>
-        <button class="btn-secondary" onclick="closeResultModal()" id="btnResultModalClose" style="margin: 0;">Đồng
-          ý</button>
-      </div>
-    </div>
-  </div>
+  <!-- Modal báo kết quả tra cứu (Vue) -->
+  <div id="vue-result-modal-root"></div>
 
   <!-- Modal phóng to ảnh -->
   <div id="imageModal" class="apple-modal" style="z-index: 10000;" onclick="closeImageModal()">
@@ -787,46 +767,8 @@
     </div>
   </div>
 
-  <!-- Modal Quét Barcode -->
-  <div id="scannerModal" class="apple-modal">
-    <div class="apple-modal-content">
-      <div class="apple-modal-header">
-        <h3 class="apple-modal-title">Quét mã Barcode</h3>
-        <button class="apple-modal-close-btn" onclick="closeScanner()">&times;</button>
-      </div>
-
-      <div class="scanner-container">
-        <div id="scanner-preview"></div>
-        <div class="scanner-laser"></div>
-        <div class="scanner-bracket top-left"></div>
-        <div class="scanner-bracket top-right"></div>
-        <div class="scanner-bracket bottom-left"></div>
-        <div class="scanner-bracket bottom-right"></div>
-      </div>
-
-      <div class="scanner-controls">
-        <div class="scanner-control-group">
-          <label for="cameraSelect" class="scanner-label">Camera:</label>
-          <select id="cameraSelect" class="scanner-select" onchange="switchCamera(this.value)">
-            <option value="">Đang tải camera...</option>
-          </select>
-        </div>
-
-        <div class="scanner-buttons">
-          <button id="btnTorch" class="scanner-btn scanner-btn--secondary" onclick="toggleTorch()"
-            style="display: none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round" style="width: 16px; height: 16px;">
-              <path d="M15 17h6M15 12h6M15 7h6M4 5v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z">
-              </path>
-            </svg>
-            Bật Đèn Pin
-          </button>
-          <button class="scanner-btn scanner-btn--danger" onclick="closeScanner()">Hủy bỏ</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Modal Quét Barcode (Vue) -->
+  <div id="vue-scanner-modal-root"></div>
 
   <!-- Modal Thông báo việc cần xử lý -->
   <div id="notificationModal" class="apple-modal" onclick="window.closeNotificationModal()">

@@ -1,12 +1,21 @@
 import { defineConfig } from 'vite';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import { VitePWA } from 'vite-plugin-pwa';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 
+const enableDevServiceWorker = process.env.VITE_ENABLE_DEV_SW === 'true';
+const localCertPath = process.env.LOCAL_HTTPS_CERT || 'dev-cert.pem';
+const localKeyPath = process.env.LOCAL_HTTPS_KEY || 'dev-key.pem';
+const localHttps = process.env.LOCAL_HTTPS === 'true' && existsSync(localCertPath) && existsSync(localKeyPath)
+  ? { cert: readFileSync(localCertPath), key: readFileSync(localKeyPath) }
+  : undefined;
+
 export default defineConfig({
   base: './',
   server: {
+    https: localHttps,
     // Cloudflare Quick Tunnel assigns a random *.trycloudflare.com hostname.
     // Keep this narrowly scoped to development instead of accepting all hosts.
     allowedHosts: ['.trycloudflare.com'],
@@ -29,7 +38,7 @@ export default defineConfig({
         globPatterns: ['**/*.{html,js,css,png,svg,ico,woff2,json}'],
       },
       devOptions: {
-        enabled: false,
+        enabled: enableDevServiceWorker,
         type: 'module',
       },
     }),
@@ -63,6 +72,9 @@ export default defineConfig({
         },
       },
     },
+  },
+  preview: {
+    https: localHttps,
   },
   test: {
     environment: 'node',

@@ -15,6 +15,29 @@ khi khởi động lại. Để làm sạch hoàn toàn dữ liệu test:
 npm run demo:reset
 ```
 
+## Test camera và offline không cần tunnel
+
+`npm run demo` là HTTP nên chỉ phù hợp test nghiệp vụ. Để test camera và
+Service Worker trên PC/điện thoại cùng Wi-Fi, tạo certificate LAN một lần trên
+MacBook rồi dùng URL HTTPS cố định.
+
+```sh
+brew install mkcert
+mkcert -install
+IP=$(ipconfig getifaddr en0)
+mkcert -key-file dev-key.pem -cert-file dev-cert.pem "$IP" localhost 127.0.0.1
+npm run demo:lan
+```
+
+Mở `https://IP_LAN_CUA_MACBOOK:5173` trên PC CHT và điện thoại. Để điện thoại
+tin certificate, lấy file `rootCA.pem` từ thư mục in bởi `mkcert -CAROOT`, gửi
+sang điện thoại, cài profile rồi bật **Full Trust for Root Certificates** trong
+cài đặt hệ thống. Đây là thao tác một lần cho mạng/CA test này.
+
+Sau khi app đã mở hoàn chỉnh một lần qua HTTPS, tắt mạng và tải lại để kiểm tra
+offline. `npm run demo:pwa` chỉ dùng để test PWA trên chính MacBook qua
+`localhost`; `npm run demo` vẫn là chế độ phát triển HTTP thông thường.
+
 ## Tài khoản demo
 
 | Vai trò | Thông tin |

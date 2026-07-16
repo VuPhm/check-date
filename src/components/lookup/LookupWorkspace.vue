@@ -41,9 +41,9 @@ function handleModeChange(event: Event) {
         <div class="form-input-wrapper">
           <input id="barcode" class="form-input" type="text" placeholder="Nhập hoặc quét mã" inputmode="numeric">
           <button id="btnScanBarcode" type="button" class="btn-picker-trigger" aria-label="Quét mã barcode" @click="invoke('openScannerForCalc')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3"/>
+              <path d="M7 9v6M10 9v6M14 9v6M17 9v6"/>
             </svg>
           </button>
         </div>
