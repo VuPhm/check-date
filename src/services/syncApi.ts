@@ -136,10 +136,11 @@ export async function syncWithServer(
   session: DeviceSession,
   cursor: string | null,
   changes: Array<{ id: string; kind: 'kph' | 'history'; record: KphLog | HistoryLog }>,
+  profile?: { storeName?: string },
 ): Promise<SyncResponse> {
   const payload = {
     cursor,
-    profile: { displayName: session.displayName, storeName: localStorage.getItem('kph_store') || 'CO.OP FOOD' },
+    profile: { displayName: session.displayName, ...profile },
     changes: await Promise.all(changes.map(async (change) => ({
       ...change, record: change.kind === 'kph' ? await toWireLog(change.record as KphLog) : change.record,
     }))),

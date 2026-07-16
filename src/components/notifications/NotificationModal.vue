@@ -4,8 +4,10 @@ import NotificationContent from './NotificationContent.vue';
 import { updateNotificationStats } from '../../../js/notifications.js';
 
 const visible = ref(false);
+const firstRunVisible = ref(false);
 
 function open() {
+  if (firstRunVisible.value) return;
   visible.value = true;
   updateNotificationStats();
 }
@@ -13,15 +15,21 @@ function open() {
 function close() {
   visible.value = false;
 }
+function setFirstRunVisibility(event: Event) {
+  firstRunVisible.value = Boolean((event as CustomEvent<boolean>).detail);
+  if (firstRunVisible.value) close();
+}
 
 onMounted(() => {
   window.addEventListener('coop:notification-modal-open', open);
   window.addEventListener('coop:notification-modal-close', close);
+  window.addEventListener('coop:first-run-visibility', setFirstRunVisibility);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('coop:notification-modal-open', open);
   window.removeEventListener('coop:notification-modal-close', close);
+  window.removeEventListener('coop:first-run-visibility', setFirstRunVisibility);
 });
 </script>
 

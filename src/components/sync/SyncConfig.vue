@@ -25,6 +25,7 @@ const busy = ref(false);
 const showJoinCode = ref(false);
 const storeNameCommitted = ref(false);
 const authAttempted = ref(false);
+const authError = ref('');
 let refreshTimer: number | undefined;
 
 const statusLabel = computed(() => ({ idle: 'Sẵn sàng đồng bộ', offline: 'Đang ngoại tuyến', syncing: 'Đang đồng bộ', synced: 'Đã đồng bộ', error: 'Cần kiểm tra kết nối' }[appStore.syncStatus]));
@@ -56,12 +57,12 @@ function friendlyError(error: unknown, fallback: string) {
 function saveStoreProfile(commitStoreName = true) {
   const code = storeCode.value.trim();
   if (code) localStorage.setItem('kph_coop_food', code); else localStorage.removeItem('kph_coop_food');
-  appStore.setStoreName(storeName.value);
+  appStore.setStoreName(storeName.value, commitStoreName);
   if (commitStoreName && appStore.session?.role === 'manager' && storeName.value.trim()) storeNameCommitted.value = true;
 }
 async function commitStoreProfile() { saveStoreProfile(); if (appStore.isManager) await appStore.syncNow(); }
-function openAuth(mode: 'manager' | 'employee') { message.value = ''; authAttempted.value = false; managerName.value = ''; authModal.value = mode; }
-function closeAuth() { authModal.value = null; managerPassword.value = ''; joinCode.value = ''; }
+function openAuth(mode: 'manager' | 'employee') { message.value = ''; authError.value = ''; authAttempted.value = false; managerName.value = ''; authModal.value = mode; }
+function closeAuth() { authModal.value = null; authError.value = ''; managerPassword.value = ''; joinCode.value = ''; }
 
 async function authenticate() {
   if (!authModal.value) return;
@@ -79,7 +80,7 @@ async function authenticate() {
     closeAuth();
     await refreshAdmin();
     await appStore.syncNow();
-  } catch (error) { message.value = friendlyError(error, 'Không thể kết nối cửa hàng.'); } finally { busy.value = false; }
+  } catch (error) { authError.value = friendlyError(error, 'Không thể kết nối cửa hàng.'); message.value = authError.value; } finally { busy.value = false; }
 }
 async function refreshAdmin() {
   if (!appStore.isManager || !appStore.session) return;
@@ -91,7 +92,6 @@ async function refreshAdmin() {
 async function syncNow() {
   try {
     busy.value = true; message.value = '';
-    if (appStore.isManager) appStore.setStoreName(storeName.value);
     if (appStore.session && displayName.value.trim() && displayName.value.trim() !== appStore.session.displayName) appStore.updateSessionDisplayName(displayName.value);
     await appStore.syncNow(); await refreshAdmin(); message.value = 'Dữ liệu cửa hàng đã được cập nhật.';
   }
@@ -122,6 +122,7 @@ async function saveEmployeeName() { try { busy.value = true; appStore.updateSess
 async function saveManagerName() { try { busy.value = true; appStore.updateSessionDisplayName(displayName.value); await appStore.syncNow(); message.value = 'Đã đồng bộ tên CHT.'; } catch (error) { message.value = friendlyError(error, 'Không thể đổi tên CHT.'); } finally { busy.value = false; } }
 function refreshAfterRemoteSync() { if (appStore.isManager) void refreshAdmin(); }
 function openFullActivityLog() { window.dispatchEvent(new CustomEvent('coop:open-tasks')); }
+function openAuthFromFirstRun(event: Event) { const mode = (event as CustomEvent<'manager' | 'employee'>).detail; if (mode === 'manager' || mode === 'employee') openAuth(mode); }
 
 onMounted(() => {
   storeCode.value = appStore.session?.branchId || '';
@@ -131,10 +132,11 @@ onMounted(() => {
   displayName.value = appStore.session?.displayName || '';
   void refreshAdmin();
   window.addEventListener('coop:remote-sync', refreshAfterRemoteSync);
+  window.addEventListener('coop:sync-auth-open', openAuthFromFirstRun);
   refreshTimer = window.setInterval(() => void refreshAdmin(), 30_000);
 });
 watch(() => appStore.storeName, (value) => { if (!appStore.isManager) storeName.value = value; });
-onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(refreshTimer); window.removeEventListener('coop:remote-sync', refreshAfterRemoteSync); });
+onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(refreshTimer); window.removeEventListener('coop:remote-sync', refreshAfterRemoteSync); window.removeEventListener('coop:sync-auth-open', openAuthFromFirstRun); });
 </script>
 
 <template>
@@ -142,7 +144,7 @@ onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(ref
     <section class="sync-card">
       <h3 class="sync-card__title">Thông tin cửa hàng</h3>
       <div class="apple-input-row sync-card__fields">
-        <div class="form-field flex-1"><label class="form-label" for="sidebarStore">Tên cửa hàng</label><div class="form-input-wrapper"><input id="sidebarStore" v-model="storeName" class="form-input" :disabled="storeNameLocked" @change="commitStoreProfile"></div></div>
+        <div class="form-field flex-1"><label class="form-label" for="sidebarStore">Tên cửa hàng</label><div class="form-input-wrapper"><input id="sidebarStore" v-model="storeName" class="form-input" :disabled="storeNameLocked" @input="appStore.isManager && appStore.setStoreName(storeName)" @change="commitStoreProfile"></div></div>
         <div class="form-field flex-1"><label class="form-label" for="sidebarCoopFood">Mã cửa hàng <span class="required-star">*</span></label><div class="form-input-wrapper"><input id="sidebarCoopFood" v-model="storeCode" class="form-input" inputmode="numeric" maxlength="4" :disabled="storeCodeLocked" @input="storeCode = cleanCode(storeCode)" @change="commitStoreProfile"></div></div>
       </div>
     </section>
@@ -181,7 +183,7 @@ onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(ref
         <template v-if="authModal === 'manager'"><div class="form-field"><label class="form-label" for="managerStoreCode">Tên đăng nhập <span class="required-star">*</span></label><div class="form-input-wrapper"><input id="managerStoreCode" v-model="storeCode" class="form-input" inputmode="numeric" maxlength="4" @input="storeCode = cleanCode(storeCode)"></div></div><div class="form-field"><label class="form-label" for="managerPassword">Mật khẩu <span class="required-star">*</span></label><div class="form-input-wrapper"><input id="managerPassword" v-model="managerPassword" type="password" class="form-input"></div></div><div class="form-field"><label class="form-label" for="managerName">Tên CHT</label><div class="form-input-wrapper"><input id="managerName" v-model="managerName" class="form-input"></div></div></template>
         <template v-else><div class="form-field"><label class="form-label" for="employeeStoreCode">Mã cửa hàng <span class="required-star">*</span></label><div class="form-input-wrapper"><input id="employeeStoreCode" v-model="storeCode" class="form-input" inputmode="numeric" maxlength="4" @input="storeCode = cleanCode(storeCode)"></div></div><div class="apple-input-row"><div class="form-field flex-1"><label class="form-label" for="syncDisplayName">Tên nhân viên <span class="required-star">*</span></label><div class="form-input-wrapper"><input id="syncDisplayName" v-model="displayName" class="form-input"></div></div><div class="form-field flex-1"><label class="form-label" for="syncEmployeeCode">Mã nhân viên <span class="required-star">*</span></label><div class="form-input-wrapper"><input id="syncEmployeeCode" v-model="employeeCode" class="form-input"></div></div></div><div class="form-field"><label class="form-label" for="syncJoinCode">Mã PIN tham gia <span class="required-star">*</span></label><div class="form-input-wrapper"><input id="syncJoinCode" v-model="joinCode" type="password" class="form-input" inputmode="numeric" maxlength="4" @input="joinCode = cleanCode(joinCode)"></div></div></template>
         <div class="form-field"><label class="form-label" for="syncDeviceName">Tên thiết bị</label><div class="form-input-wrapper"><input id="syncDeviceName" v-model="deviceName" class="form-input"></div></div>
-        <p v-if="authValidationMessage" class="sync-modal__validation" role="alert">{{ authValidationMessage }}</p><div class="sync-modal__actions"><button class="btn-secondary" type="button" @click="closeAuth">Hủy</button><button class="btn-action" type="button" :disabled="busy" @click="authenticate">{{ busy ? 'Đang kết nối…' : authModal === 'manager' ? 'Đăng nhập' : 'Tham gia' }}</button></div>
+        <p v-if="authValidationMessage || authError" class="sync-modal__validation" role="alert">{{ authValidationMessage || authError }}</p><div class="sync-modal__actions"><button class="btn-secondary" type="button" @click="closeAuth">Hủy</button><button class="btn-action" type="button" :disabled="busy" @click="authenticate">{{ busy ? 'Đang kết nối…' : authModal === 'manager' ? 'Đăng nhập' : 'Tham gia' }}</button></div>
       </div></div>
     </div>
 

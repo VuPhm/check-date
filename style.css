@@ -5067,7 +5067,8 @@ button.notif-item {
 .btn-export-excel svg { width: 15px; height: 15px; margin-right: 5px; }
 .btn-delete-selected svg { width: 14px; height: 14px; margin-right: 5px; }
 
-.image-modal { z-index: 10000; }
+/* The image preview may be opened while the KPH create modal is active. */
+.image-modal { z-index: 100001; }
 .image-modal__content { max-width: 90%; padding: 0; background: transparent; box-shadow: none; border: none; text-align: center; }
 .image-modal__image { max-width: 100%; max-height: 80vh; width: auto; height: auto; object-fit: contain; border-radius: var(--radius-item); }
 
@@ -5163,6 +5164,7 @@ button.notif-item {
 .sync-modal__body .apple-input-row { margin: 0; }
 .sync-modal__message { margin: 0; color: var(--text-sub); line-height: 1.5; }
 .sync-modal__validation { margin: 0; color: var(--brand-accent-red); font-size: 12px; font-weight: 650; }
+.first-run-dismiss { display: block; width: auto; margin: 14px auto 0; padding: 0; border: 0; background: transparent; color: var(--brand-primary); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .sync-modal__actions { justify-content: flex-end; padding-top: 2px; }
 @keyframes sync-status-pulse { 50% { opacity: .45; transform: scale(.8); } }
 

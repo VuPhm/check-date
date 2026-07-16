@@ -323,14 +323,14 @@ export async function exportHistoryToExcel() {
         worksheet.getCell('A1').font = { name: 'Times New Roman', bold: true, size: 9 };
         worksheet.getCell('A1').alignment = { horizontal: 'left', wrapText: false };
         
-        const coopFoodVal = localStorage.getItem('kph_coop_food') || '';
-        const storeVal = localStorage.getItem('kph_store') || '';
+        const storeName = localStorage.getItem('kph_store') || '';
+        const storeCode = localStorage.getItem('kph_coop_food') || '';
         
-        worksheet.getCell('A2').value = `CO.OP FOOD: ${coopFoodVal || '................................'}`;
+        worksheet.getCell('A2').value = `CO.OP FOOD: ${storeName || '................................'}`;
         worksheet.getCell('A2').font = { name: 'Times New Roman', bold: true, size: 9 };
         worksheet.getCell('A2').alignment = { horizontal: 'left', wrapText: false };
         
-        worksheet.getCell('A3').value = `STORE: ${storeVal || '................................'}`;
+        worksheet.getCell('A3').value = `STORE: ${storeCode || '................................'}`;
         worksheet.getCell('A3').font = { name: 'Times New Roman', bold: true, size: 9 };
         worksheet.getCell('A3').alignment = { horizontal: 'left', wrapText: false };
         

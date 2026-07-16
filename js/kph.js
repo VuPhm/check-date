@@ -908,6 +908,10 @@ export async function removeKphLog(id) {
 export async function clearAllKphLogs() {
     const logsInTab = kphLogs.filter(item => (item.loaiKph || 'TPCN') === kphActiveSubTab);
     if (logsInTab.length === 0) return;
+    if (logsInTab.some(item => !canDeleteKphLog(item))) {
+        showAppleToast('⚠️ Nhân viên chỉ được xóa phiếu của mình khi còn chờ duyệt.', 'warning');
+        return;
+    }
     const tabNameText = kphActiveSubTab === 'TPTS' ? 'TP Tươi sống (TPTS)' : 'TP Công nghệ (TPCN)';
     const confirmClear = await showAppleConfirm({
         title: "Xóa toàn bộ danh sách phiếu",
@@ -952,6 +956,11 @@ export async function deleteSelectedKphLogs() {
 
     if (selectedIds.length === 0) {
         showAppleToast("⚠️ Vui lòng chọn ít nhất 1 dòng để xóa.", "warning");
+        return;
+    }
+    const unauthorized = selectedIds.map(id => kphLogs.find(item => item.id === id)).some(item => item && !canDeleteKphLog(item));
+    if (unauthorized) {
+        showAppleToast('⚠️ Nhân viên chỉ được xóa phiếu của mình khi còn chờ duyệt. Hãy bỏ các phiếu không có quyền xóa khỏi lựa chọn.', 'warning');
         return;
     }
 
@@ -1426,14 +1435,14 @@ export async function exportKphToExcel() {
         worksheet.getCell('A1').font = { name: 'Times New Roman', bold: true, size: 9 };
         worksheet.getCell('A1').alignment = { horizontal: 'left', wrapText: false };
 
-        const coopFoodVal = document.getElementById('sidebarCoopFood')?.value.trim() || localStorage.getItem('kph_coop_food') || '';
-        const storeVal = document.getElementById('sidebarStore')?.value.trim() || localStorage.getItem('kph_store') || '';
+        const storeName = document.getElementById('sidebarStore')?.value.trim() || localStorage.getItem('kph_store') || '';
+        const storeCode = document.getElementById('sidebarCoopFood')?.value.trim() || localStorage.getItem('kph_coop_food') || '';
 
-        worksheet.getCell('A2').value = `CO.OP FOOD: ${coopFoodVal || '................................'}`;
+        worksheet.getCell('A2').value = `CO.OP FOOD: ${storeName || '................................'}`;
         worksheet.getCell('A2').font = { name: 'Times New Roman', bold: true, size: 9 };
         worksheet.getCell('A2').alignment = { horizontal: 'left', wrapText: false };
 
-        worksheet.getCell('A3').value = `STORE: ${storeVal || '................................'}`;
+        worksheet.getCell('A3').value = `STORE: ${storeCode || '................................'}`;
         worksheet.getCell('A3').font = { name: 'Times New Roman', bold: true, size: 9 };
         worksheet.getCell('A3').alignment = { horizontal: 'left', wrapText: false };
 

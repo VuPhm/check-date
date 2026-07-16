@@ -24,6 +24,7 @@ export const useAppStore = defineStore('app', {
     syncError: null as string | null,
     managerName: '' as string,
     storeName: 'CO.OP FOOD' as string,
+    storeNameDirty: false as boolean,
     authNotice: '' as string,
     activityEvents: [] as ActivityEvent[],
     seenActivityIds: [] as string[],
@@ -98,7 +99,7 @@ export const useAppStore = defineStore('app', {
       this.session = validated; localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(validated));
       if (validated.role === 'manager') { this.managerName = validated.displayName; localStorage.setItem('kph_cht', validated.displayName); }
     },
-    setStoreName(storeName: string) { this.storeName = storeName.trim() || 'CO.OP FOOD'; localStorage.setItem('kph_store', this.storeName); },
+    setStoreName(storeName: string, markDirty = true) { this.storeName = storeName.trim() || 'CO.OP FOOD'; this.storeNameDirty = markDirty; localStorage.setItem('kph_store', this.storeName); },
     bindConnectivityEvents() {
       window.addEventListener('online', () => {
         this.syncStatus = 'idle';
@@ -147,13 +148,14 @@ export const useAppStore = defineStore('app', {
       try {
         await assignUnboundRecords(this.session.branchId, this.session.id);
         const [cursor, changes] = await Promise.all([getSyncCursor(this.session.branchId), getPendingChanges(this.session.branchId)]);
-        const snapshot = await syncWithServer(this.endpoint, this.session, cursor, changes);
+        const snapshot = await syncWithServer(this.endpoint, this.session, cursor, changes, this.storeNameDirty ? { storeName: this.storeName } : undefined);
         if (snapshot.profile?.displayName && snapshot.profile.displayName !== this.session.displayName) {
           this.session = deviceSessionSchema.parse({ ...this.session, displayName: snapshot.profile.displayName });
           localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(this.session));
         }
         if (snapshot.profile?.managerName) { this.managerName = snapshot.profile.managerName; localStorage.setItem('kph_cht', snapshot.profile.managerName); }
-        if (snapshot.profile?.storeName) this.setStoreName(snapshot.profile.storeName);
+        if (snapshot.profile?.storeName) this.setStoreName(snapshot.profile.storeName, false);
+        this.storeNameDirty = false;
         await mergeSyncSnapshot(snapshot.kphLogs, snapshot.historyLogs);
         await Promise.all([acknowledgeChanges(snapshot.acceptedChangeIds), setSyncCursor(this.session.branchId, snapshot.cursor)]);
         this.lastSyncedAt = snapshot.serverTime;
