@@ -228,10 +228,8 @@ export function refreshCalculationForm() {
     if (svgContainer) svgContainer.innerHTML = '';
     setCalcFocusTheme('safe');
 
-    import('./history.js').then(module => {
-        module.setSelectedHistoryId(null);
-        module.updateHistoryUI();
-    });
+    setSelectedHistoryId(null);
+    updateHistoryUI();
     document.getElementById('tenHang')?.focus();
     notifyLookupDomChanged();
 }
@@ -439,6 +437,13 @@ export function executeCalculation(saveToHistory = true) {
         }
     }, 150);
 }
+
+window.addEventListener('coop:history-restore', (event) => {
+    const { nsx, hsdDate } = event.detail || {};
+    if (nsxFlatpickr) nsxFlatpickr.setDate(nsx, false);
+    if (hsdFlatpickr) hsdFlatpickr.setDate(hsdDate, false);
+    executeCalculation(false);
+});
 
 // Khởi chạy khi DOM sẵn sàng
 document.addEventListener('DOMContentLoaded', async () => {

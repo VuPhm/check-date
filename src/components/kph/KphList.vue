@@ -38,29 +38,43 @@ interface KphViewRow extends KphLog {
 }
 
 const rows = ref<KphViewRow[]>([]);
-let objectUrls: string[] = [];
+// KPH list is refreshed for selection and sorting changes as well as data
+// changes. Keep each Blob's preview URL while it remains visible so a simple
+// checkbox click does not revoke and recreate every image in the table.
+const objectUrls = new Map<Blob, string>();
 
 function releaseObjectUrls() {
   objectUrls.forEach((url) => URL.revokeObjectURL(url));
-  objectUrls = [];
+  objectUrls.clear();
 }
 
 function rebuildRows() {
-  releaseObjectUrls();
   const filtered = getFilteredKphLogs() as KphLog[];
+  const visibleBlobs = new Set<Blob>();
   rows.value = (sortKphLogs(filtered) as KphLog[]).map((item) => ({
     ...item,
     imageUrls: getKphLogImages(item)
       .map((image: Blob | string) => {
         if (image instanceof Blob) {
-          const url = URL.createObjectURL(image);
-          objectUrls.push(url);
+          visibleBlobs.add(image);
+          let url = objectUrls.get(image);
+          if (!url) {
+            url = URL.createObjectURL(image);
+            objectUrls.set(image, url);
+          }
           return url;
         }
         return typeof image === 'string' && image.startsWith('data:') ? image : '';
       })
       .filter(Boolean),
   }));
+
+  objectUrls.forEach((url, image) => {
+    if (!visibleBlobs.has(image)) {
+      URL.revokeObjectURL(url);
+      objectUrls.delete(image);
+    }
+  });
 }
 
 function isSelected(id: string) {

@@ -1,7 +1,6 @@
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import flatpickr from 'flatpickr';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import 'flatpickr/dist/flatpickr.min.css';
 import AppRuntime from './AppRuntime.vue';
 import AppHeader from './components/AppHeader.vue';
@@ -23,7 +22,7 @@ import { notifyDeviceAboutActivity } from './services/deviceNotifications';
 import type { ActivityEvent } from './domain/types';
 import '../js/main.js';
 
-Object.assign(window, { flatpickr, Html5Qrcode, Html5QrcodeSupportedFormats });
+Object.assign(window, { flatpickr });
 
 const pinia = createPinia();
 const appStore = useAppStore(pinia);

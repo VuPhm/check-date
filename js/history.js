@@ -198,29 +198,21 @@ export function updateHistoryUI() {
 
 export function loadHistoryItem(nsx, hsdDate, hsdDays, barcode = "", quantity = 1, dvt = "EA", tenHang = "", id = null) { 
     selectedHistoryId = id;
-    proceedLoading();
+    updateHistoryUI();
+    document.getElementById('nsx').value = nsx;
+    document.getElementById('hsdDate').value = hsdDate;
+    document.getElementById('hsdDays').value = hsdDays;
+    document.getElementById('barcode').value = barcode;
 
-    function proceedLoading() {
-        updateHistoryUI();
-        import('./main.js').then(module => {
-            document.getElementById('nsx').value = nsx; 
-            if (module.nsxFlatpickr) module.nsxFlatpickr.setDate(nsx, false); 
-            document.getElementById('hsdDate').value = hsdDate; 
-            if (module.hsdFlatpickr) module.hsdFlatpickr.setDate(hsdDate, false); 
-            document.getElementById('hsdDays').value = hsdDays; 
-            document.getElementById('barcode').value = barcode;
-            
-            const tenHangInput = document.getElementById('tenHang');
-            if (tenHangInput) tenHangInput.value = tenHang;
-            
-            const calcDvtRadio = document.querySelector(`input[name="calcDvt"][value="${dvt}"]`);
-            if (calcDvtRadio) calcDvtRadio.checked = true;
-            
-            document.getElementById('quantity').value = quantity;
-            window.dispatchEvent(new CustomEvent('coop:lookup-loaded'));
-            module.executeCalculation(false);
-        });
-    }
+    const tenHangInput = document.getElementById('tenHang');
+    if (tenHangInput) tenHangInput.value = tenHang;
+
+    const calcDvtRadio = document.querySelector(`input[name="calcDvt"][value="${dvt}"]`);
+    if (calcDvtRadio) calcDvtRadio.checked = true;
+
+    document.getElementById('quantity').value = quantity;
+    window.dispatchEvent(new CustomEvent('coop:lookup-loaded'));
+    window.dispatchEvent(new CustomEvent('coop:history-restore', { detail: { nsx, hsdDate } }));
 }
 
 // Xuất lịch sử tra cứu ra file Excel theo đúng định dạng mẫu

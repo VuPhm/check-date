@@ -3,6 +3,7 @@ import { addLog, softDeleteLog, clearAllLogs, getAllLogs } from './db.js';
 import { buildKphApprovalUpdate } from '../src/domain/kphApproval.ts';
 import { buildKphLog } from '../src/domain/kphEntry.ts';
 import { fitImageIntoBounds } from '../src/domain/excelImage.ts';
+import { filterKphLogs as filterKphLogsInDomain, sortKphLogs as sortKphLogsInDomain } from '../src/domain/kphList.ts';
 
 export let activeTab = 'tracuu';
 export let kphActiveSubTab = 'TPCN';
@@ -1051,30 +1052,11 @@ export function clearKphForm() {
 export function getFilteredKphLogs() {
     const tuStr = document.getElementById('kphFilterTuNgay').value.trim();
     const denStr = document.getElementById('kphFilterDenNgay').value.trim();
-
-    return kphLogs.filter(item => {
-        // Phân loại sub-tab: mặc định cũ là TPCN
-        const itemType = item.loaiKph || 'TPCN';
-        if (itemType !== kphActiveSubTab) return false;
-
-        if (tuStr && isValidDateStr(tuStr)) {
-            const itemDate = parseLocalDate(item.ngayPhatHien);
-            const tuDate = parseLocalDate(tuStr);
-            if (itemDate < tuDate) return false;
-        }
-        if (denStr && isValidDateStr(denStr)) {
-            const itemDate = parseLocalDate(item.ngayPhatHien);
-            const denDate = parseLocalDate(denStr);
-            if (itemDate > denDate) return false;
-        }
-
-        // Tag lọc Chờ duyệt
-        if (kphFilterChoDuyet) {
-            const status = item.trangThaiDuyet || 'cho_duyet';
-            if (status !== 'cho_duyet') return false;
-        }
-
-        return true;
+    return filterKphLogsInDomain(kphLogs, {
+        type: kphActiveSubTab,
+        fromDate: tuStr,
+        toDate: denStr,
+        pendingOnly: kphFilterChoDuyet,
     });
 }
 
@@ -1153,41 +1135,7 @@ export function toggleKphSort(field) {
 }
 
 export function sortKphLogs(logs) {
-    if (!kphSortField) return logs;
-
-    return [...logs].sort((a, b) => {
-        let valA, valB;
-
-        if (kphSortField === 'ngayPhatHien' || kphSortField === 'ngayXuLy') {
-            const dateStrA = a[kphSortField];
-            const dateStrB = b[kphSortField];
-
-            if (!dateStrA) return 1;
-            if (!dateStrB) return -1;
-
-            valA = parseLocalDate(dateStrA).getTime();
-            valB = parseLocalDate(dateStrB).getTime();
-        } else if (kphSortField === 'soLuong') {
-            valA = parseFloat(a.soLuong) || 0;
-            valB = parseFloat(b.soLuong) || 0;
-        } else if (kphSortField === 'trangThaiDuyet') {
-            valA = a.trangThaiDuyet || 'cho_duyet';
-            valB = b.trangThaiDuyet || 'cho_duyet';
-        } else if (kphSortField === 'skuTenHang') {
-            valA = `${a.sku || ''}\u0000${a.tenHang || ''}`.toLocaleLowerCase('vi-VN');
-            valB = `${b.sku || ''}\u0000${b.tenHang || ''}`.toLocaleLowerCase('vi-VN');
-        } else if (kphSortField === 'imageCount') {
-            valA = getKphLogImages(a).length;
-            valB = getKphLogImages(b).length;
-        } else {
-            valA = a[kphSortField] || '';
-            valB = b[kphSortField] || '';
-        }
-
-        if (valA < valB) return (kphSortDirection === 'asc') ? -1 : 1;
-        if (valA > valB) return (kphSortDirection === 'asc') ? 1 : -1;
-        return 0;
-    });
+    return sortKphLogsInDomain(logs, { field: kphSortField, direction: kphSortDirection });
 }
 
 // LỰA CHỌN HÀNG XUẤT EXCEL

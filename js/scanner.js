@@ -6,6 +6,20 @@ export let currentCameraId = null;
 export let isTorchOn = false;
 export let isTorchSupported = false;
 export let scannerTargetInputId = 'barcode';
+let Html5Qrcode = null;
+let Html5QrcodeSupportedFormats = {};
+let scannerLibraryPromise = null;
+let scannerRequestId = 0;
+
+async function loadScannerLibrary() {
+    if (!scannerLibraryPromise) {
+        scannerLibraryPromise = import('html5-qrcode').then((module) => {
+            Html5Qrcode = module.Html5Qrcode;
+            Html5QrcodeSupportedFormats = module.Html5QrcodeSupportedFormats;
+        });
+    }
+    await scannerLibraryPromise;
+}
 
 export function setScannerTargetInputId(id) {
     scannerTargetInputId = id;
@@ -14,7 +28,7 @@ export function setScannerTargetInputId(id) {
 // Trả về danh sách chuẩn quét được chọn
 export function getSelectedBarcodeFormats() {
     const activeFormats = [];
-    const formats = window.Html5QrcodeSupportedFormats || (typeof Html5QrcodeSupportedFormats !== 'undefined' ? Html5QrcodeSupportedFormats : {});
+    const formats = Html5QrcodeSupportedFormats;
     
     document.querySelectorAll('.format-tag.active').forEach(tag => {
         const formatName = tag.getAttribute('data-format');
@@ -30,12 +44,16 @@ export function getSelectedBarcodeFormats() {
 export async function openScanner() {
     const modal = document.getElementById('scannerModal');
     if (!modal) return;
-    
+
+    const requestId = ++scannerRequestId;
     modal.classList.add('active');
-    
-    const formatsToSupport = getSelectedBarcodeFormats();
-    
+
     try {
+        await loadScannerLibrary();
+        // The modal can be closed while the scanner bundle is loading.
+        if (requestId !== scannerRequestId || !modal.classList.contains('active')) return;
+
+        const formatsToSupport = getSelectedBarcodeFormats();
         const configObj = { verbose: false };
         if (formatsToSupport.length > 0) {
             configObj.formatsToSupport = formatsToSupport;
@@ -145,6 +163,7 @@ export async function startScanning(cameraId) {
 
 // Tắt camera và đóng modal
 export function closeScanner() {
+    scannerRequestId += 1;
     const modal = document.getElementById('scannerModal');
     if (modal) modal.classList.remove('active');
     
