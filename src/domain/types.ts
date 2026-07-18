@@ -1,5 +1,5 @@
 export type BranchRole = 'manager' | 'employee';
-export type SyncStatus = 'idle' | 'offline' | 'syncing' | 'synced' | 'error';
+export type SyncStatus = 'idle' | 'offline' | 'syncing' | 'synced' | 'paused' | 'error';
 export type ApprovalStatus = 'cho_duyet' | 'da_duyet' | 'khong_duyet';
 export type KphResolution = 'HỦY' | 'ĐỔI' | 'XUẤT TRẢ' | 'KHÁC';
 export type AlertType = 'safe' | 'warning' | 'danger' | 'expired';

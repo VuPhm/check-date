@@ -28,13 +28,14 @@ const authAttempted = ref(false);
 const authError = ref('');
 let refreshTimer: number | undefined;
 
-const statusLabel = computed(() => ({ idle: 'Sẵn sàng đồng bộ', offline: 'Đang ngoại tuyến', syncing: 'Đang đồng bộ', synced: 'Đã đồng bộ', error: 'Cần kiểm tra kết nối' }[appStore.syncStatus]));
+const statusLabel = computed(() => ({ idle: 'Sẵn sàng đồng bộ', offline: 'Đang ngoại tuyến', syncing: 'Đang đồng bộ', synced: 'Đã đồng bộ', paused: 'Đang tạm dừng đồng bộ', error: 'Cần kiểm tra kết nối' }[appStore.syncStatus]));
 const lastSync = computed(() => appStore.lastSyncedAt ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(appStore.lastSyncedAt)) : 'Chưa từng đồng bộ');
 const statusMessage = computed(() => {
   if (message.value) return message.value;
   if (appStore.authNotice) return appStore.authNotice;
   if (appStore.syncStatus === 'offline') return 'Thiết bị sẽ đồng bộ lại khi có mạng.';
   if (appStore.syncStatus === 'syncing') return 'Đang cập nhật dữ liệu cửa hàng.';
+  if (appStore.syncStatus === 'paused') return 'Máy chủ tạm thời chưa sẵn sàng. Dữ liệu vẫn an toàn trên thiết bị và sẽ tự thử lại; bạn cũng có thể chọn Đồng bộ ngay.';
   if (appStore.syncStatus === 'error') return appStore.syncError || 'Không thể đồng bộ. Hãy thử lại sau.';
   if (!appStore.session) return 'Đăng nhập hoặc tham gia cửa hàng để dùng đồng bộ.';
   return appStore.lastSyncedAt ? `Lần gần nhất: ${lastSync.value}.` : 'Nhấn Đồng bộ ngay để cập nhật dữ liệu.';
@@ -84,9 +85,10 @@ async function authenticate() {
 }
 async function refreshAdmin() {
   if (!appStore.isManager || !appStore.session) return;
+  if (appStore.syncStatus === 'paused') return;
   try {
     const data = await getStoreAdministration(appStore.endpoint, appStore.session);
-    employees.value = data.employees; devices.value = data.devices; newJoinCode.value = data.joinCode;
+    employees.value = data.employees; devices.value = data.devices; newJoinCode.value = '';
   } catch (error) { message.value = friendlyError(error, 'Không tải được quản trị cửa hàng.'); }
 }
 async function syncNow() {
@@ -161,7 +163,7 @@ onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(ref
       <template v-else>
         <div class="sync-card__actions"><button class="btn-action" type="button" :disabled="busy" @click="syncNow">{{ busy ? 'Đang đồng bộ…' : 'Đồng bộ ngay' }}</button></div>
         <div v-if="appStore.isManager" class="sync-admin-grid">
-          <section class="sync-subcard"><h4>Mã PIN tham gia</h4><div class="form-input-wrapper"><input v-model="newJoinCode" :type="showJoinCode ? 'text' : 'password'" class="form-input" inputmode="numeric" maxlength="4" @input="newJoinCode = cleanCode(newJoinCode)"><button class="sync-eye-button" type="button" :aria-label="showJoinCode ? 'Ẩn mã PIN' : 'Hiện mã PIN'" @click="showJoinCode = !showJoinCode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/><path v-if="!showJoinCode" d="m4 4 16 16"/></svg></button></div><button class="btn-action sync-subcard__button" type="button" :disabled="busy || newJoinCode.length !== 4" @click="saveJoinCode">Đổi mã PIN</button></section>
+          <section class="sync-subcard"><h4>Mã PIN tham gia</h4><div class="form-input-wrapper"><input v-model="newJoinCode" :type="showJoinCode ? 'text' : 'password'" class="form-input" inputmode="numeric" maxlength="4" placeholder="Nhập mã PIN mới" @input="newJoinCode = cleanCode(newJoinCode)"><button class="sync-eye-button" type="button" :aria-label="showJoinCode ? 'Ẩn mã PIN' : 'Hiện mã PIN'" @click="showJoinCode = !showJoinCode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/><path v-if="!showJoinCode" d="m4 4 16 16"/></svg></button></div><button class="btn-action sync-subcard__button" type="button" :disabled="busy || newJoinCode.length !== 4" @click="saveJoinCode">Đổi mã PIN</button></section>
           <section class="sync-subcard"><h4>Mật khẩu cửa hàng</h4><div class="form-input-wrapper"><input v-model="newPassword" type="password" class="form-input"></div><div class="sync-subcard__buttons"><button class="btn-action" type="button" :disabled="busy || !newPassword" @click="confirmAction = 'password'">Đổi mật khẩu</button><button class="btn-secondary" type="button" :disabled="busy" @click="confirmAction = 'reset'">Đặt lại</button></div></section>
           <section class="sync-subcard sync-subcard--wide"><h4>Tên CHT</h4><div class="sync-inline-action"><div class="form-input-wrapper"><input v-model="displayName" class="form-input"></div><button class="btn-action" type="button" :disabled="!displayName.trim()" @click="saveManagerName">Lưu</button></div></section>
           <section class="sync-subcard sync-subcard--wide"><h4>Nhân viên</h4><div v-for="item in employees" :key="item.id" class="sync-list-row"><span>{{ item.displayName }} · {{ item.employeeCode }}</span><button class="sync-list-row__action" type="button" @click="dropEmployee(item.id)">Xóa</button></div></section>

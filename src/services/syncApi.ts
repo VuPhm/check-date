@@ -113,7 +113,7 @@ function authorizedOptions(token: string, options: RequestInit = {}): RequestIni
   return { ...options, headers: { ...options.headers, authorization: `Bearer ${token}` } };
 }
 
-export async function getStoreAdministration(endpoint: ServerEndpoint, session: DeviceSession): Promise<{ employees: ManagedEmployee[]; devices: ManagedDevice[]; joinCode: string }> {
+export async function getStoreAdministration(endpoint: ServerEndpoint, session: DeviceSession): Promise<{ employees: ManagedEmployee[]; devices: ManagedDevice[] }> {
   return requestJson(apiUrl(endpoint, '/v1/store/administration'), authorizedOptions(session.accessToken));
 }
 

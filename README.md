@@ -21,8 +21,8 @@ JavaScript sang **Vue 3 + TypeScript**. Vite/Vue là runtime chính; thư mục
 - Tạo phiếu KPH TPCN/TPTS, tối đa ba ảnh đã nén/đóng dấu, duyệt hoặc từ chối
   phiếu và xuất Excel.
 - Làm việc offline với IndexedDB; đồng bộ lại khi có mạng.
-- Ghép thiết bị theo vai trò CHT/nhân viên, đồng bộ tức thời qua SSE và polling
-  30 giây dự phòng.
+- Ghép thiết bị theo vai trò CHT/nhân viên, đồng bộ tức thời qua SSE; khi máy
+  chủ tắt, dữ liệu giữ cục bộ và tự thử lại theo backoff tối đa năm phút.
 - Quản lý nhân viên, thiết bị và hoạt động gần đây theo cửa hàng.
 
 ## Quy tắc tính hạn lùi
@@ -79,6 +79,7 @@ Thông tin tài khoản và kịch bản nhiều thiết bị nằm trong [STAGI
 | `npm run test:watch` | Chạy Vitest ở chế độ theo dõi |
 | `npm run build` | Type-check và tạo bản production trong `dist/` |
 | `npm run preview` | Xem bản build production |
+| `npm run pilot:api` | Chạy API SQLite cho pilot (không dùng mock) |
 
 Trước khi bàn giao thay đổi:
 
@@ -138,6 +139,9 @@ các lệnh demo PWA.
   Pages.
 - Push `staging` hoặc chạy thủ công: `.github/workflows/staging.yml` chạy test,
   build và tải artifact staging; workflow này không tự host API.
+- Pilot máy Windows chưa có domain: xem [deploy/pilot/README.md](deploy/pilot/README.md).
+  Gói này dùng Docker, SQLite bền vững, sao lưu nhất quán và khởi động lại dịch
+  vụ khi Windows/Docker Desktop trở lại.
 
 ## Tài liệu cho người đóng góp
 

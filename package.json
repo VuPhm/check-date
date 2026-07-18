@@ -9,6 +9,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "mock:api": "node scripts/mock-central-api.mjs",
+    "pilot:api": "node server/pilot-api.mjs",
+    "pilot:add-store": "node server/manage-pilot.mjs add-store",
     "demo": "node scripts/demo.mjs",
     "demo:pwa": "DEMO_PWA=1 node scripts/demo.mjs",
     "demo:lan": "DEMO_PWA=1 LOCAL_HTTPS=true node scripts/demo.mjs",

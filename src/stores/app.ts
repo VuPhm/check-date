@@ -3,6 +3,7 @@ import type { ActivityEvent, DeviceSession, ServerEndpoint, SyncStatus } from '.
 import { deviceSessionSchema, serverEndpointSchema } from '../domain/schemas';
 import { acknowledgeChanges, assignUnboundRecords, getPendingChanges, getSyncCursor, mergeSyncSnapshot, setSyncCursor } from '../repositories/localDatabase';
 import { checkSyncServer, subscribeToBranchEvents, syncWithServer } from '../services/syncApi';
+import { nextRetryAt } from '../domain/syncRetry';
 
 const SESSION_STORAGE_KEY = 'coop_device_session';
 const BRANCH_STORAGE_KEY = 'coop_branch_identity';
@@ -22,6 +23,8 @@ export const useAppStore = defineStore('app', {
     syncStatus: (navigator.onLine ? 'idle' : 'offline') as SyncStatus,
     lastSyncedAt: null as string | null,
     syncError: null as string | null,
+    syncRetryAt: null as number | null,
+    failedSyncAttempts: 0 as number,
     managerName: '' as string,
     storeName: 'CO.OP FOOD' as string,
     storeNameDirty: false as boolean,
@@ -103,6 +106,8 @@ export const useAppStore = defineStore('app', {
     bindConnectivityEvents() {
       window.addEventListener('online', () => {
         this.syncStatus = 'idle';
+        this.syncRetryAt = null;
+        this.failedSyncAttempts = 0;
         if (this.session) void this.syncNow().catch(() => undefined);
       });
       window.addEventListener('offline', () => { this.syncStatus = 'offline'; });
@@ -110,7 +115,7 @@ export const useAppStore = defineStore('app', {
         if (document.visibilityState === 'visible' && this.session) void this.syncNow().catch(() => undefined);
       });
       if (syncTimer === null) syncTimer = window.setInterval(() => {
-        if (document.visibilityState === 'visible' && this.session && navigator.onLine) void this.syncNow().catch(() => undefined);
+        if (document.visibilityState === 'visible' && this.session && navigator.onLine) void this.syncNow(false).catch(() => undefined);
       }, 30_000);
     },
     startLiveSync() {
@@ -136,13 +141,14 @@ export const useAppStore = defineStore('app', {
         throw error;
       }
     },
-    async syncNow() {
+    async syncNow(force = true) {
       if (this.syncStatus === 'syncing') return;
       if (!this.session) throw new Error('Hãy ghép thiết bị với cửa hàng trước.');
       if (!navigator.onLine) {
         this.syncStatus = 'offline';
         throw new Error('Thiết bị đang ngoại tuyến.');
       }
+      if (!force && this.syncRetryAt && Date.now() < this.syncRetryAt) return;
       this.syncError = null;
       this.syncStatus = 'syncing';
       try {
@@ -172,6 +178,8 @@ export const useAppStore = defineStore('app', {
         }
         localStorage.setItem(LAST_SYNC_STORAGE_KEY, snapshot.serverTime);
         this.syncStatus = 'synced';
+        this.syncRetryAt = null;
+        this.failedSyncAttempts = 0;
         window.dispatchEvent(new CustomEvent('coop:remote-sync'));
         if (snapshot.revoked) this.clearSession('Tài khoản nhân viên đã bị CHT thu hồi. Hãy đăng nhập hoặc tham gia lại cửa hàng nếu cần.');
         return snapshot;
@@ -180,8 +188,16 @@ export const useAppStore = defineStore('app', {
           this.clearSession('Phiên thiết bị không còn hiệu lực. Hãy đăng nhập hoặc tham gia lại cửa hàng.');
           error = new Error('Phiên thiết bị không còn hiệu lực. Hãy đăng nhập lại.');
         }
-        this.syncStatus = 'error';
-        this.syncError = error instanceof Error ? error.message : 'Đồng bộ thất bại.';
+        const message = error instanceof Error ? error.message : 'Đồng bộ thất bại.';
+        if (this.session && !/\b401\b/.test(message)) {
+          this.failedSyncAttempts += 1;
+          this.syncRetryAt = nextRetryAt(this.failedSyncAttempts);
+          this.syncStatus = 'paused';
+          this.syncError = message;
+        } else {
+          this.syncStatus = 'error';
+          this.syncError = message;
+        }
         throw error;
       }
     },
