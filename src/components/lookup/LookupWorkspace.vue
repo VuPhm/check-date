@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { processReturnBusinessLogic } from '../../domain/business';
-import { MS_PER_DAY, parseLocalDate } from '../../domain/date';
-import { isAnonymousLookupSupersededByBarcode, validateLookupCalculation, type LookupHistoryIdentity } from '../../domain/lookup';
+import { buildLookupHistoryPayload, isAnonymousLookupSupersededByBarcode, syncLookupDates, validateLookupCalculation, type LookupHistoryIdentity, type LookupSyncSource } from '../../domain/lookup';
 import { formatRemainingText } from '../../../js/helpers.js';
 import { historyData, removeHistoryItem, saveHistoryToStorage, setSelectedHistoryId, updateHistoryUI } from '../../../js/history.js';
 import { drawTimelineDiagram } from '../../../js/timeline.js';
@@ -53,8 +52,20 @@ function syncFormFromDom() {
   form.dvt = (document.querySelector('input[name="calcDvt"]:checked') as HTMLInputElement | null)?.value ?? 'EA';
 }
 
-function syncFormAfterLegacyInput() {
-  window.setTimeout(syncFormFromDom);
+function syncDateFields(source: LookupSyncSource, changedDateField?: 'nsx' | 'hsdDate') {
+  let actualSource = source;
+  if (source === 'date') {
+    // Keep the legacy interaction contract: changing NSX in forward mode uses
+    // an already-entered day count, while changing HSD in backward mode does
+    // the same. Otherwise the two explicit dates determine the duration.
+    const isNsxInput = changedDateField === 'nsx';
+    if (isNsxInput && isForwardMode.value && form.hsdDays.trim()) actualSource = 'days';
+    if (!isNsxInput && !isForwardMode.value) {
+      if (form.hsdDays.trim()) actualSource = 'days';
+      else return;
+    }
+  }
+  Object.assign(form, syncLookupDates(form, isForwardMode.value ? 'forward' : 'backward', actualSource));
 }
 
 function handleModeChange(event: Event) {
@@ -130,25 +141,15 @@ function executeCalculation(saveToHistory = true) {
     });
 
     if (!saveToHistory) return;
-    const historyPayload = {
+    const historyPayload = buildLookupHistoryPayload({
       nsx: form.nsx,
-      rawHsdDate: form.hsdDate,
-      rawHsdDays: form.hsdDays || Math.round((parseLocalDate(form.hsdDate).getTime() - parseLocalDate(form.nsx).getTime()) / MS_PER_DAY) + 1,
-      formattedHsd: output.formattedHsd,
-      result: output.dateStr,
-      daysRemaining: output.daysRemaining,
-      alertClass: output.alert.class,
-      alertLabel: output.alert.label,
-      alertType,
-      alertWeight: output.alert.weight,
-      isShortProduct: output.isShortProduct,
-      isExpiredProduct: output.isExpiredProduct,
+      hsdDate: form.hsdDate,
+      hsdDays: form.hsdDays,
       barcode: form.barcode,
       tenHang: form.tenHang,
       quantity,
       dvt: form.dvt,
-      checkedAt: new Date().toISOString(),
-    };
+    }, output);
     // A later barcode identifies the otherwise anonymous lookup. Do not remove
     // other barcode lookups: those can legitimately be different products.
     historyData
@@ -287,7 +288,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="form-input-wrapper">
-          <input id="nsx" v-model="form.nsx" class="form-input auto-date" type="text" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10" @input="syncFormAfterLegacyInput">
+          <input id="nsx" v-model="form.nsx" class="form-input auto-date" type="text" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10" @input="syncDateFields('date', 'nsx')">
           <button id="btnNsxPicker" type="button" class="btn-picker-trigger" aria-label="Chọn ngày" @click="invoke('openNsxPicker')">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -303,7 +304,7 @@ onBeforeUnmount(() => {
       <div id="hsdGroup" class="form-field">
         <label class="form-label" for="hsdDate">Hạn sử dụng (Chọn ngày)</label>
         <div class="form-input-wrapper">
-          <input id="hsdDate" v-model="form.hsdDate" class="form-input auto-date" type="text" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10" @input="syncFormAfterLegacyInput">
+          <input id="hsdDate" v-model="form.hsdDate" class="form-input auto-date" type="text" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10" @input="syncDateFields('date', 'hsdDate')">
           <button type="button" class="btn-picker-trigger" aria-label="Chọn ngày" @click="invoke('openHsdPicker')">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -322,14 +323,14 @@ onBeforeUnmount(() => {
         <div class="form-field flex-1">
           <label class="form-label" for="hsdDays">HSD (Số ngày)</label>
           <div class="form-input-wrapper">
-            <input id="hsdDays" v-model="form.hsdDays" class="form-input" type="number" placeholder="Ví dụ: 30" inputmode="numeric" min="1" @input="syncFormAfterLegacyInput">
+            <input id="hsdDays" v-model="form.hsdDays" class="form-input" type="number" placeholder="Ví dụ: 30" inputmode="numeric" min="1" @input="syncDateFields('days')">
             <span class="form-input-suffix">ngày</span>
           </div>
         </div>
         <div class="form-field flex-1">
           <label class="form-label" for="hsdMonths">HSD (Số tháng)</label>
           <div class="form-input-wrapper">
-            <input id="hsdMonths" v-model="form.hsdMonths" class="form-input" type="number" placeholder="Ví dụ: 3" inputmode="numeric" min="1" @input="syncFormAfterLegacyInput">
+            <input id="hsdMonths" v-model="form.hsdMonths" class="form-input" type="number" placeholder="Ví dụ: 3" inputmode="numeric" min="1" @input="syncDateFields('months')">
             <span class="form-input-suffix">tháng</span>
           </div>
         </div>

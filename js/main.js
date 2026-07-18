@@ -26,7 +26,7 @@ import {
     processReturnBusinessLogic
 } from './business.js';
 
-import { isAnonymousLookupSupersededByBarcode, syncLookupDates } from '../src/domain/lookup.ts';
+import { buildLookupHistoryPayload, isAnonymousLookupSupersededByBarcode, syncLookupDates } from '../src/domain/lookup.ts';
 
 import {
     drawTimelineDiagram
@@ -341,25 +341,15 @@ export function executeCalculation(saveToHistory = true) {
                 ],
             });
 
-            const historyPayload = {
+            const historyPayload = buildLookupHistoryPayload({
                 nsx: nsxVal,
-                rawHsdDate: hsdDateVal,
-                rawHsdDays: hsdDaysVal || Math.round((parseLocalDate(hsdDateVal) - parseLocalDate(nsxVal)) / MS_PER_DAY) + 1,
-                formattedHsd: output.formattedHsd,
-                result: output.dateStr,
-                daysRemaining: output.daysRemaining,
-                alertClass: output.alert.class,
-                alertLabel: output.alert.label,
-                alertType,
-                alertWeight: output.alert.weight,
-                isShortProduct: output.isShortProduct,
-                isExpiredProduct: output.isExpiredProduct,
+                hsdDate: hsdDateVal,
+                hsdDays: hsdDaysVal,
                 barcode: barcodeVal,
                 tenHang: tenHangVal,
                 quantity: quantityVal,
                 dvt: calcDvtVal,
-                checkedAt: new Date().toISOString()
-            };
+            }, output);
 
             if (saveToHistory) {
                 // A later barcode identifies the temporary anonymous lookup;

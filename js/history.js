@@ -11,6 +11,7 @@ import {
     addHistoryLog, 
     softDeleteHistoryLog
 } from './db.js';
+import { countHistoryByType, getVisibleHistory } from '../src/domain/historyPresentation.ts';
 
 export const historyData = [];
 export const activeFilters = new Set(['all']);
@@ -121,11 +122,7 @@ export function removeHistoryItemFromDB(id) {
 
 export function clearAllHistory() {
     if (historyData.length === 0) return;
-    let displayData = [...historyData];
-    if (!activeFilters.has('all')) {
-        displayData = displayData.filter(item => activeFilters.has(item.alertType));
-    }
-    if (isPrioritySort) displayData.sort((a, b) => a.alertWeight - b.alertWeight);
+    const displayData = getVisibleHistory(historyData, activeFilters, isPrioritySort);
     if (displayData.length === 0) return;
 
     const idsToRemove = new Set(displayData.map(item => item.id));
@@ -177,14 +174,8 @@ export function clearAllHistory() {
 }
 
 export function updateFilterCounts() {
-    return {
-        total: historyData.length,
-        safe: historyData.filter(item => item.alertType === 'safe').length,
-        warning: historyData.filter(item => item.alertType === 'warning').length,
-        danger: historyData.filter(item => item.alertType === 'danger').length,
-        other: historyData.filter(item => item.alertType === 'other').length,
-        expired: historyData.filter(item => item.alertType === 'expired').length
-    };
+    const counts = countHistoryByType(historyData);
+    return { total: counts.all, ...counts };
 }
 
 export function updateHistoryUI() {
@@ -217,10 +208,7 @@ export function loadHistoryItem(nsx, hsdDate, hsdDays, barcode = "", quantity = 
 
 // Xuất lịch sử tra cứu ra file Excel theo đúng định dạng mẫu
 export async function exportHistoryToExcel() {
-    let displayData = [...historyData];
-    if (!activeFilters.has('all')) {
-        displayData = displayData.filter(item => activeFilters.has(item.alertType));
-    }
+    const displayData = getVisibleHistory(historyData, activeFilters, false);
     
     if (displayData.length === 0) {
         showAppleToast("⚠️ Không có dữ liệu phù hợp với bộ lọc hiện tại để xuất Excel.", "warning");

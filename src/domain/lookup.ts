@@ -1,4 +1,5 @@
 import { formatLocalDate, MS_PER_DAY, parseLocalDate } from './date';
+import type { AlertType, ReturnBusinessResult } from './types';
 
 export type LookupMode = 'forward' | 'backward';
 export type LookupSyncSource = 'date' | 'days' | 'months';
@@ -21,6 +22,57 @@ export interface LookupHistoryIdentity {
   formattedHsd: string;
   barcode?: string;
   tenHang?: string;
+}
+
+export interface LookupHistoryPayload extends LookupHistoryIdentity {
+  result: string;
+  daysRemaining: number;
+  alertClass: string;
+  alertLabel: string;
+  alertType: AlertType | 'other';
+  alertWeight: number;
+  isShortProduct: boolean;
+  isExpiredProduct: boolean;
+  tenHang: string;
+  quantity: number | '';
+  dvt: string;
+  checkedAt: string;
+}
+
+export interface LookupHistoryPayloadInput {
+  nsx: string;
+  hsdDate: string;
+  hsdDays: string;
+  barcode: string;
+  tenHang: string;
+  quantity: number | '';
+  dvt: string;
+}
+
+export function buildLookupHistoryPayload(
+  input: LookupHistoryPayloadInput,
+  result: ReturnBusinessResult,
+  checkedAt = new Date().toISOString(),
+): LookupHistoryPayload {
+  return {
+    nsx: input.nsx,
+    rawHsdDate: input.hsdDate,
+    rawHsdDays: input.hsdDays || Math.round((parseLocalDate(input.hsdDate).getTime() - parseLocalDate(input.nsx).getTime()) / MS_PER_DAY) + 1,
+    formattedHsd: result.formattedHsd,
+    result: result.dateStr,
+    daysRemaining: result.daysRemaining,
+    alertClass: result.alert.class,
+    alertLabel: result.alert.label,
+    alertType: result.isShortProduct ? 'other' : result.alert.type,
+    alertWeight: result.alert.weight,
+    isShortProduct: result.isShortProduct,
+    isExpiredProduct: result.isExpiredProduct,
+    barcode: input.barcode,
+    tenHang: input.tenHang,
+    quantity: input.quantity,
+    dvt: input.dvt,
+    checkedAt,
+  };
 }
 
 /**

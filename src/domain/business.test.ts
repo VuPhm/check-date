@@ -17,6 +17,19 @@ describe('processReturnBusinessLogic', () => {
     expect(result.alert.type).toBe('safe');
   });
 
+  it('dùng hạn lùi từ đúng mốc 10 ngày và cảnh báo theo khoảng 20–40%', () => {
+    const result = processReturnBusinessLogic('01/07/2026', '10/07/2026', new Date(2026, 6, 6));
+    expect(result.isShortProduct).toBe(false);
+    expect(result.dateStr).toBe('08/07/2026');
+    expect(result.alert.type).toBe('warning');
+  });
+
+  it('đánh dấu danger khi hôm nay đúng hạn lùi', () => {
+    const result = processReturnBusinessLogic('01/07/2026', '30/07/2026', new Date(2026, 6, 24));
+    expect(result.dateStr).toBe('24/07/2026');
+    expect(result.alert).toMatchObject({ type: 'danger', label: 'Đến hạn lùi hàng' });
+  });
+
   it('đánh dấu sản phẩm đã hết HSD', () => {
     const result = processReturnBusinessLogic('01/06/2026', '14/07/2026', NOW);
     expect(result.isExpiredProduct).toBe(true);

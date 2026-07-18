@@ -12,7 +12,7 @@ import {
   setFilter,
   togglePrioritySort,
 } from '../../../js/history.js';
-import { formatRemainingText } from '../../domain/historyPresentation';
+import { countHistoryByType, formatRemainingText, getVisibleHistory, type HistoryFilter } from '../../domain/historyPresentation';
 
 interface HistoryItem {
   id: string;
@@ -20,7 +20,7 @@ interface HistoryItem {
   formattedHsd: string;
   rawHsdDays: string | number;
   result: string;
-  alertType: string;
+  alertType: HistoryFilter;
   alertClass: string;
   alertLabel: string;
   alertWeight: number;
@@ -46,25 +46,12 @@ const loadLegacyHistoryItem = loadHistoryItem as unknown as (
 ) => void;
 const items = computed(() => {
   revision.value;
-  let result = [...(historyData as HistoryItem[])];
-  if (!activeFilters.has('all')) {
-    result = result.filter((item) => activeFilters.has(item.alertType));
-  }
-  if (isPrioritySort) result.sort((a, b) => a.alertWeight - b.alertWeight);
-  return result;
+  return getVisibleHistory(historyData as HistoryItem[], activeFilters as Set<HistoryFilter>, isPrioritySort);
 });
 
 const counts = computed(() => {
   revision.value;
-  const source = historyData as HistoryItem[];
-  return {
-    all: source.length,
-    safe: source.filter((item) => item.alertType === 'safe').length,
-    warning: source.filter((item) => item.alertType === 'warning').length,
-    danger: source.filter((item) => item.alertType === 'danger').length,
-    other: source.filter((item) => item.alertType === 'other').length,
-    expired: source.filter((item) => item.alertType === 'expired').length,
-  };
+  return countHistoryByType(historyData as HistoryItem[]);
 });
 
 const prioritySortEnabled = computed(() => {

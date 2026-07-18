@@ -4,6 +4,8 @@ import {
   getFilteredKphLogs,
   getKphLogImages,
   kphSelectedIds,
+  kphSortDirection,
+  kphSortField,
   openKphApproveModal,
   removeKphLog,
   sortKphLogs,
@@ -112,6 +114,15 @@ function selectAll(event: Event) {
   toggleSelectAllKph(event.target as HTMLInputElement);
 }
 
+function sortIcon(field: string) {
+  if (kphSortField !== field) return '↕';
+  return kphSortDirection === 'asc' ? '▲' : '▼';
+}
+
+function isSortActive(field: string) {
+  return kphSortField === field;
+}
+
 onMounted(() => {
   rebuildRows();
   window.addEventListener('coop:kph-changed', rebuildRows);
@@ -134,14 +145,14 @@ onBeforeUnmount(() => {
       <thead>
         <tr>
           <th class="kph-col-select" style="text-align: center"><input id="kphSelectAll" type="checkbox" class="kph-checkbox" @change="selectAll"></th>
-          <th class="kph-col-date sortable-header" style="text-align: center; cursor: pointer" @click="toggleKphSort('ngayPhatHien')">Phát hiện <span id="sort-icon-ngayPhatHien" class="sort-icon">↕</span></th>
-          <th class="kph-col-approval sortable-header" style="text-align: center; cursor: pointer" @click="toggleKphSort('trangThaiDuyet')"><span class="kph-header-line">Duyệt <span id="sort-icon-trangThaiDuyet" class="sort-icon">↕</span></span><span class="kph-header-line">Thời gian duyệt</span></th>
-          <th class="kph-col-sku sortable-header" style="cursor: pointer" @click="toggleKphSort('skuTenHang')"><span class="kph-header-line">SKU/UPC</span><span class="kph-header-line">Tên hàng hóa <span id="sort-icon-skuTenHang" class="sort-icon">↕</span></span></th>
-          <th class="kph-col-supplier sortable-header" style="cursor: pointer" @click="toggleKphSort('ncc')">NCC <span id="sort-icon-ncc" class="sort-icon">↕</span></th>
-          <th class="kph-col-quantity sortable-header" style="cursor: pointer; text-align: center" @click="toggleKphSort('soLuong')"><span class="kph-header-line">SL <span id="sort-icon-soLuong" class="sort-icon">↕</span></span><span class="kph-header-line">ĐVT</span></th>
-          <th class="kph-col-condition sortable-header" style="cursor: pointer" @click="toggleKphSort('tinhTrang')"><span class="kph-header-line">Mô tả tình trạng <span id="sort-icon-tinhTrang" class="sort-icon">↕</span></span><span class="kph-header-line">KPH</span></th>
-          <th class="kph-col-resolution sortable-header" style="cursor: pointer" @click="toggleKphSort('ngayXuLy')"><span class="kph-header-line">Biện pháp xử lý</span><span class="kph-header-line">Ngày xử lý <span id="sort-icon-ngayXuLy" class="sort-icon">↕</span></span></th>
-          <th class="kph-col-image sortable-header" style="text-align: center; cursor: pointer" @click="toggleKphSort('imageCount')">Ảnh <span id="sort-icon-imageCount" class="sort-icon">↕</span></th>
+          <th class="kph-col-date sortable-header" style="text-align: center; cursor: pointer" @click="toggleKphSort('ngayPhatHien')">Phát hiện <span id="sort-icon-ngayPhatHien" class="sort-icon" :class="{ 'active-sort': isSortActive('ngayPhatHien') }">{{ sortIcon('ngayPhatHien') }}</span></th>
+          <th class="kph-col-approval sortable-header" style="text-align: center; cursor: pointer" @click="toggleKphSort('trangThaiDuyet')"><span class="kph-header-line">Duyệt <span id="sort-icon-trangThaiDuyet" class="sort-icon" :class="{ 'active-sort': isSortActive('trangThaiDuyet') }">{{ sortIcon('trangThaiDuyet') }}</span></span><span class="kph-header-line">Thời gian duyệt</span></th>
+          <th class="kph-col-sku sortable-header" style="cursor: pointer" @click="toggleKphSort('skuTenHang')"><span class="kph-header-line">SKU/UPC</span><span class="kph-header-line">Tên hàng hóa <span id="sort-icon-skuTenHang" class="sort-icon" :class="{ 'active-sort': isSortActive('skuTenHang') }">{{ sortIcon('skuTenHang') }}</span></span></th>
+          <th class="kph-col-supplier sortable-header" style="cursor: pointer" @click="toggleKphSort('ncc')">NCC <span id="sort-icon-ncc" class="sort-icon" :class="{ 'active-sort': isSortActive('ncc') }">{{ sortIcon('ncc') }}</span></th>
+          <th class="kph-col-quantity sortable-header" style="cursor: pointer; text-align: center" @click="toggleKphSort('soLuong')"><span class="kph-header-line">SL <span id="sort-icon-soLuong" class="sort-icon" :class="{ 'active-sort': isSortActive('soLuong') }">{{ sortIcon('soLuong') }}</span></span><span class="kph-header-line">ĐVT</span></th>
+          <th class="kph-col-condition sortable-header" style="cursor: pointer" @click="toggleKphSort('tinhTrang')"><span class="kph-header-line">Mô tả tình trạng <span id="sort-icon-tinhTrang" class="sort-icon" :class="{ 'active-sort': isSortActive('tinhTrang') }">{{ sortIcon('tinhTrang') }}</span></span><span class="kph-header-line">KPH</span></th>
+          <th class="kph-col-resolution sortable-header" style="cursor: pointer" @click="toggleKphSort('ngayXuLy')"><span class="kph-header-line">Biện pháp xử lý</span><span class="kph-header-line">Ngày xử lý <span id="sort-icon-ngayXuLy" class="sort-icon" :class="{ 'active-sort': isSortActive('ngayXuLy') }">{{ sortIcon('ngayXuLy') }}</span></span></th>
+          <th class="kph-col-image sortable-header" style="text-align: center; cursor: pointer" @click="toggleKphSort('imageCount')">Ảnh <span id="sort-icon-imageCount" class="sort-icon" :class="{ 'active-sort': isSortActive('imageCount') }">{{ sortIcon('imageCount') }}</span></th>
           <th class="kph-col-delete" style="text-align: center">Xóa</th>
         </tr>
       </thead>
