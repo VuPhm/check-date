@@ -3,7 +3,7 @@
   <name>CoopFood Pilot Service</name>
   <description>Runs one CoopFood pilot cluster: Node Host and HTTPS tunnel.</description>
   <executable>%BASE%\..\node\node.exe</executable>
-  <arguments>%BASE%\..\server\pilot-supervisor.mjs</arguments>
+  <arguments>"%BASE%\..\server\pilot-supervisor.mjs"</arguments>
   <env name="PILOT_CONFIG_PATH" value="C:\ProgramData\CoopFoodPilot\runtime.json" />
   <env name="PILOT_NODE_EXECUTABLE" value="%BASE%\..\node\node.exe" />
   <env name="PILOT_CLOUDFLARED_BIN" value="%BASE%\..\cloudflared\cloudflared.exe" />
