@@ -11,11 +11,11 @@ function passwordHash(value) {
   return `${salt}:${scryptSync(value, salt, 32).toString('hex')}`;
 }
 function usage() {
-  console.error('Dùng: node server/manage-pilot.mjs add-store <mã 4 số> <mật khẩu CHT tối thiểu 12 ký tự> <PIN 4 số> [tên cửa hàng]');
+  console.error('Dùng: node server/manage-pilot.mjs add-store <mã 4 số> <mật khẩu CHT> <PIN 4 số> [tên cửa hàng]');
   process.exitCode = 1;
 }
 
-if (command !== 'add-store' || !/^\d{4}$/.test(code || '') || (managerPassword || '').length < 12 || !/^\d{4}$/.test(joinCode || '')) usage();
+if (command !== 'add-store' || !/^\d{4}$/.test(code || '') || !(managerPassword || '').trim() || !/^\d{4}$/.test(joinCode || '')) usage();
 else if (!existsSync(databaseFile)) {
   console.error(`Chưa tìm thấy cơ sở dữ liệu: ${databaseFile}. Hãy khởi động API ít nhất một lần.`);
   process.exitCode = 1;

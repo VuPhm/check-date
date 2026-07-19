@@ -1,4 +1,9 @@
-# Pilot Windows (chưa có domain)
+# Pilot Windows qua Docker (legacy transition)
+
+> Bản này vẫn là cách chạy Docker hiện có. Target mới cho Pilot 1 là một
+> `CoopFoodPilotService` trên Windows, gồm Node Pilot Host và tunnel dưới một
+> Supervisor; xem [kế hoạch runtime Windows](../pilot-windows/PLAN.md). Không
+> dùng hướng dẫn này để đóng gói host Windows mới.
 
 Gói này chạy ứng dụng và API ở cùng một máy Windows. Các máy cửa hàng dùng cùng
 link; khi máy chủ được tắt, ứng dụng đã cài trước đó vẫn lưu dữ liệu cục bộ rồi
@@ -8,9 +13,10 @@ tự đồng bộ lại khi máy chủ bật.
 
 1. Cài Docker Desktop for Windows và bật chế độ khởi động cùng Windows.
 2. Build frontend tại root repository: `npm ci` rồi `npm run build`.
-3. Trong thư mục này, sao chép `.env.example` thành `.env`. Đặt
-   `PILOT_MANAGER_PASSWORD` dài ít nhất 12 ký tự, và đổi `PILOT_JOIN_CODE`.
-   Không gửi file `.env` qua nhóm chat.
+3. Trong thư mục này, sao chép `.env.example` thành `.env`. Password CHT của
+   store khởi tạo có thể tạm dùng chính mã cửa hàng bốn số; đổi
+   `PILOT_JOIN_CODE` trước khi mời nhân viên. Không gửi file `.env` qua nhóm
+   chat.
 4. Tạo hai thư mục `pilot-data` và `backups` ngay trong `deploy/pilot`.
 
 Khởi động:
