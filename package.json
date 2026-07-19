@@ -1,7 +1,7 @@
 {
   "name": "coop-date",
   "private": true,
-  "version": "2.23.1",
+  "version": "2.23.2",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -10,12 +10,15 @@
     "preview": "vite preview --host 0.0.0.0",
     "mock:api": "node scripts/mock-central-api.mjs",
     "pilot:api": "node server/pilot-api.mjs",
+    "pilot:host": "node server/pilot-host.mjs",
+    "pilot:supervisor": "node server/pilot-supervisor.mjs",
+    "pilot:windows:stage": "node scripts/build-pilot-windows-runtime.mjs",
     "pilot:add-store": "node server/manage-pilot.mjs add-store",
     "demo": "node scripts/demo.mjs",
     "demo:pwa": "DEMO_PWA=1 node scripts/demo.mjs",
     "demo:lan": "DEMO_PWA=1 LOCAL_HTTPS=true node scripts/demo.mjs",
     "demo:reset": "node scripts/reset-demo-data.mjs",
-    "test": "vitest run",
+    "test": "vitest run && node --test server/*.test.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {

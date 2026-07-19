@@ -1,0 +1,10 @@
+{
+  "databaseFile": "D:\\CoopFoodPilot\\data\\pilot.sqlite",
+  "backupDirectory": "E:\\CoopFoodPilot\\backups",
+  "distDirectory": "C:\\Program Files\\CoopFood Pilot\\runtime\\dist",
+  "publicUrl": "https://c01.tenmiencuaban.vn",
+  "hostPort": 8787,
+  "statusFile": "C:\\ProgramData\\CoopFoodPilot\\cluster-status.json",
+  "systemAdminToken": "INSTALLER_GENERATES_A_RANDOM_SECRET",
+  "tunnelToken": "CONFIGURED_BY_SETUP_WIZARD"
+}

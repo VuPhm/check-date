@@ -1,7 +1,8 @@
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, statfsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 
 const port = Number(process.env.PORT || 8787);
@@ -10,6 +11,11 @@ const defaultStoreCode = String(process.env.PILOT_STORE_CODE || '0001');
 const defaultManagerPassword = String(process.env.PILOT_MANAGER_PASSWORD || defaultStoreCode);
 const defaultJoinCode = String(process.env.PILOT_JOIN_CODE || '1234');
 const sessionDays = Number(process.env.SESSION_DAYS || 30);
+const authWindowMs = Number(process.env.PILOT_AUTH_WINDOW_MS || 15 * 60 * 1000);
+const authBlockMs = Number(process.env.PILOT_AUTH_BLOCK_MS || 15 * 60 * 1000);
+const authMaxAttempts = Number(process.env.PILOT_AUTH_MAX_ATTEMPTS || 5);
+const systemAdminToken = String(process.env.PILOT_SYSTEM_ADMIN_TOKEN || '');
+const backupDirectory = resolve(process.env.PILOT_BACKUP_DIR || resolve(dirname(databaseFile), '../backups'));
 const clients = new Map();
 
 mkdirSync(dirname(databaseFile), { recursive: true });
@@ -21,7 +27,18 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, device_id TEXT NOT NULL, user_id TEXT NOT NULL, branch_id TEXT NOT NULL, display_name TEXT NOT NULL, role TEXT NOT NULL, device_name TEXT NOT NULL, expires_at TEXT NOT NULL, revoked_at TEXT, last_seen_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, branch_id TEXT NOT NULL, id TEXT NOT NULL, body TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL, deleted_at TEXT, server_revision INTEGER NOT NULL, PRIMARY KEY(kind, branch_id, id));
   CREATE TABLE IF NOT EXISTS activity (id TEXT PRIMARY KEY, branch_id TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS auth_rate_limits (scope TEXT PRIMARY KEY, attempts INTEGER NOT NULL, window_started_at TEXT NOT NULL, blocked_until TEXT, updated_at TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL);
 `);
+
+function applyMigration(version, statement) {
+  if (db.prepare('SELECT version FROM schema_migrations WHERE version = ?').get(version)) return;
+  db.exec(statement);
+  db.prepare('INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)').run(version, new Date().toISOString());
+}
+
+applyMigration(1, 'ALTER TABLE stores ADD COLUMN disabled_at TEXT');
+applyMigration(2, 'CREATE TABLE system_audit (id TEXT PRIMARY KEY, action TEXT NOT NULL, details TEXT NOT NULL, created_at TEXT NOT NULL)');
 
 function hash(value) { return createHash('sha256').update(value).digest('hex'); }
 function passwordHash(value) { const salt = randomBytes(16).toString('hex'); return `${salt}:${scryptSync(value, salt, 32).toString('hex')}`; }
@@ -38,10 +55,70 @@ function readBody(request) { return new Promise((resolve, reject) => { let raw =
 function seedStore() { if (!one('SELECT id FROM stores WHERE code = ?', defaultStoreCode)) run('INSERT INTO stores (id, code, name, password_hash, join_code_hash) VALUES (?, ?, ?, ?, ?)', defaultStoreCode, defaultStoreCode, `Co.op Food ${defaultStoreCode}`, passwordHash(defaultManagerPassword), passwordHash(defaultJoinCode)); }
 seedStore();
 
+function clientIp(request) {
+  const forwarded = request.headers['cf-connecting-ip'];
+  if (typeof forwarded === 'string' && forwarded.trim()) return forwarded.trim();
+  return request.socket.remoteAddress || 'unknown';
+}
+function authScopes(kind, storeCode, request) {
+  const code = String(storeCode || '').replace(/\D/g, '').slice(0, 4) || 'unknown';
+  const ip = clientIp(request);
+  return [
+    { scope: `${kind}:store-ip:${code}:${ip}`, maxAttempts: authMaxAttempts },
+    { scope: `${kind}:ip:${ip}`, maxAttempts: authMaxAttempts * 6 },
+  ];
+}
+function isAuthBlocked(scopes) {
+  const timestamp = Date.now();
+  return scopes.some(({ scope }) => {
+    const row = one('SELECT blocked_until FROM auth_rate_limits WHERE scope = ?', scope);
+    return row?.blocked_until && Date.parse(row.blocked_until) > timestamp;
+  });
+}
+function recordAuthFailure(scopes) {
+  const timestamp = Date.now();
+  for (const { scope, maxAttempts } of scopes) {
+    const row = one('SELECT attempts, window_started_at FROM auth_rate_limits WHERE scope = ?', scope);
+    const withinWindow = row && timestamp - Date.parse(row.window_started_at) < authWindowMs;
+    const attempts = withinWindow ? Number(row.attempts) + 1 : 1;
+    const blockedUntil = attempts >= maxAttempts ? new Date(timestamp + authBlockMs).toISOString() : null;
+    run('INSERT OR REPLACE INTO auth_rate_limits (scope, attempts, window_started_at, blocked_until, updated_at) VALUES (?, ?, ?, ?, ?)', scope, attempts, withinWindow ? row.window_started_at : now(), blockedUntil, now());
+  }
+}
+function clearAuthFailures(scopes) { for (const { scope } of scopes) run('DELETE FROM auth_rate_limits WHERE scope = ?', scope); }
+function systemAuthorized(request) {
+  const provided = request.headers['x-pilot-system-token'];
+  const remote = request.socket.remoteAddress;
+  if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote || '') || request.headers['cf-connecting-ip'] || request.headers['x-forwarded-for']) return false;
+  if (!systemAdminToken || typeof provided !== 'string') return false;
+  const expected = Buffer.from(systemAdminToken); const actual = Buffer.from(provided);
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+function systemAudit(action, details = {}) { run('INSERT INTO system_audit VALUES (?, ?, ?, ?)', randomUUID(), action, json(details), now()); }
+function createPilotBackup() {
+  const name = `pilot-${now().replace(/[:.]/g, '-')}.sqlite`;
+  const destination = resolve(backupDirectory, name);
+  mkdirSync(backupDirectory, { recursive: true });
+  db.exec(`VACUUM INTO '${destination.replace(/'/g, "''")}'`);
+  systemAudit('backup.created', { filename: name });
+  return { filename: name, path: destination, createdAt: now() };
+}
+function systemHealth() {
+  const filesystem = statfsSync(dirname(databaseFile));
+  return {
+    ok: true,
+    mode: 'pilot-host',
+    branchCount: one('SELECT COUNT(*) AS count FROM stores WHERE disabled_at IS NULL').count,
+    databaseWritable: db.isOpen,
+    diskFreeBytes: Number(filesystem.bavail) * Number(filesystem.bsize),
+    backupDirectory,
+  };
+}
+
 function sessionFrom(request) {
   const token = request.headers.authorization?.replace(/^Bearer\s+/i, '');
   if (!token) return null;
-  const row = one('SELECT * FROM sessions WHERE token_hash = ?', hash(token));
+  const row = one('SELECT sessions.* FROM sessions JOIN stores ON stores.id = sessions.branch_id WHERE sessions.token_hash = ? AND stores.disabled_at IS NULL', hash(token));
   if (!row || row.revoked_at || Date.parse(row.expires_at) <= Date.now()) return null;
   return { tokenHash: row.token_hash, deviceId: row.device_id, id: row.user_id, branchId: row.branch_id, displayName: row.display_name, role: row.role, deviceName: row.device_name };
 }
@@ -53,7 +130,7 @@ function createSession(store, role, userId, displayName, deviceName) {
 }
 function nextRevision(branchId) { run('UPDATE stores SET revision = revision + 1 WHERE id = ?', branchId); return one('SELECT revision FROM stores WHERE id = ?', branchId).revision; }
 function publish(branchId) { for (const response of clients.get(branchId) || []) response.write('event: branch-changed\ndata: {}\n\n'); }
-function storeByCode(code) { return one('SELECT * FROM stores WHERE code = ?', String(code || '')); }
+function storeByCode(code) { return one('SELECT * FROM stores WHERE code = ? AND disabled_at IS NULL', String(code || '')); }
 function isDeleted(record) { return Boolean(record?.deletedAt); }
 function storedRecord(kind, branchId, id) { const row = one('SELECT * FROM records WHERE kind = ? AND branch_id = ? AND id = ?', kind, branchId, id); return row ? { row, record: parse(row.body) } : null; }
 function newer(incoming, existing) { const iv = Number(incoming.version || 0); const ev = Number(existing.version || 0); if (iv !== ev) return iv > ev; return Date.parse(incoming.updatedAt || incoming.createdAt || 0) >= Date.parse(existing.updatedAt || existing.createdAt || 0); }
@@ -95,10 +172,11 @@ function mergeChange(kind, session, record) {
   return true;
 }
 
-createServer(async (request, response) => {
+export function createPilotApiHandler() {
+  return async (request, response) => {
   const url = new URL(request.url || '/', `http://${request.headers.host}`); const path = url.pathname.replace(/^\/api/, '') || '/';
   if (request.method === 'OPTIONS') return send(response, 204, {});
-  if (request.method === 'GET' && path === '/health') return send(response, 200, { ok: true, mode: 'pilot-api', branchCount: one('SELECT COUNT(*) AS count FROM stores').count });
+  if (request.method === 'GET' && path === '/health') return send(response, 200, { ok: true, mode: 'pilot-api', branchCount: one('SELECT COUNT(*) AS count FROM stores WHERE disabled_at IS NULL').count });
   if (request.method === 'GET' && path === '/v1/events') {
     const row = one('SELECT * FROM sessions WHERE token_hash = ?', hash(url.searchParams.get('access_token') || ''));
     if (!row || row.revoked_at || Date.parse(row.expires_at) <= Date.now()) return fail(response, 401, 'Phiên không hợp lệ.');
@@ -106,13 +184,40 @@ createServer(async (request, response) => {
     const set = clients.get(row.branch_id) || new Set(); set.add(response); clients.set(row.branch_id, set); request.on('close', () => set.delete(response)); return;
   }
   try {
+    if (path.startsWith('/v1/system/')) {
+      if (!systemAuthorized(request)) return fail(response, 401, 'Không có quyền quản trị hệ thống.');
+      if (request.method === 'GET' && path === '/v1/system/health') return send(response, 200, systemHealth());
+      if (request.method === 'GET' && path === '/v1/system/stores') return send(response, 200, { stores: many('SELECT code, name, manager_name, disabled_at, revision FROM stores ORDER BY code').map((store) => ({ code: store.code, name: store.name, managerName: store.manager_name || '', disabled: Boolean(store.disabled_at), revision: store.revision })) });
+      if (request.method === 'POST' && path === '/v1/system/stores') {
+        const body = await readBody(request); const code = String(body.code || ''); const name = String(body.name || '').trim() || `Co.op Food ${code}`; const joinCode = String(body.joinCode || '1234'); const password = String(body.password || code);
+        if (!/^\d{4}$/.test(code) || !/^\d{4}$/.test(joinCode) || !password) return fail(response, 400, 'Mã cửa hàng và PIN phải gồm bốn số.');
+        if (one('SELECT id FROM stores WHERE code = ?', code)) return fail(response, 409, 'Mã cửa hàng đã tồn tại.');
+        run('INSERT INTO stores (id, code, name, password_hash, join_code_hash) VALUES (?, ?, ?, ?, ?)', code, code, name, passwordHash(password), passwordHash(joinCode));
+        systemAudit('store.created', { code, name }); return send(response, 201, { code, name });
+      }
+      const systemStoreCode = path.match(/^\/v1\/system\/stores\/(\d{4})$/)?.[1];
+      if (request.method === 'PATCH' && systemStoreCode) {
+        const body = await readBody(request); const store = one('SELECT * FROM stores WHERE code = ?', systemStoreCode); if (!store) return fail(response, 404, 'Không tìm thấy cửa hàng.');
+        if (typeof body.name === 'string' && body.name.trim()) run('UPDATE stores SET name = ? WHERE code = ?', body.name.trim(), systemStoreCode);
+        if (typeof body.disabled === 'boolean') { run('UPDATE stores SET disabled_at = ? WHERE code = ?', body.disabled ? now() : null, systemStoreCode); if (body.disabled) run('UPDATE sessions SET revoked_at = ? WHERE branch_id = ?', now(), store.id); }
+        systemAudit('store.updated', { code: systemStoreCode, disabled: body.disabled }); return send(response, 200, { ok: true });
+      }
+      if (request.method === 'POST' && path === '/v1/system/backups') return send(response, 201, createPilotBackup());
+      return fail(response, 404, 'Không tìm thấy quản trị hệ thống.');
+    }
     if (request.method === 'POST' && path === '/v1/auth/manager/login') {
-      const body = await readBody(request); const store = storeByCode(body.storeCode); if (!store || !passwordMatches(String(body.password || ''), store.password_hash)) return fail(response, 401, 'Mã cửa hàng hoặc mật khẩu không đúng.');
+      const body = await readBody(request); const scopes = authScopes('manager', body.storeCode, request);
+      if (isAuthBlocked(scopes)) return fail(response, 429, 'Thử lại sau ít phút.');
+      const store = storeByCode(body.storeCode); if (!store || !passwordMatches(String(body.password || ''), store.password_hash)) { recordAuthFailure(scopes); return fail(response, 401, 'Mã cửa hàng hoặc mật khẩu không đúng.'); }
+      clearAuthFailures(scopes);
       const name = String(body.displayName || store.manager_name || `CHT ${store.code}`).trim(); if (name !== store.manager_name) run('UPDATE stores SET manager_name = ? WHERE id = ?', name, store.id);
       return send(response, 200, { session: createSession(store, 'manager', `manager:${store.id}`, name, String(body.deviceName || 'Thiết bị CHT')) });
     }
     if (request.method === 'POST' && path === '/v1/auth/employee/join') {
-      const body = await readBody(request); const store = storeByCode(body.storeCode); if (!store || !passwordMatches(String(body.joinCode || ''), store.join_code_hash)) return fail(response, 401, 'Mã cửa hàng hoặc mã tham gia không đúng.');
+      const body = await readBody(request); const scopes = authScopes('employee', body.storeCode, request);
+      if (isAuthBlocked(scopes)) return fail(response, 429, 'Thử lại sau ít phút.');
+      const store = storeByCode(body.storeCode); if (!store || !passwordMatches(String(body.joinCode || ''), store.join_code_hash)) { recordAuthFailure(scopes); return fail(response, 401, 'Mã cửa hàng hoặc mã tham gia không đúng.'); }
+      clearAuthFailures(scopes);
       const displayName = String(body.displayName || '').trim(); const employeeCode = String(body.employeeCode || '').trim(); if (!displayName || !employeeCode) return fail(response, 400, 'Cần họ tên và mã nhân viên.');
       let employee = one('SELECT * FROM employees WHERE branch_id = ? AND employee_code = ?', store.id, employeeCode); if (!employee) { const id = randomUUID(); run('INSERT INTO employees VALUES (?, ?, ?, ?, 1)', id, store.id, displayName, employeeCode); employee = one('SELECT * FROM employees WHERE id = ?', id); nextRevision(store.id); appendEmployeeJoined(store, employee); publish(store.id); } if (!employee.active) return fail(response, 403, 'Tài khoản nhân viên đã bị xóa.');
       if (employee.display_name !== displayName) run('UPDATE employees SET display_name = ? WHERE id = ?', displayName, employee.id);
@@ -135,4 +240,18 @@ createServer(async (request, response) => {
     const employeeId = path.match(/^\/v1\/store\/employees\/([^/]+)$/)?.[1]; if (request.method === 'DELETE' && employeeId && session.role === 'manager') { run('UPDATE employees SET active = 0 WHERE id = ? AND branch_id = ?', employeeId, session.branchId); run('UPDATE sessions SET revoked_at = ? WHERE user_id = ?', now(), employeeId); publish(session.branchId); return send(response, 200, { ok: true }); }
     return fail(response, 404, 'Không tìm thấy endpoint.');
   } catch (error) { return fail(response, 400, error instanceof Error ? error.message : 'Yêu cầu không hợp lệ.'); }
-}).listen(port, '0.0.0.0', () => console.log(`Pilot API running on :${port}; database: ${databaseFile}`));
+  };
+}
+
+export function createPilotApiServer() {
+  return createServer(createPilotApiHandler());
+}
+
+export function closePilotDatabase() {
+  if (db.isOpen) db.close();
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const server = createPilotApiServer();
+  server.listen(port, '0.0.0.0', () => console.log(`Pilot API running on :${port}; database: ${databaseFile}`));
+}
