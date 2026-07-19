@@ -1,0 +1,38 @@
+<Window x:Class="CoopFoodPilot.ControlCenter.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pilot Control Center" Height="390" Width="620" MinHeight="390" MinWidth="620"
+        WindowStartupLocation="CenterScreen">
+  <Grid Margin="28">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="18" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="20" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+    <StackPanel>
+      <TextBlock Text="Pilot Control Center" FontSize="26" FontWeight="SemiBold" />
+      <TextBlock Text="Một cụm · 22 cửa hàng" Foreground="#666" Margin="0,5,0,0" />
+    </StackPanel>
+    <Border Grid.Row="2" Padding="18" Background="#F5F5F7" CornerRadius="12">
+      <StackPanel>
+        <TextBlock x:Name="StatusText" Text="Đang kiểm tra cụm…" FontSize="18" FontWeight="SemiBold" />
+        <TextBlock x:Name="LinkText" Text="Link: Chưa cấu hình" Margin="0,8,0,0" TextWrapping="Wrap" />
+        <TextBlock x:Name="BackupText" Text="Backup gần nhất: Chưa có thông tin" Margin="0,4,0,0" Foreground="#666" />
+      </StackPanel>
+    </Border>
+    <StackPanel Grid.Row="4" Orientation="Horizontal" VerticalAlignment="Top">
+      <Button Content="Cấu hình cụm" Click="SetupCluster_Click" Padding="18,10" Margin="0,0,10,0" />
+      <Button x:Name="StartButton" Content="Bật cụm" Click="StartCluster_Click" Padding="22,10" Margin="0,0,10,0" />
+      <Button x:Name="StopButton" Content="Dừng cụm" Click="StopCluster_Click" Padding="22,10" Margin="0,0,10,0" />
+      <Button x:Name="BackupButton" Content="Sao lưu ngay" Click="Backup_Click" Padding="22,10" />
+      <Button Content="Khôi phục backup" Click="Restore_Click" Padding="18,10" Margin="10,0,0,0" />
+    </StackPanel>
+    <DockPanel Grid.Row="5">
+      <Button Content="Làm mới" Click="Refresh_Click" DockPanel.Dock="Left" Padding="14,7" />
+      <TextBlock x:Name="DetailText" Text="Chi tiết kỹ thuật chỉ dùng khi hỗ trợ." Foreground="#777" HorizontalAlignment="Right" VerticalAlignment="Center" />
+    </DockPanel>
+  </Grid>
+</Window>

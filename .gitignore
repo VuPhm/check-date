@@ -14,3 +14,5 @@ tmp/
 *.pfx
 certs/
 data/mock-central-api.json
+out/
+deploy/pilot-windows/vendor/
