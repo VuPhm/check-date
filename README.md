@@ -146,4 +146,6 @@ tay precache manifest. Dev service worker chỉ bật bằng `npm run dev:pwa`.
   quản trị cụm/toàn chuỗi.
 - [central-admin.md](docs/architecture/central-admin.md): mô hình quyền admin
   hiện tại và điều kiện để mở rộng toàn chuỗi.
+- [IT-SECURITY-REVIEW.md](docs/security/IT-SECURITY-REVIEW.md): phạm vi, lệnh tái
+  lập và checklist thẩm định an toàn trước bàn giao.
 - `docs/huong-dan/`: hướng dẫn sử dụng được đóng gói cùng ứng dụng.

@@ -3,6 +3,10 @@
 Phần source Node/PWA đã kiểm tra trên macOS. Các bước dưới đây bắt buộc chạy trên
 Windows 10/11 64-bit bằng account có quyền Administrator.
 
+Trước khi ký/phát installer, IT chạy checklist trong
+[hồ sơ thẩm định bảo mật](../../docs/security/IT-SECURITY-REVIEW.md), đặc biệt là
+hash/chữ ký vendor, ACL runtime và thử payload Excel an toàn.
+
 ## 1. Chuẩn bị build machine Windows
 
 Cài .NET 8 SDK, Inno Setup và một Node 24 dùng cho build. Clone source, sau đó:

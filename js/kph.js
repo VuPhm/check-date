@@ -1,4 +1,5 @@
 import { isValidDateStr, parseLocalDate, formatLocalDate, showAppleConfirm, showAppleToast, loadExcelJS } from './helpers.js';
+import { excelSafeCell } from '../src/domain/excelSafety.ts';
 import { addLog, softDeleteLog, clearAllLogs, getAllLogs } from './db.js';
 import { buildKphApprovalUpdate } from '../src/domain/kphApproval.ts';
 import { buildKphLog } from '../src/domain/kphEntry.ts';
@@ -1462,21 +1463,21 @@ export async function exportKphToExcel() {
             row.height = 70;
 
             worksheet.getCell(`A${currentRow}`).value = idx + 1;
-            worksheet.getCell(`B${currentRow}`).value = item.ngayPhatHien;
-            worksheet.getCell(`C${currentRow}`).value = item.sku;
-            worksheet.getCell(`D${currentRow}`).value = item.tenHang;
-            worksheet.getCell(`E${currentRow}`).value = item.ncc || '';
-            worksheet.getCell(`F${currentRow}`).value = item.dvt;
-            worksheet.getCell(`G${currentRow}`).value = item.soLuong;
-            worksheet.getCell(`H${currentRow}`).value = item.tinhTrang;
-            worksheet.getCell(`I${currentRow}`).value = item.nguoiPhatHien || '';
+            worksheet.getCell(`B${currentRow}`).value = excelSafeCell(item.ngayPhatHien);
+            worksheet.getCell(`C${currentRow}`).value = excelSafeCell(item.sku);
+            worksheet.getCell(`D${currentRow}`).value = excelSafeCell(item.tenHang);
+            worksheet.getCell(`E${currentRow}`).value = excelSafeCell(item.ncc || '');
+            worksheet.getCell(`F${currentRow}`).value = excelSafeCell(item.dvt);
+            worksheet.getCell(`G${currentRow}`).value = excelSafeCell(item.soLuong);
+            worksheet.getCell(`H${currentRow}`).value = excelSafeCell(item.tinhTrang);
+            worksheet.getCell(`I${currentRow}`).value = excelSafeCell(item.nguoiPhatHien || '');
 
             worksheet.getCell(`J${currentRow}`).value = (item.bienPhap === 'HỦY') ? 'X' : '';
             worksheet.getCell(`K${currentRow}`).value = (item.bienPhap === 'ĐỔI') ? 'X' : '';
             worksheet.getCell(`L${currentRow}`).value = (item.bienPhap === 'XUẤT TRẢ') ? 'X' : '';
-            worksheet.getCell(`M${currentRow}`).value = (item.bienPhap === 'KHÁC') ? item.bienPhapText : '';
+            worksheet.getCell(`M${currentRow}`).value = excelSafeCell((item.bienPhap === 'KHÁC') ? item.bienPhapText : '');
 
-            worksheet.getCell(`N${currentRow}`).value = item.ngayXuLy;
+            worksheet.getCell(`N${currentRow}`).value = excelSafeCell(item.ngayXuLy);
 
             const itemImages = getKphLogImages(item);
             if (itemImages.length > 0) {
@@ -1516,7 +1517,7 @@ export async function exportKphToExcel() {
                 worksheet.getCell(`O${currentRow}`).value = '';
             }
 
-            worksheet.getCell(`P${currentRow}`).value = item.nguoiDuyet || '';
+            worksheet.getCell(`P${currentRow}`).value = excelSafeCell(item.nguoiDuyet || '');
 
             const columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P'];
             columns.forEach(col => {

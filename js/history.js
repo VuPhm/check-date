@@ -12,6 +12,7 @@ import {
     softDeleteHistoryLog
 } from './db.js';
 import { countHistoryByType, getVisibleHistory } from '../src/domain/historyPresentation.ts';
+import { excelSafeCell } from '../src/domain/excelSafety.ts';
 
 export const historyData = [];
 export const activeFilters = new Set(['all']);
@@ -379,10 +380,10 @@ export async function exportHistoryToExcel() {
             } else {
                 inspectionDate = item.nsx;
             }
-            worksheet.getCell(`B${currentRow}`).value = inspectionDate;
-            worksheet.getCell(`C${currentRow}`).value = item.barcode || '';
-            worksheet.getCell(`D${currentRow}`).value = item.tenHang || '';
-            worksheet.getCell(`E${currentRow}`).value = (item.quantity !== undefined && item.quantity !== "") ? item.quantity : "";
+            worksheet.getCell(`B${currentRow}`).value = excelSafeCell(inspectionDate);
+            worksheet.getCell(`C${currentRow}`).value = excelSafeCell(item.barcode || '');
+            worksheet.getCell(`D${currentRow}`).value = excelSafeCell(item.tenHang || '');
+            worksheet.getCell(`E${currentRow}`).value = excelSafeCell((item.quantity !== undefined && item.quantity !== "") ? item.quantity : "");
             
             // Tính toán Mốc 40% và Hạn lùi 20%
             let date40Str = '-';
@@ -409,8 +410,8 @@ export async function exportHistoryToExcel() {
                 console.error("Error calculating milestones", e);
             }
             
-            worksheet.getCell(`F${currentRow}`).value = date40Str;
-            worksheet.getCell(`G${currentRow}`).value = date20Str;
+            worksheet.getCell(`F${currentRow}`).value = excelSafeCell(date40Str);
+            worksheet.getCell(`G${currentRow}`).value = excelSafeCell(date20Str);
             
             const alertType = item.alertType;
             const labelMap = {
@@ -420,7 +421,7 @@ export async function exportHistoryToExcel() {
                 'expired': 'Đã hết HSD',
                 'other': 'Khác'
             };
-            worksheet.getCell(`H${currentRow}`).value = labelMap[alertType] || item.alertLabel || 'Khác';
+            worksheet.getCell(`H${currentRow}`).value = excelSafeCell(labelMap[alertType] || item.alertLabel || 'Khác');
             
             const columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
             columns.forEach(col => {
