@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import type { ActivityEvent, DeviceSession, ServerEndpoint, SyncStatus } from '../domain/types';
 import { deviceSessionSchema, serverEndpointSchema } from '../domain/schemas';
 import { acknowledgeChanges, assignUnboundRecords, getPendingChanges, getSyncCursor, mergeSyncSnapshot, setSyncCursor } from '../repositories/localDatabase';
-import { checkSyncServer, subscribeToBranchEvents, syncWithServer } from '../services/syncApi';
+import { checkSyncServer, subscribeToBranchEvents, syncWithServer, type BranchEventSubscription } from '../services/syncApi';
 import { nextRetryAt } from '../domain/syncRetry';
 
 const SESSION_STORAGE_KEY = 'coop_device_session';
@@ -13,7 +13,7 @@ const SEEN_ACTIVITY_STORAGE_KEY = 'coop_seen_activity';
 const KNOWN_ACTIVITY_STORAGE_KEY = 'coop_known_activity';
 const AUTH_NOTICE_STORAGE_KEY = 'coop_auth_notice';
 const defaultEndpoint: ServerEndpoint = { basePath: '/api' };
-let branchEvents: EventSource | null = null;
+let branchEvents: BranchEventSubscription | null = null;
 let syncTimer: number | null = null;
 
 export const useAppStore = defineStore('app', {

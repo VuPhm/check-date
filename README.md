@@ -59,22 +59,19 @@ Mở URL do Vite in ra, mặc định là <http://localhost:5173>. Không mở t
 `index.html` và không dùng static server thuần vì Vue/TypeScript cần được Vite
 biên dịch.
 
-Để chạy cả frontend và mock API đồng bộ:
+Để chạy API pilot cục bộ phục vụ phát triển:
 
 ```bash
-npm run demo
+npm run pilot:api
 ```
 
-Thông tin tài khoản và kịch bản nhiều thiết bị nằm trong [STAGING.md](STAGING.md).
+Đóng gói/cài đặt Windows dùng [WINDOWS-HANDOFF.md](deploy/pilot-windows/WINDOWS-HANDOFF.md).
 
 ## Lệnh thường dùng
 
 | Lệnh | Mục đích |
 | --- | --- |
 | `npm run dev` | Chạy Vite ở chế độ phát triển |
-| `npm run demo` | Chạy Vite và mock API |
-| `npm run demo:pwa` | Demo có service worker trên localhost |
-| `npm run demo:lan` | Demo HTTPS trong LAN để thử camera/PWA |
 | `npm test` | Chạy toàn bộ unit test một lần |
 | `npm run test:watch` | Chạy Vitest ở chế độ theo dõi |
 | `npm run build` | Type-check và tạo bản production trong `dist/` |
@@ -123,15 +120,14 @@ liệu cũ. Mọi thay đổi schema phải thêm migration Dexie trong
 `src/repositories/localDatabase.ts` và bảo toàn dữ liệu hiện hữu.
 
 API mặc định dùng cùng origin tại `/api`. Trong development, Vite proxy endpoint
-này tới `http://127.0.0.1:8787`. Production phải phục vụ frontend qua HTTPS và
-reverse proxy `/api` tới API trung tâm; xem `deploy/Caddyfile.example`.
+này tới `http://127.0.0.1:8787`. Bản Windows phục vụ frontend/API cùng origin
+trên loopback, sau đó Cloudflare Tunnel cung cấp HTTPS public.
 
 ### PWA
 
 `src/sw.ts` precache app shell do Workbox sinh trong lúc build, dùng navigation
 fallback về `index.html` (trừ `/api`) và cache-first cho vendor CDN. Không chỉnh
-tay precache manifest. Dev service worker chỉ bật bằng `npm run dev:pwa` hoặc
-các lệnh demo PWA.
+tay precache manifest. Dev service worker chỉ bật bằng `npm run dev:pwa`.
 
 ## Triển khai
 
@@ -139,12 +135,15 @@ các lệnh demo PWA.
   Pages.
 - Push `staging` hoặc chạy thủ công: `.github/workflows/staging.yml` chạy test,
   build và tải artifact staging; workflow này không tự host API.
-- Pilot máy Windows chưa có domain: xem [deploy/pilot/README.md](deploy/pilot/README.md).
-  Gói này dùng Docker, SQLite bền vững, sao lưu nhất quán và khởi động lại dịch
-  vụ khi Windows/Docker Desktop trở lại.
+- Pilot Windows: xem [WINDOWS-HANDOFF.md](deploy/pilot-windows/WINDOWS-HANDOFF.md).
+  Gói dùng Windows Service, Node Pilot Host, Cloudflare Tunnel và Control Center;
+  không phụ thuộc Docker Desktop.
 
 ## Tài liệu cho người đóng góp
 
 - [AGENTS.md](AGENTS.md): quy ước bắt buộc khi sửa dự án.
-- [STAGING.md](STAGING.md): mock API, HTTPS LAN và kịch bản kiểm thử đồng bộ.
+- [PLAN.md](deploy/pilot-windows/PLAN.md): ranh giới Pilot Windows và lộ trình
+  quản trị cụm/toàn chuỗi.
+- [central-admin.md](docs/architecture/central-admin.md): mô hình quyền admin
+  hiện tại và điều kiện để mở rộng toàn chuỗi.
 - `docs/huong-dan/`: hướng dẫn sử dụng được đóng gói cùng ứng dụng.

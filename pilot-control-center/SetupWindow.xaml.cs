@@ -1,6 +1,7 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace CoopFoodPilot.ControlCenter;
@@ -16,6 +17,9 @@ public partial class SetupWindow : Window
         { ValidationText.Text = "Link công khai phải bắt đầu bằng https://."; return; }
         if (string.IsNullOrWhiteSpace(DatabaseFile.Text) || string.IsNullOrWhiteSpace(BackupDirectory.Text) || string.IsNullOrWhiteSpace(TunnelToken.Password))
         { ValidationText.Text = "Nhập đủ đường dẫn dữ liệu, backup và tunnel token."; return; }
+        var storeCode = BootstrapStoreCode.Text.Trim();
+        if (!Regex.IsMatch(storeCode, "^\\d{4}$") || BootstrapManagerPassword.Password.Length < 12 || !Regex.IsMatch(BootstrapJoinCode.Password, "^\\d{4}$"))
+        { ValidationText.Text = "Nhập mã cửa hàng/PIN gồm 4 số và mật khẩu CHT ít nhất 12 ký tự."; return; }
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
@@ -26,6 +30,7 @@ public partial class SetupWindow : Window
                 distDirectory = @"C:\Program Files\CoopFood Pilot\runtime\dist", publicUrl = publicUrl.ToString().TrimEnd('/'), hostPort = 8787,
                 statusFile = @"C:\ProgramData\CoopFoodPilot\cluster-status.json",
                 systemAdminToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_'), tunnelToken = TunnelToken.Password.Trim(),
+                bootstrapStoreCode = storeCode, bootstrapManagerPassword = BootstrapManagerPassword.Password, bootstrapJoinCode = BootstrapJoinCode.Password,
             };
             await using var output = File.Create(ConfigPath);
             await JsonSerializer.SerializeAsync(output, config, new JsonSerializerOptions { WriteIndented = true });

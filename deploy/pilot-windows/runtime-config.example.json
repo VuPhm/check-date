@@ -6,5 +6,8 @@
   "hostPort": 8787,
   "statusFile": "C:\\ProgramData\\CoopFoodPilot\\cluster-status.json",
   "systemAdminToken": "INSTALLER_GENERATES_A_RANDOM_SECRET",
-  "tunnelToken": "CONFIGURED_BY_SETUP_WIZARD"
+  "tunnelToken": "CONFIGURED_BY_SETUP_WIZARD",
+  "bootstrapStoreCode": "0001",
+  "bootstrapManagerPassword": "SET_DURING_SETUP__MIN_12_CHARS",
+  "bootstrapJoinCode": "SET_DURING_SETUP__4_DIGITS"
 }

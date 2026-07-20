@@ -7,10 +7,12 @@ import { DatabaseSync } from 'node:sqlite';
 
 const port = Number(process.env.PORT || 8787);
 const databaseFile = resolve(process.env.PILOT_DB_FILE || 'data/pilot-api.sqlite');
-const defaultStoreCode = String(process.env.PILOT_STORE_CODE || '0001');
-const defaultManagerPassword = String(process.env.PILOT_MANAGER_PASSWORD || defaultStoreCode);
-const defaultJoinCode = String(process.env.PILOT_JOIN_CODE || '1234');
-const sessionDays = Number(process.env.SESSION_DAYS || 30);
+const bootstrapStoreCode = String(process.env.PILOT_STORE_CODE || '');
+const bootstrapManagerPassword = String(process.env.PILOT_MANAGER_PASSWORD || '');
+const bootstrapJoinCode = String(process.env.PILOT_JOIN_CODE || '');
+const sessionDays = Math.min(Math.max(Number(process.env.SESSION_DAYS || 7), 1), 30);
+const maxBodyBytes = 12 * 1024 * 1024;
+const maxChangesPerSync = 100;
 const authWindowMs = Number(process.env.PILOT_AUTH_WINDOW_MS || 15 * 60 * 1000);
 const authBlockMs = Number(process.env.PILOT_AUTH_BLOCK_MS || 15 * 60 * 1000);
 const authMaxAttempts = Number(process.env.PILOT_AUTH_MAX_ATTEMPTS || 5);
@@ -49,10 +51,49 @@ function many(sql, ...params) { return db.prepare(sql).all(...params); }
 function run(sql, ...params) { return db.prepare(sql).run(...params); }
 function json(value) { return JSON.stringify(value); }
 function parse(value) { return JSON.parse(value); }
-function send(response, status, body) { response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type, authorization', 'access-control-allow-methods': 'GET, POST, PATCH, DELETE, OPTIONS' }); response.end(JSON.stringify(body)); }
+const securityHeaders = {
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'referrer-policy': 'no-referrer',
+  'permissions-policy': 'camera=(self), geolocation=(), microphone=()',
+  'content-security-policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; connect-src 'self'; img-src 'self' blob: data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'",
+};
+function send(response, status, body) { response.writeHead(status, { ...securityHeaders, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); response.end(JSON.stringify(body)); }
 function fail(response, status, error) { send(response, status, { error }); }
-function readBody(request) { return new Promise((resolve, reject) => { let raw = ''; request.on('data', (chunk) => { raw += chunk; if (raw.length > 15 * 1024 * 1024) reject(new Error('Payload quá lớn.')); }); request.on('end', () => { try { resolve(JSON.parse(raw || '{}')); } catch { reject(new Error('Payload JSON không hợp lệ.')); } }); }); }
-function seedStore() { if (!one('SELECT id FROM stores WHERE code = ?', defaultStoreCode)) run('INSERT INTO stores (id, code, name, password_hash, join_code_hash) VALUES (?, ?, ?, ?, ?)', defaultStoreCode, defaultStoreCode, `Co.op Food ${defaultStoreCode}`, passwordHash(defaultManagerPassword), passwordHash(defaultJoinCode)); }
+function readBody(request) {
+  const contentLength = Number(request.headers['content-length'] || 0);
+  if (contentLength > maxBodyBytes) return Promise.reject(new Error('Payload quá lớn.'));
+  return new Promise((resolve, reject) => {
+    const chunks = []; let size = 0; let finished = false;
+    request.on('data', (chunk) => {
+      if (finished) return;
+      size += chunk.length;
+      if (size > maxBodyBytes) { finished = true; request.resume(); reject(new Error('Payload quá lớn.')); return; }
+      chunks.push(chunk);
+    });
+    request.on('end', () => { if (!finished) { try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); } catch { reject(new Error('Payload JSON không hợp lệ.')); } } });
+    request.on('error', reject);
+  });
+}
+function requireText(value, field, max, { min = 1, pattern } = {}) {
+  const text = String(value || '').trim();
+  if (text.length < min || text.length > max || (pattern && !pattern.test(text))) throw new Error(`${field} không hợp lệ.`);
+  return text;
+}
+function validateRecord(record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error('Bản ghi đồng bộ không hợp lệ.');
+  requireText(record.id, 'Mã bản ghi', 128);
+  if (Buffer.byteLength(JSON.stringify(record), 'utf8') > maxBodyBytes) throw new Error('Bản ghi đồng bộ quá lớn.');
+  return record;
+}
+function seedStore() {
+  if (one('SELECT id FROM stores LIMIT 1')) return;
+  if (!/^\d{4}$/.test(bootstrapStoreCode) || !/^\d{4}$/.test(bootstrapJoinCode) || bootstrapManagerPassword.length < 12) {
+    console.warn('Pilot khởi động không có cửa hàng. Hoàn tất Setup để tạo CHT và PIN đầu tiên.');
+    return;
+  }
+  run('INSERT INTO stores (id, code, name, password_hash, join_code_hash) VALUES (?, ?, ?, ?, ?)', bootstrapStoreCode, bootstrapStoreCode, `Co.op Food ${bootstrapStoreCode}`, passwordHash(bootstrapManagerPassword), passwordHash(bootstrapJoinCode));
+}
 seedStore();
 
 function clientIp(request) {
@@ -146,18 +187,18 @@ function appendEmployeeJoined(store, employee) {
 }
 function updateProfile(session, profile) {
   if (!profile || typeof profile !== 'object') return;
-  const displayName = String(profile.displayName || '').trim();
+  const displayName = profile.displayName === undefined ? '' : requireText(profile.displayName, 'Tên hiển thị', 100);
   if (displayName && displayName !== session.displayName) {
     run('UPDATE sessions SET display_name = ? WHERE user_id = ? AND branch_id = ? AND revoked_at IS NULL', displayName, session.id, session.branchId);
     if (session.role === 'manager') run('UPDATE stores SET manager_name = ? WHERE id = ?', displayName, session.branchId);
     else run('UPDATE employees SET display_name = ? WHERE id = ? AND branch_id = ?', displayName, session.id, session.branchId);
     session.displayName = displayName;
   }
-  const storeName = String(profile.storeName || '').trim();
+  const storeName = profile.storeName === undefined ? '' : requireText(profile.storeName, 'Tên cửa hàng', 150);
   if (session.role === 'manager' && storeName) run('UPDATE stores SET name = ? WHERE id = ?', storeName, session.branchId);
 }
 function mergeChange(kind, session, record) {
-  if (!record?.id) return false;
+  validateRecord(record);
   const existing = storedRecord(kind, session.branchId, record.id);
   if (kind === 'kph' && session.role === 'employee') {
     if (!existing && isDeleted(record)) return false;
@@ -175,13 +216,13 @@ function mergeChange(kind, session, record) {
 export function createPilotApiHandler() {
   return async (request, response) => {
   const url = new URL(request.url || '/', `http://${request.headers.host}`); const path = url.pathname.replace(/^\/api/, '') || '/';
-  if (request.method === 'OPTIONS') return send(response, 204, {});
+  if (request.method === 'OPTIONS') return fail(response, 405, 'CORS không được hỗ trợ.');
   if (request.method === 'GET' && path === '/health') return send(response, 200, { ok: true, mode: 'pilot-api', branchCount: one('SELECT COUNT(*) AS count FROM stores WHERE disabled_at IS NULL').count });
   if (request.method === 'GET' && path === '/v1/events') {
-    const row = one('SELECT * FROM sessions WHERE token_hash = ?', hash(url.searchParams.get('access_token') || ''));
-    if (!row || row.revoked_at || Date.parse(row.expires_at) <= Date.now()) return fail(response, 401, 'Phiên không hợp lệ.');
-    response.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' }); response.write(': connected\n\n');
-    const set = clients.get(row.branch_id) || new Set(); set.add(response); clients.set(row.branch_id, set); request.on('close', () => set.delete(response)); return;
+    const session = sessionFrom(request);
+    if (!session) return fail(response, 401, 'Phiên không hợp lệ.');
+    response.writeHead(200, { ...securityHeaders, 'content-type': 'text/event-stream', 'cache-control': 'no-cache', connection: 'keep-alive' }); response.write(': connected\n\n');
+    const set = clients.get(session.branchId) || new Set(); set.add(response); clients.set(session.branchId, set); request.on('close', () => set.delete(response)); return;
   }
   try {
     if (path.startsWith('/v1/system/')) {
@@ -189,8 +230,7 @@ export function createPilotApiHandler() {
       if (request.method === 'GET' && path === '/v1/system/health') return send(response, 200, systemHealth());
       if (request.method === 'GET' && path === '/v1/system/stores') return send(response, 200, { stores: many('SELECT code, name, manager_name, disabled_at, revision FROM stores ORDER BY code').map((store) => ({ code: store.code, name: store.name, managerName: store.manager_name || '', disabled: Boolean(store.disabled_at), revision: store.revision })) });
       if (request.method === 'POST' && path === '/v1/system/stores') {
-        const body = await readBody(request); const code = String(body.code || ''); const name = String(body.name || '').trim() || `Co.op Food ${code}`; const joinCode = String(body.joinCode || '1234'); const password = String(body.password || code);
-        if (!/^\d{4}$/.test(code) || !/^\d{4}$/.test(joinCode) || !password) return fail(response, 400, 'Mã cửa hàng và PIN phải gồm bốn số.');
+        const body = await readBody(request); const code = requireText(body.code, 'Mã cửa hàng', 4, { pattern: /^\d{4}$/ }); const name = body.name ? requireText(body.name, 'Tên cửa hàng', 150) : `Co.op Food ${code}`; const joinCode = requireText(body.joinCode, 'Mã PIN', 4, { pattern: /^\d{4}$/ }); const password = requireText(body.password, 'Mật khẩu', 256, { min: 12 });
         if (one('SELECT id FROM stores WHERE code = ?', code)) return fail(response, 409, 'Mã cửa hàng đã tồn tại.');
         run('INSERT INTO stores (id, code, name, password_hash, join_code_hash) VALUES (?, ?, ?, ?, ?)', code, code, name, passwordHash(password), passwordHash(joinCode));
         systemAudit('store.created', { code, name }); return send(response, 201, { code, name });
@@ -225,7 +265,7 @@ export function createPilotApiHandler() {
     }
     const session = sessionFrom(request); if (!session) return fail(response, 401, 'Thiết bị chưa được ghép hoặc đã bị thu hồi.');
     if (request.method === 'POST' && path === '/v1/sync') {
-      const body = await readBody(request); updateProfile(session, body.profile); const changes = Array.isArray(body.changes) ? body.changes : []; const acceptedChangeIds = [];
+      const body = await readBody(request); updateProfile(session, body.profile); const changes = Array.isArray(body.changes) ? body.changes : []; if (changes.length > maxChangesPerSync) throw new Error('Quá nhiều thay đổi trong một lần đồng bộ.'); const acceptedChangeIds = [];
       for (const change of changes) if (change?.kind === 'kph' || change?.kind === 'history') if (mergeChange(change.kind, session, change.record)) acceptedChangeIds.push(change.id);
       const cursor = Number(body.cursor || 0) || 0; const store = one('SELECT * FROM stores WHERE id = ?', session.branchId); const records = many('SELECT * FROM records WHERE branch_id = ? AND server_revision > ?', session.branchId, cursor);
       const snapshot = { branchId: session.branchId, serverTime: now(), cursor: String(store.revision), acceptedChangeIds, activityEvents: many('SELECT body FROM activity WHERE branch_id = ? ORDER BY created_at DESC LIMIT 50', session.branchId).map((row) => parse(row.body)), kphLogs: records.filter((row) => row.kind === 'kph').map((row) => parse(row.body)), historyLogs: records.filter((row) => row.kind === 'history').map((row) => parse(row.body)), profile: { displayName: session.displayName, managerName: store.manager_name || '', storeName: store.name }, revoked: false };
@@ -234,7 +274,7 @@ export function createPilotApiHandler() {
     if (path === '/v1/store/administration') {
       if (session.role !== 'manager') return fail(response, 403, 'Chỉ CHT được quản trị cửa hàng.'); const store = one('SELECT * FROM stores WHERE id = ?', session.branchId);
       if (request.method === 'GET') return send(response, 200, { employees: many('SELECT id, display_name, employee_code, active FROM employees WHERE branch_id = ? AND active = 1', session.branchId).map((row) => ({ id: row.id, displayName: row.display_name, employeeCode: row.employee_code, active: Boolean(row.active) })), devices: many('SELECT device_id, user_id, display_name, role, device_name, last_seen_at FROM sessions WHERE branch_id = ? AND revoked_at IS NULL', session.branchId).map((row) => ({ deviceId: row.device_id, userId: row.user_id, displayName: row.display_name, role: row.role, deviceName: row.device_name, lastSeenAt: row.last_seen_at })) });
-      if (request.method === 'PATCH') { const body = await readBody(request); if (body.password) run('UPDATE stores SET password_hash = ? WHERE id = ?', passwordHash(String(body.password)), store.id); if (body.joinCode) run('UPDATE stores SET join_code_hash = ? WHERE id = ?', passwordHash(String(body.joinCode)), store.id); return send(response, 200, { ok: true }); }
+      if (request.method === 'PATCH') { const body = await readBody(request); let sessionsRevoked = false; if (body.password !== undefined) { run('UPDATE stores SET password_hash = ? WHERE id = ?', passwordHash(requireText(body.password, 'Mật khẩu', 256, { min: 12 })), store.id); run("UPDATE sessions SET revoked_at = ? WHERE branch_id = ? AND role = 'manager' AND revoked_at IS NULL", now(), session.branchId); sessionsRevoked = true; } if (body.joinCode !== undefined) run('UPDATE stores SET join_code_hash = ? WHERE id = ?', passwordHash(requireText(body.joinCode, 'Mã PIN', 4, { pattern: /^\d{4}$/ })), store.id); return send(response, 200, { ok: true, sessionsRevoked }); }
     }
     const deviceId = path.match(/^\/v1\/store\/devices\/([^/]+)$/)?.[1]; if (request.method === 'DELETE' && deviceId && session.role === 'manager') { run('UPDATE sessions SET revoked_at = ? WHERE device_id = ? AND branch_id = ?', now(), deviceId, session.branchId); return send(response, 200, { ok: true }); }
     const employeeId = path.match(/^\/v1\/store\/employees\/([^/]+)$/)?.[1]; if (request.method === 'DELETE' && employeeId && session.role === 'manager') { run('UPDATE employees SET active = 0 WHERE id = ? AND branch_id = ?', employeeId, session.branchId); run('UPDATE sessions SET revoked_at = ? WHERE user_id = ?', now(), employeeId); publish(session.branchId); return send(response, 200, { ok: true }); }

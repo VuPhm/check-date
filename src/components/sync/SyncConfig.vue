@@ -7,7 +7,7 @@ import ActivityLog from '../activity/ActivityLog.vue';
 
 const appStore = useAppStore();
 const authModal = ref<'manager' | 'employee' | null>(null);
-const confirmAction = ref<'password' | 'reset' | 'logout' | null>(null);
+const confirmAction = ref<'password' | 'logout' | null>(null);
 const storeCode = ref('');
 const storeName = ref('');
 const managerPassword = ref('');
@@ -109,13 +109,15 @@ async function saveJoinCode() {
 async function confirm() {
   if (!appStore.session || !confirmAction.value) return;
   if (confirmAction.value === 'logout') { appStore.clearSession(); confirmAction.value = null; message.value = 'Đã đăng xuất CHT khỏi thiết bị này.'; return; }
-  const password = confirmAction.value === 'reset' ? storeCode.value : newPassword.value;
+  const password = newPassword.value;
+  if (password.length < 12) { message.value = 'Mật khẩu cửa hàng cần tối thiểu 12 ký tự.'; return; }
   try {
     busy.value = true;
-    await updateStoreAdministration(appStore.endpoint, appStore.session, { password });
+    const result = await updateStoreAdministration(appStore.endpoint, appStore.session, { password });
     newPassword.value = '';
-    message.value = confirmAction.value === 'reset' ? 'Mật khẩu đã được đặt lại theo mã cửa hàng.' : 'Đã đổi mật khẩu cửa hàng.';
+    message.value = 'Đã đổi mật khẩu cửa hàng. Hãy đăng nhập lại trên các thiết bị CHT.';
     confirmAction.value = null;
+    if (result.sessionsRevoked) appStore.clearSession('Mật khẩu đã đổi. Hãy đăng nhập lại.');
   } catch (error) { message.value = friendlyError(error, 'Không thể đổi mật khẩu.'); } finally { busy.value = false; }
 }
 async function dropDevice(id: string) { if (appStore.session) { await revokeDevice(appStore.endpoint, appStore.session, id); await refreshAdmin(); } }
@@ -164,7 +166,7 @@ onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(ref
         <div class="sync-card__actions"><button class="btn-action" type="button" :disabled="busy" @click="syncNow">{{ busy ? 'Đang đồng bộ…' : 'Đồng bộ ngay' }}</button></div>
         <div v-if="appStore.isManager" class="sync-admin-grid">
           <section class="sync-subcard"><h4>Mã PIN tham gia</h4><div class="form-input-wrapper"><input v-model="newJoinCode" :type="showJoinCode ? 'text' : 'password'" class="form-input" inputmode="numeric" maxlength="4" placeholder="Nhập mã PIN mới" @input="newJoinCode = cleanCode(newJoinCode)"><button class="sync-eye-button" type="button" :aria-label="showJoinCode ? 'Ẩn mã PIN' : 'Hiện mã PIN'" @click="showJoinCode = !showJoinCode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/><path v-if="!showJoinCode" d="m4 4 16 16"/></svg></button></div><button class="btn-action sync-subcard__button" type="button" :disabled="busy || newJoinCode.length !== 4" @click="saveJoinCode">Đổi mã PIN</button></section>
-          <section class="sync-subcard"><h4>Mật khẩu cửa hàng</h4><div class="form-input-wrapper"><input v-model="newPassword" type="password" class="form-input"></div><div class="sync-subcard__buttons"><button class="btn-action" type="button" :disabled="busy || !newPassword" @click="confirmAction = 'password'">Đổi mật khẩu</button><button class="btn-secondary" type="button" :disabled="busy" @click="confirmAction = 'reset'">Đặt lại</button></div></section>
+          <section class="sync-subcard"><h4>Mật khẩu cửa hàng</h4><div class="form-input-wrapper"><input v-model="newPassword" type="password" minlength="12" autocomplete="new-password" class="form-input"></div><div class="sync-subcard__buttons"><button class="btn-action" type="button" :disabled="busy || newPassword.length < 12" @click="confirmAction = 'password'">Đổi mật khẩu</button></div></section>
           <section class="sync-subcard sync-subcard--wide"><h4>Tên CHT</h4><div class="sync-inline-action"><div class="form-input-wrapper"><input v-model="displayName" class="form-input"></div><button class="btn-action" type="button" :disabled="!displayName.trim()" @click="saveManagerName">Lưu</button></div></section>
           <section class="sync-subcard sync-subcard--wide"><h4>Nhân viên</h4><div v-for="item in employees" :key="item.id" class="sync-list-row"><span>{{ item.displayName }} · {{ item.employeeCode }}</span><button class="sync-list-row__action" type="button" @click="dropEmployee(item.id)">Xóa</button></div></section>
           <section class="sync-subcard sync-subcard--wide"><h4>Thiết bị</h4><div v-for="item in devices" :key="item.deviceId" class="sync-list-row"><span>{{ item.deviceName }} · {{ item.displayName }}</span><button class="sync-list-row__action" type="button" @click="item.deviceId === appStore.session?.deviceId ? confirmAction = 'logout' : dropDevice(item.deviceId)">{{ item.deviceId === appStore.session?.deviceId ? 'Đăng xuất' : 'Thu hồi' }}</button></div></section>
@@ -189,6 +191,6 @@ onBeforeUnmount(() => { if (refreshTimer !== undefined) window.clearInterval(ref
       </div></div>
     </div>
 
-    <div v-if="confirmAction" class="apple-modal active sync-modal" role="dialog" aria-modal="true" aria-label="Xác nhận thao tác" @click.self="confirmAction = null"><div class="apple-modal-content sync-modal__content"><div class="apple-modal-header"><h3 class="apple-modal-title">Xác nhận</h3><button class="apple-modal-close-btn" type="button" aria-label="Đóng" @click="confirmAction = null">×</button></div><div class="apple-modal-body sync-modal__body"><p class="sync-modal__message">{{ confirmAction === 'logout' ? `Bạn muốn đăng xuất ${appStore.isManager ? 'CHT' : 'khỏi'} thiết bị này?` : confirmAction === 'reset' ? 'Mật khẩu sẽ được đặt lại thành mã cửa hàng.' : 'Bạn muốn đổi mật khẩu cửa hàng?' }}</p><div class="sync-modal__actions"><button class="btn-secondary" type="button" @click="confirmAction = null">Hủy</button><button class="btn-action" type="button" :disabled="busy" @click="confirm">Xác nhận</button></div></div></div></div>
+    <div v-if="confirmAction" class="apple-modal active sync-modal" role="dialog" aria-modal="true" aria-label="Xác nhận thao tác" @click.self="confirmAction = null"><div class="apple-modal-content sync-modal__content"><div class="apple-modal-header"><h3 class="apple-modal-title">Xác nhận</h3><button class="apple-modal-close-btn" type="button" aria-label="Đóng" @click="confirmAction = null">×</button></div><div class="apple-modal-body sync-modal__body"><p class="sync-modal__message">{{ confirmAction === 'logout' ? `Bạn muốn đăng xuất ${appStore.isManager ? 'CHT' : 'khỏi'} thiết bị này?` : 'Bạn muốn đổi mật khẩu cửa hàng? Các thiết bị CHT sẽ phải đăng nhập lại.' }}</p><div class="sync-modal__actions"><button class="btn-secondary" type="button" @click="confirmAction = null">Hủy</button><button class="btn-action" type="button" :disabled="busy" @click="confirm">Xác nhận</button></div></div></div></div>
   </section>
 </template>

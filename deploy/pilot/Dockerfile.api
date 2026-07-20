@@ -1,6 +1,0 @@
-FROM node:24-alpine
-WORKDIR /app
-COPY server/pilot-api.mjs server/manage-pilot.mjs server/backup-pilot.mjs ./server/
-ENV PORT=8787 PILOT_DB_FILE=/data/pilot-api.sqlite
-EXPOSE 8787
-CMD ["node", "server/pilot-api.mjs"]

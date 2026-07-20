@@ -46,7 +46,8 @@ Kết quả cần giao là `out\pilot-windows\installer\CoopFoodPilotSetup.exe`.
 1. Chép installer sang máy host Windows có SSD và tối thiểu 8 GB RAM.
 2. Chạy installer bằng Administrator.
 3. Mở **Pilot Control Center** bằng Administrator.
-4. Chọn **Cấu hình cụm**, nhập data path, backup path, URL HTTPS và tunnel token.
+4. Chọn **Cấu hình cụm**, nhập data path, backup path, URL HTTPS, tunnel token,
+   mã cửa hàng và mật khẩu CHT/PIN đầu tiên. Thông tin CHT/PIN không có giá trị mặc định.
 5. Bấm **Bật cụm**.
 6. Kiểm tra trạng thái `Đang chạy`, link HTTPS và cài PWA trên một thiết bị qua
    4G hoặc Wi-Fi khác mạng.
@@ -59,7 +60,7 @@ cụm để kiểm tra lại.
 
 - Control Center: Bật cụm, Sao lưu ngay, Dừng cụm, Bật lại.
 - Mở `https://.../api/health` từ link public thông qua app, không cần public port.
-- CHT login `0001/0001`; tạo nhân viên và tạo một KPH.
+- Đăng nhập CHT bằng thông tin đã đặt trong Setup; tạo nhân viên và tạo một KPH.
 - Tắt cụm, nhập KPH offline trên điện thoại, bật lại và xác minh sync.
 - Reboot máy Windows; kiểm tra cụm tự chạy lại.
 - Dùng [MOVE-HOST.md](MOVE-HOST.md) để diễn tập backup/restore một lần.

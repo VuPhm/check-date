@@ -23,11 +23,29 @@ interface SyncResponse {
   revoked?: boolean;
 }
 
-export function subscribeToBranchEvents(endpoint: ServerEndpoint, session: DeviceSession, onChange: () => void): EventSource {
-  const url = apiUrl(endpoint, `/v1/events?access_token=${encodeURIComponent(session.accessToken)}`);
-  const source = new EventSource(url);
-  source.addEventListener('branch-changed', onChange);
-  return source;
+export interface BranchEventSubscription { close(): void; }
+
+export function subscribeToBranchEvents(endpoint: ServerEndpoint, session: DeviceSession, onChange: () => void): BranchEventSubscription {
+  let closed = false;
+  let controller: AbortController | null = null;
+  const connect = async () => {
+    while (!closed) {
+      controller = new AbortController();
+      try {
+        const response = await fetch(apiUrl(endpoint, '/v1/events'), authorizedOptions(session.accessToken, { headers: { accept: 'text/event-stream' }, signal: controller.signal }));
+        if (!response.ok || !response.body) throw new Error(`SSE ${response.status}`);
+        const reader = response.body.pipeThrough(new TextDecoderStream()).getReader(); let pending = '';
+        while (!closed) {
+          const { value, done } = await reader.read(); if (done) break;
+          pending += value; const events = pending.split('\n\n'); pending = events.pop() || '';
+          for (const event of events) if (/^event: branch-changed$/m.test(event)) onChange();
+        }
+      } catch { /* Retry while the app remains active. */ }
+      if (!closed) await new Promise((resolve) => window.setTimeout(resolve, 3_000));
+    }
+  };
+  void connect();
+  return { close() { closed = true; controller?.abort(); } };
 }
 
 interface WireSyncResponse extends Omit<SyncResponse, 'kphLogs'> {
@@ -117,8 +135,8 @@ export async function getStoreAdministration(endpoint: ServerEndpoint, session: 
   return requestJson(apiUrl(endpoint, '/v1/store/administration'), authorizedOptions(session.accessToken));
 }
 
-export async function updateStoreAdministration(endpoint: ServerEndpoint, session: DeviceSession, input: { password?: string; joinCode?: string }): Promise<void> {
-  await requestJson(apiUrl(endpoint, '/v1/store/administration'), authorizedOptions(session.accessToken, {
+export async function updateStoreAdministration(endpoint: ServerEndpoint, session: DeviceSession, input: { password?: string; joinCode?: string }): Promise<{ sessionsRevoked?: boolean }> {
+  return requestJson<{ sessionsRevoked?: boolean }>(apiUrl(endpoint, '/v1/store/administration'), authorizedOptions(session.accessToken, {
     method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input),
   }));
 }

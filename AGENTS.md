@@ -46,7 +46,7 @@ giữ hành vi và dữ liệu cũ hoạt động trong suốt quá trình.
 | Legacy orchestration | `js/main.js` |
 | KPH/history/scanner/timeline legacy | các module tương ứng trong `js/` |
 | Design tokens và responsive UI | `style.css` |
-| Mock backend | `scripts/mock-central-api.mjs` |
+| Pilot Windows backend | `server/pilot-api.mjs`, `server/pilot-host.mjs`, `server/pilot-supervisor.mjs` |
 
 `js/business.js` và `js/db.js` là bridge tới implementation TypeScript. Không
 chép logic ngược lại vào các bridge này.
@@ -110,8 +110,8 @@ Mọi thay đổi các bất biến trên cần unit test tương ứng trong `s
 - Workbox inject `self.__WB_MANIFEST` khi build; không tạo hay sửa precache list
   thủ công.
 - Navigation fallback không được nuốt request `/api`.
-- Service worker development chỉ bật có chủ đích (`npm run dev:pwa`,
-  `npm run demo:pwa`, `npm run demo:lan`) để tránh cache làm nhiễu debug thường.
+- Service worker development chỉ bật có chủ đích (`npm run dev:pwa`) để tránh
+  cache làm nhiễu debug thường.
 - Camera trên thiết bị LAN cần HTTPS. Không commit certificate/key local.
 - Khi thêm asset hoặc dependency, xác minh bản build vẫn dùng được sau lần tải
   online đầu tiên nếu chức năng đó được quảng bá là offline.
@@ -145,16 +145,17 @@ npm run build
 ```
 
 `npm run build` đã bao gồm `vue-tsc --noEmit`. Nếu thay đổi UI/PWA/sync, ngoài hai
-lệnh trên cần smoke-test bằng `npm run dev` hoặc `npm run demo`; dùng kịch bản
-trong `STAGING.md` cho thay đổi nhiều thiết bị.
+lệnh trên cần smoke-test bằng `npm run dev`; với bản Windows, dùng checklist trong
+`deploy/pilot-windows/WINDOWS-HANDOFF.md`.
 
 ## Tài liệu
 
 - Cập nhật `README.md` khi capability, kiến trúc, lệnh hoặc deployment thay đổi.
-- Cập nhật `STAGING.md` khi mock API, account demo hoặc kịch bản sync thay đổi.
+- Cập nhật `deploy/pilot-windows/WINDOWS-HANDOFF.md` khi runtime Windows hoặc
+  kịch bản sync thay đổi.
 - Link dùng đường dẫn tương đối trong repository và ví dụ lệnh phải chạy được từ
   root.
 
 Khi tài liệu và implementation khác nhau, ưu tiên theo thứ tự: code và test hiện
-tại → `AGENTS.md` → `README.md` → `STAGING.md`. Không tạo tài liệu riêng theo
+tại → `AGENTS.md` → `README.md` → `deploy/pilot-windows/WINDOWS-HANDOFF.md`. Không tạo tài liệu riêng theo
 từng trợ lý AI; mọi agent dùng chung file này để tránh đặc tả bị phân kỳ.

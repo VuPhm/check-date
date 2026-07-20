@@ -9,6 +9,11 @@ const port = Number(process.env.PORT || 8787);
 const serverDirectory = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const distDirectory = resolve(process.env.PILOT_DIST_DIR || resolve(serverDirectory, '../dist'));
 const apiHandler = createPilotApiHandler();
+const securityHeaders = {
+  'x-content-type-options': 'nosniff', 'x-frame-options': 'DENY', 'referrer-policy': 'no-referrer',
+  'permissions-policy': 'camera=(self), geolocation=(), microphone=()',
+  'content-security-policy': "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; connect-src 'self'; img-src 'self' blob: data:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'",
+};
 
 const mimeTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -23,7 +28,7 @@ const mimeTypes = {
 };
 
 function send(response, status, body) {
-  response.writeHead(status, { 'content-type': 'text/plain; charset=utf-8' });
+  response.writeHead(status, { ...securityHeaders, 'content-type': 'text/plain; charset=utf-8' });
   response.end(body);
 }
 
@@ -43,7 +48,7 @@ function serveFile(request, response, filename) {
       ? 'no-cache'
       : 'public, max-age=31536000, immutable',
   };
-  response.writeHead(200, headers);
+  response.writeHead(200, { ...securityHeaders, ...headers });
   if (request.method === 'HEAD') return response.end();
   createReadStream(filename).pipe(response);
 }

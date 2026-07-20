@@ -20,7 +20,8 @@ thoát để Windows Service Recovery khởi động lại toàn cụm.
 ## Phân kỳ
 
 1. `server/pilot-host.mjs` thay Caddy, phục vụ `dist/` và `/api` trên loopback.
-2. API có migration, bootstrap CHT 4 số, rate-limit, audit, health, backup và
+2. API có migration, CHT/PIN được tạo trong Setup (không có credential mặc định),
+   rate-limit, audit, health, backup và
    local-only system management API.
 3. Supervisor quản lý Host và cloudflared theo lifecycle của một cụm.
 4. Runtime Windows dùng Node 24 pin version và WinSW chỉ bọc Supervisor.
