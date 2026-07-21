@@ -38,7 +38,7 @@ npm run pilot:windows:stage
 dotnet publish .\pilot-control-center\CoopFoodPilot.ControlCenter.csproj -c Release -r win-x64 --self-contained true
 
 # Đóng gói bộ cài đặt (.exe) bằng Inno Setup compiler
-iscc .\deploy\pilot-windows\installer\CoopFoodPilot.iss
+iscc .\deploy\pilot-windows\installer\CoopFoodPilot.iss.txt
 ```
 
 Kết quả cần giao là `out\pilot-windows\installer\CoopFoodPilotSetup.exe`.
