@@ -54,7 +54,7 @@ export async function registerServiceWorker() {
         return;
     }
 
-    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { type: 'module' })
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, import.meta.env.DEV ? { type: 'module' } : undefined)
         .catch((err) => console.error("SW Register Error:", err));
 }
 

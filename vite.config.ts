@@ -13,7 +13,7 @@ const localHttps = process.env.LOCAL_HTTPS === 'true' && existsSync(localCertPat
   : undefined;
 
 export default defineConfig({
-  base: './',
+  base: '/',
   server: {
     https: localHttps,
     // Cloudflare Quick Tunnel assigns a random *.trycloudflare.com hostname.
