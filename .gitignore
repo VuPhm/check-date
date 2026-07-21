@@ -1,18 +1,61 @@
+# Dependencies and outputs
 node_modules/
 dist/
+dist-ssr/
 coverage/
 .vite/
 tmp/
+out/
+
+# Environment configurations and keys
 *.local
 .env
 .env.*
 !.env.example
-.DS_Store
 *.pem
 *.key
 *.p12
 *.pfx
 certs/
-data/mock-central-api.json
-out/
 deploy/pilot-windows/vendor/
+deploy/pilot-windows/runtime-config.json
+
+# .NET / C# build artifacts (pilot-control-center)
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+
+# Vite & build tool temporary files
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+vitest.config.js.timestamp-*
+vitest.config.ts.timestamp-*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local data & Mock files
+data/mock-central-api.json
+
+# Editor & OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json

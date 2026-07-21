@@ -1,28 +1,42 @@
 # Check Date CoopFood
 
-PWA hỗ trợ cửa hàng Co.op Food tra hạn lùi hàng, quản lý hàng không phù hợp
-(KPH) và đồng bộ dữ liệu giữa thiết bị cửa hàng trưởng (CHT) với nhân viên.
+Ứng dụng PWA hỗ trợ cửa hàng Co.op Food tra hạn lùi hàng, quản lý hàng không phù hợp (KPH) và đồng bộ dữ liệu nội bộ giữa thiết bị của cửa hàng trưởng (CHT) và nhân viên.
 
-Đây là phiên bản mới đang được chuyển đổi tăng dần từ ứng dụng Vanilla
-JavaScript sang **Vue 3 + TypeScript**. Vite/Vue là runtime chính; thư mục
-`js/` vẫn là lớp tương thích cho những luồng chưa chuyển đổi hoàn toàn.
+## Tổng quan hệ thống
 
-- Phiên bản: `2.23.2` — cập nhật `20/07/2026`
-- Runtime: Vue 3, TypeScript, Pinia, Dexie, Vite
+Dự án Check Date CoopFood được chia thành hai phân hệ chính hoạt động song song để đáp ứng yêu cầu vận hành offline-first và bảo mật thông tin nội bộ tại cửa hàng:
+
+### 1. Phân hệ Client (PWA Frontend)
+Ứng dụng client chạy trên thiết bị di động của nhân viên và CHT:
+*   **Giao diện & Logic:** Sử dụng **Vue 3, TypeScript và Pinia**, tối ưu hóa mobile-first bằng Vanilla CSS. Một phần mã nguồn legacy đang được duy trì và chuyển đổi dần nằm trong thư mục `js/`.
+*   **Lưu trữ cục bộ:** Sử dụng **IndexedDB** thông qua thư viện **Dexie** để quản lý cơ sở dữ liệu ngoại tuyến (`kph_logs`, `history_logs`, `sync_outbox`, `sync_state`).
+*   **Offline & Cache:** Service Worker ([src/sw.ts](src/sw.ts)) và Workbox thông qua `vite-plugin-pwa` hỗ trợ tải nhanh và vận hành đầy đủ khi mất kết nối mạng.
+
+### 2. Phân hệ Local Windows Pilot (Máy chủ cụm tại cửa hàng)
+Hệ thống máy chủ local chạy trên Windows tại cửa hàng trưởng (hoặc máy chủ chi nhánh), phục vụ tối đa 22 cửa hàng liên kết mà không phụ thuộc Docker/WSL2:
+*   **CoopFoodPilotService (Windows Service):** Service chạy ngầm được bọc bởi WinSW, tự động khởi động (`Automatic`) cùng Windows để phục hồi sau reboot.
+*   **Pilot Supervisor ([server/pilot-supervisor.mjs](server/pilot-supervisor.mjs)):** Điều khiển vòng đời, tự khởi động và giám sát hai tiến trình con: **Node Pilot Host** và **cloudflared**.
+*   **Node Pilot Host ([server/pilot-host.mjs](server/pilot-host.mjs)):** Máy chủ Web & API nội bộ chạy SQLite (WAL mode) để lưu trữ, phục vụ API đồng bộ nội bộ và serve các tệp tĩnh của PWA (`dist/`) trên loopback `127.0.0.1`.
+*   **cloudflared Tunnel:** Khởi tạo đường truyền HTTPS bảo mật (Cloudflare Tunnel) ra internet để các thiết bị di động của nhân viên đồng bộ dữ liệu mà không cần NAT port router.
+*   **Pilot Control Center ([pilot-control-center/](pilot-control-center)):** Ứng dụng desktop WPF (.NET 8 / C#) dành cho CHT để cấu hình (đường dẫn dữ liệu, tunnel token), bật/dừng cụm, backup dữ liệu thủ công và quản lý tài khoản.
+*   **Inno Setup Installer ([deploy/pilot-windows/installer/](deploy/pilot-windows/installer)):** Trình cài đặt trọn gói (`CoopFoodPilotSetup.exe`), tự động phân quyền ACL bảo mật thư mục `ProgramData` và đăng ký service.
+
+---
+
+- Phiên bản: `2.23.3` — cập nhật `21/07/2026`
+- Runtime: Vue 3, TypeScript, Pinia, Dexie, Vite, .NET 8 (WPF)
 - Giao diện: Vanilla CSS, mobile-first
 - PWA: Workbox qua `vite-plugin-pwa`
 - Yêu cầu phát triển: Node.js 24
 
-## Chức năng
+## Chức năng chính
 
 - Tra xuôi từ NSX và HSD, hoặc tra ngược từ HSD và thời lượng sử dụng.
 - Tính hạn lùi theo mốc 20%, cảnh báo từ mốc 40%, có SVG timeline.
 - Lưu và lọc lịch sử tra cứu; xuất báo cáo Excel.
-- Tạo phiếu KPH TPCN/TPTS, tối đa ba ảnh đã nén/đóng dấu, duyệt hoặc từ chối
-  phiếu và xuất Excel.
+- Tạo phiếu KPH TPCN/TPTS, tối đa ba ảnh đã nén/đóng dấu, duyệt hoặc từ chối phiếu và xuất Excel.
 - Làm việc offline với IndexedDB; đồng bộ lại khi có mạng.
-- Ghép thiết bị theo vai trò CHT/nhân viên, đồng bộ tức thời qua SSE; khi máy
-  chủ tắt, dữ liệu giữ cục bộ và tự thử lại theo backoff tối đa năm phút.
+- Ghép thiết bị theo vai trò CHT/nhân viên, đồng bộ tức thời qua SSE; khi máy chủ tắt, dữ liệu giữ cục bộ và tự thử lại theo backoff tối đa năm phút.
 - Quản lý nhân viên, thiết bị và hoạt động gần đây theo cửa hàng.
 
 ## Quy tắc tính hạn lùi
@@ -85,22 +99,24 @@ npm test
 npm run build
 ```
 
-## Kiến trúc hiện tại
+## Cấu trúc thư mục dự án
 
 ```text
-index.html
-└── src/main.ts                    Vue bootstrap, Pinia, runtime wiring
-    ├── src/components/            Các vùng UI đã chuyển sang Vue
-    ├── src/domain/                Logic thuần, kiểu dữ liệu, schema, test
-    ├── src/repositories/          Dexie/IndexedDB và sync outbox
-    ├── src/services/              API đồng bộ, thông báo thiết bị
-    ├── src/stores/                Session, connectivity, live sync
-    └── js/main.js                 Điều phối legacy còn lại
-        ├── js/history.js
-        ├── js/kph.js
-        ├── js/scanner.js
-        ├── js/timeline.js
-        └── js/notifications.js
+check-date/
+├── src/                          Frontend Vue 3 + TypeScript
+│   ├── main.ts                   Vue bootstrap, Pinia, runtime wiring
+│   ├── components/               Các UI component đã chuyển đổi sang Vue
+│   ├── domain/                   Logic nghiệp vụ thuần túy, unit test
+│   ├── repositories/             Dexie / IndexedDB local database
+│   ├── services/                 API đồng bộ và giao tiếp mạng
+│   └── stores/                   State management (Pinia)
+├── js/                           Lớp tương thích legacy (Vanilla JS)
+├── pilot-control-center/         Ứng dụng WPF quản trị cụm (.NET 8)
+├── server/                       Mã nguồn Pilot Host, Supervisor, SQLite
+├── deploy/
+│   └── pilot-windows/            Script build release, file installer Inno Setup
+├── dist/                         Thư mục build frontend (gitignored)
+└── out/                          Thư mục build installer & runtime (gitignored)
 ```
 
 Các bridge `js/business.js` và `js/db.js` tái xuất implementation TypeScript.
