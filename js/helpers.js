@@ -384,8 +384,15 @@ export function isValidDateStr(str) {
     return true; 
 }
 
+export function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+}
+
 // Custom Apple-style Confirmation Dialog
 export function showAppleConfirm({ title, message, htmlContent = null, confirmText = 'Xác nhận', cancelText = 'Hủy', isDanger = false, isPrimary = false }) {
+
     return new Promise((resolve) => {
         // Create elements using the standard Apple Modal System
         const overlay = document.createElement('div');

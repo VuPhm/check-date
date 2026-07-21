@@ -1,4 +1,4 @@
-import { isValidDateStr, parseLocalDate, formatLocalDate, showAppleConfirm, showAppleToast, loadExcelJS } from './helpers.js';
+import { isValidDateStr, parseLocalDate, formatLocalDate, showAppleConfirm, showAppleToast, loadExcelJS, escapeHtml } from './helpers.js';
 import { excelSafeCell } from '../src/domain/excelSafety.ts';
 import { addLog, softDeleteLog, clearAllLogs, getAllLogs } from './db.js';
 import { buildKphApprovalUpdate } from '../src/domain/kphApproval.ts';
@@ -880,10 +880,11 @@ export async function removeKphLog(id) {
                     <p style="font-size: 13px; color: var(--text-sub); margin-bottom: 16px;">Hành động này không thể hoàn tác.</p>
                     
                     <div style="background-color: var(--bg-base); border-radius: 12px; padding: 14px 16px; text-align: left; border: 1px solid var(--status-red-border); font-size: 13px; line-height: 1.6;">
-                        <div style="margin-bottom: 6px; display: flex;"><span style="color: var(--text-sub); width: 110px; flex-shrink: 0; font-weight: 500;">Tên sản phẩm:</span><span style="color: var(--text-main); font-weight: 600; word-break: break-word;">${item.tenHang}</span></div>
-                        <div style="margin-bottom: 6px; display: flex;"><span style="color: var(--text-sub); width: 110px; flex-shrink: 0; font-weight: 500;">Mã SKU/UPC:</span><span style="color: var(--text-main); font-family: monospace; font-weight: 600;">${item.sku}</span></div>
-                        <div style="margin-bottom: 6px; display: flex;"><span style="color: var(--text-sub); width: 110px; flex-shrink: 0; font-weight: 500;">Số lượng:</span><span style="color: var(--brand-accent-red); font-weight: 700;">${item.soLuong} ${item.dvt || 'Cái'}</span></div>
-                        <div style="display: flex;"><span style="color: var(--text-sub); width: 110px; flex-shrink: 0; font-weight: 500;">Ngày phát hiện:</span><span style="color: var(--text-main); font-weight: 600;">${item.ngayPhatHien}</span></div>
+                        <div style="margin-bottom: 6px; display: flex;"><span style="color: var(--text-sub); width: 110px; flex-shrink: 0; font-weight: 500;">Tên sản phẩm:</span><span style="color: var(--text-main); font-weight: 600; word-break: break-word;">${escapeHtml(item.tenHang)}</span></div>
+                        <div style="margin-bottom: 6px; display: flex;"><span style="color: var(--text-sub); width: 110px; flex-shrink: 0; font-weight: 500;">Mã SKU/UPC:</span><span style="color: var(--text-main); font-family: monospace; font-weight: 600;">${escapeHtml(item.sku)}</span></div>
+                        <div style="margin-bottom: 6px; display: flex;"><span style="color: var(--text-sub); width: 110px; flex-shrink: 0; font-weight: 500;">Số lượng:</span><span style="color: var(--brand-accent-red); font-weight: 700;">${escapeHtml(item.soLuong)} ${escapeHtml(item.dvt || 'Cái')}</span></div>
+                        <div style="display: flex;"><span style="color: var(--text-sub); width: 110px; flex-shrink: 0; font-weight: 500;">Ngày phát hiện:</span><span style="color: var(--text-main); font-weight: 600;">${escapeHtml(item.ngayPhatHien)}</span></div>
+
                     </div>
                 </div>
             `,

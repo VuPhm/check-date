@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { processReturnBusinessLogic } from './business';
+import { processReturnBusinessLogic, formatPresentationResult, getFriendlyErrorMessage } from './business';
 
 const NOW = new Date(2026, 6, 15, 10, 30);
 
@@ -40,3 +40,36 @@ describe('processReturnBusinessLogic', () => {
     expect(() => processReturnBusinessLogic('20/07/2026', '19/07/2026', NOW)).toThrow();
   });
 });
+
+describe('formatPresentationResult', () => {
+  it('định dạng sản phẩm an toàn ngắn ngày', () => {
+    const res = processReturnBusinessLogic('14/07/2026', '20/07/2026', NOW);
+    const pres = formatPresentationResult(res);
+    expect(pres.mainLabel).toBe('Hạn sử dụng');
+    expect(pres.subLines).toContain('[An toàn]');
+    expect(pres.subLines).toContain('Sử dụng đến hết ngày 20/07/2026');
+  });
+
+  it('định dạng sản phẩm hết HSD', () => {
+    const res = processReturnBusinessLogic('01/06/2026', '14/07/2026', NOW);
+    const pres = formatPresentationResult(res);
+    expect(pres.mainLabel).toBe('Hạn sử dụng');
+    expect(pres.subLines).toEqual(['[Đã hết HSD]']);
+  });
+
+  it('định dạng sản phẩm dài ngày', () => {
+    const res = processReturnBusinessLogic('01/07/2026', '30/07/2026', NOW);
+    const pres = formatPresentationResult(res);
+    expect(pres.mainLabel).toBe('Ngày lùi hàng');
+    expect(pres.subLines).toContain('[An toàn]');
+    expect(pres.subLines).toContain('HSD còn 16 ngày');
+  });
+});
+
+describe('getFriendlyErrorMessage', () => {
+  it('bản đồ thông báo lỗi hợp lý', () => {
+    expect(getFriendlyErrorMessage('Vui lòng nhập Ngày sản xuất')).toContain('Thiếu Ngày sản xuất');
+    expect(getFriendlyErrorMessage('ngẫu nhiên')).toContain('Không thể tra cứu');
+  });
+});
+

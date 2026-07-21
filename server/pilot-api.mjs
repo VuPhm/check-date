@@ -63,6 +63,9 @@ function fail(response, status, error) { send(response, status, { error }); }
 function readBody(request) {
   const contentLength = Number(request.headers['content-length'] || 0);
   if (contentLength > maxBodyBytes) return Promise.reject(new Error('Payload quá lớn.'));
+  request.setTimeout(30000, () => {
+    request.destroy(new Error('Request timeout khi đọc body.'));
+  });
   return new Promise((resolve, reject) => {
     const chunks = []; let size = 0; let finished = false;
     request.on('data', (chunk) => {
@@ -97,9 +100,11 @@ function seedStore() {
 seedStore();
 
 function clientIp(request) {
+  const remote = request.socket.remoteAddress || 'unknown';
+  const isLoopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(remote);
   const forwarded = request.headers['cf-connecting-ip'];
-  if (typeof forwarded === 'string' && forwarded.trim()) return forwarded.trim();
-  return request.socket.remoteAddress || 'unknown';
+  if (isLoopback && typeof forwarded === 'string' && forwarded.trim()) return forwarded.trim();
+  return remote;
 }
 function authScopes(kind, storeCode, request) {
   const code = String(storeCode || '').replace(/\D/g, '').slice(0, 4) || 'unknown';
@@ -139,7 +144,12 @@ function systemAudit(action, details = {}) { run('INSERT INTO system_audit VALUE
 function createPilotBackup() {
   const name = `pilot-${now().replace(/[:.]/g, '-')}.sqlite`;
   const destination = resolve(backupDirectory, name);
+  const unsafePattern = /[^a-zA-Z0-9\-_\.\/\\:]/;
+  if (unsafePattern.test(backupDirectory) || unsafePattern.test(name)) {
+    throw new Error('Đường dẫn sao lưu chứa ký tự không an toàn.');
+  }
   mkdirSync(backupDirectory, { recursive: true });
+  // SQLite VACUUM INTO does not support parameterization, so we escape single quotes as defense-in-depth.
   db.exec(`VACUUM INTO '${destination.replace(/'/g, "''")}'`);
   systemAudit('backup.created', { filename: name });
   return { filename: name, path: destination, createdAt: now() };
@@ -205,7 +215,21 @@ function mergeChange(kind, session, record) {
     if (!existing) { record = { ...record, createdBy: session.id, updatedBy: session.id, branchId: session.branchId }; }
     else if (!(isDeleted(record) && existing.record.createdBy === session.id && (existing.record.trangThaiDuyet || 'cho_duyet') === 'cho_duyet')) return false;
   }
+  if (kind === 'history' && session.role === 'employee') {
+    if (!existing && isDeleted(record)) return false;
+    if (!existing) { record = { ...record, createdBy: session.id, updatedBy: session.id, branchId: session.branchId }; }
+    else if (existing.record.createdBy && existing.record.createdBy !== session.id) return false;
+  }
+  if (kind === 'kph') {
+    if (record.tenHang !== undefined) requireText(record.tenHang, 'Tên hàng hóa', 256, { min: 0 });
+    if (record.sku !== undefined) requireText(record.sku, 'Mã SKU', 128, { min: 0 });
+  }
   if (record.branchId && record.branchId !== session.branchId) return false;
+  if (existing) {
+    const incomingVersion = Number(record.version || 0);
+    const existingVersion = Number(existing.record.version || 0);
+    if (incomingVersion > existingVersion + 50) throw new Error('Phiên bản đồng bộ không hợp lệ.');
+  }
   if (existing && !newer(record, existing.record)) return true;
   const timestamp = now(); const revision = nextRevision(session.branchId); const normalized = isDeleted(record) ? { ...record, deletedAt: timestamp, updatedAt: timestamp, serverRevision: revision } : { ...record, branchId: session.branchId, serverRevision: revision, serverUpdatedAt: timestamp };
   run('INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?, ?, ?)', kind, session.branchId, record.id, json(normalized), Number(normalized.version || 0), normalized.updatedAt || normalized.createdAt || timestamp, normalized.deletedAt || null, revision);
@@ -293,5 +317,6 @@ export function closePilotDatabase() {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const server = createPilotApiServer();
-  server.listen(port, '0.0.0.0', () => console.log(`Pilot API running on :${port}; database: ${databaseFile}`));
+  const bindHost = process.env.PILOT_HOST || '127.0.0.1';
+  server.listen(port, bindHost, () => console.log(`Pilot API running on ${bindHost}:${port}; database: ${databaseFile}`));
 }

@@ -26,7 +26,7 @@ tunnel token, `.env`, `runtime.json`, SQLite/WAL hay backup qua source repositor
 
 | Hạng mục | Kiểm soát và vị trí |
 | --- | --- |
-| Bề mặt mạng | `pilot-host.mjs` chỉ bind `127.0.0.1`; HTTPS public chỉ qua Cloudflare Tunnel cùng origin `/api`. |
+| Bề mặt mạng | `pilot-host.mjs` và `pilot-api.mjs` chỉ bind `127.0.0.1`; HTTPS public chỉ qua Cloudflare Tunnel cùng origin `/api`. |
 | Cài đặt Control Center | Installer chạy quyền admin; `runtime.json` chỉ dành cho LocalSystem/Administrators qua ACL. |
 | CHT/PIN | Setup Wizard bắt buộc tạo mật khẩu CHT ≥12 ký tự và PIN 4 số; không có credential mặc định. |
 | Quyền quản trị cụm | `/v1/system/*` chỉ nhận loopback + secret ngẫu nhiên; không đi qua tunnel. |

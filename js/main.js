@@ -23,8 +23,11 @@ import {
 } from './scanner.js';
 
 import {
-    processReturnBusinessLogic
+    processReturnBusinessLogic,
+    formatPresentationResult,
+    getFriendlyErrorMessage
 } from './business.js';
+
 
 import { buildLookupHistoryPayload, isAnonymousLookupSupersededByBarcode, syncLookupDates } from '../src/domain/lookup.ts';
 
@@ -296,27 +299,11 @@ export function executeCalculation(saveToHistory = true) {
                 wrapper.className = `calc-board__result-wrapper ${output.alert.class}`;
             }
 
-            let mainText = "";
-            let subText = "";
-            let mainLabel = "";
-            let subLines = [];
-
-            if (output.isExpiredProduct) {
-                mainLabel = output.isShortProduct ? 'Hạn sử dụng' : 'Ngày lùi hàng';
-                mainText = `${mainLabel}: <strong>${output.dateStr}</strong>`;
-                subText = `<span style="font-weight: 800;">[${output.alert.label}]</span>`;
-                subLines = [`[${output.alert.label}]`];
-            } else if (output.isShortProduct) {
-                mainText = `Hạn sử dụng: <strong>${output.dateStr}</strong>`;
-                subText = `<span style="font-weight: 600;">[${output.alert.label}]</span><br>Sử dụng đến hết ngày ${output.dateStr}`;
-                mainLabel = 'Hạn sử dụng';
-                subLines = [`[${output.alert.label}]`, `Sử dụng đến hết ngày ${output.dateStr}`];
-            } else {
-                mainText = `Ngày lùi hàng: <strong>${output.dateStr}</strong>`;
-                subText = `<span style="font-weight: 600;">[${output.alert.label}]</span><br>HSD còn ${output.daysRemaining} ngày`;
-                mainLabel = 'Ngày lùi hàng';
-                subLines = [`[${output.alert.label}]`, `HSD còn ${output.daysRemaining} ngày`];
-            }
+            const { mainLabel, mainText, subLines } = formatPresentationResult(output);
+            const weight = output.isExpiredProduct ? 800 : 600;
+            const formattedSubLines = [...subLines];
+            formattedSubLines[0] = `<span style="font-weight: ${weight};">${formattedSubLines[0]}</span>`;
+            const subText = formattedSubLines.join('<br>');
 
             if (text) {
                 text.innerHTML = mainText + "<br><small>" + subText + "</small>";
@@ -389,20 +376,7 @@ export function executeCalculation(saveToHistory = true) {
                 wrapper.className = 'calc-board__result-wrapper state-danger';
             }
 
-            let userFriendlyMessage = error.message;
-            if (error.message.includes("Vui lòng nhập Ngày sản xuất")) {
-                userFriendlyMessage = "⚠️ <b>Thiếu Ngày sản xuất:</b> Vui lòng điền ngày in trên bao bì (hoặc bật lịch chọn) trước khi tra cứu.";
-            } else if (error.message.includes("Ngày sản xuất không đúng định dạng")) {
-                userFriendlyMessage = "⚠️ <b>Sai Ngày sản xuất:</b> Định dạng chuẩn là Ngày/Tháng/Năm (Ví dụ: 10/06/2026).";
-            } else if (error.message.includes("Vui lòng nhập Hạn sử dụng")) {
-                userFriendlyMessage = "⚠️ <b>Thiếu Hạn sử dụng:</b> Hãy nhập 1 trong 3 ô: Chọn Ngày cụ thể, điền Số ngày, hoặc điền Số tháng.";
-            } else if (error.message.includes("Hạn sử dụng không đúng định dạng")) {
-                userFriendlyMessage = "⚠️ <b>Sai định dạng Ngày HSD:</b> Vui lòng kiểm tra lại ô Ngày HSD (Ví dụ: 25/06/2026).";
-            } else if (error.message.includes("Hạn sử dụng phải lớn hơn")) {
-                userFriendlyMessage = "⚠️ <b>Lỗi biên ngày:</b> Hạn sử dụng bắt buộc phải nằm sau Ngày sản xuất. Vui lòng kiểm tra lại năm hoặc tháng.";
-            } else if (error.message.includes("chưa thể tính ngược")) {
-                userFriendlyMessage = "⚠️ <b>Thiếu dữ liệu tra ngược:</b> Hãy nhập Ngày HSD kèm theo Số ngày (hoặc Số tháng) để hệ thống tìm ra Ngày sản xuất.";
-            }
+            const userFriendlyMessage = getFriendlyErrorMessage(error.message);
 
             if (text) {
                 text.innerHTML = `<div style="line-height: 1.6; font-size: 13px; color: #e20514; font-weight: 600;">${userFriendlyMessage}</div>`;

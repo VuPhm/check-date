@@ -69,3 +69,136 @@ test('lets the local system administrator create and list a pilot store', async 
   assert.equal(stores.status, 200);
   assert.equal((await stores.json()).stores.some((store) => store.code === '0002'), true);
 });
+
+async function employeeJoin(displayName, employeeCode) {
+  return fetch(`${baseUrl}/api/v1/auth/employee/join`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ storeCode: '0001', joinCode: '1234', displayName, employeeCode, deviceName: 'Employee device' }),
+  });
+}
+
+async function syncRequest(token, changes = [], cursor = '0') {
+  return fetch(`${baseUrl}/api/v1/sync`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ changes, cursor }),
+  });
+}
+
+test('enforces IDOR authorization checks on history logs sync for employees', async () => {
+  // Join Employee 1 and 2
+  const res1 = await employeeJoin('Emp One', 'EMP01');
+  const body1 = await res1.json();
+  const token1 = body1.session.accessToken;
+
+  const res2 = await employeeJoin('Emp Two', 'EMP02');
+  const body2 = await res2.json();
+  const token2 = body2.session.accessToken;
+
+  const recordId = 'history-test-1';
+  const historyRecord = {
+    id: recordId,
+    nsx: '10/06/2026',
+    rawHsdDate: '25/06/2026',
+    rawHsdDays: 15,
+    formattedHsd: '25/06/2026',
+    result: '18/06/2026',
+    daysRemaining: 10,
+    alertClass: 'state-safe',
+    alertLabel: 'An toàn',
+    alertType: 'safe',
+    alertWeight: 3,
+    isShortProduct: false,
+    isExpiredProduct: false,
+    tenHang: 'Sữa Milo',
+    quantity: 5,
+    dvt: 'EA',
+    checkedAt: new Date().toISOString(),
+  };
+
+  // 1. Employee 1 creates the history record
+  const sync1 = await syncRequest(token1, [{ id: 'change-1', kind: 'history', record: historyRecord }]);
+  assert.equal(sync1.status, 200);
+  const sync1Body = await sync1.json();
+  assert.deepEqual(sync1Body.acceptedChangeIds, ['change-1']);
+
+  // 2. Employee 2 attempts to overwrite Employee 1's history record
+  const modifiedRecord = {
+    ...historyRecord,
+    tenHang: 'Sữa Milo Hack',
+    version: 2,
+  };
+  const sync2 = await syncRequest(token2, [{ id: 'change-2', kind: 'history', record: modifiedRecord }]);
+  assert.equal(sync2.status, 200);
+  const sync2Body = await sync2.json();
+  // Change should NOT be accepted because Employee 2 does not own the record
+  assert.deepEqual(sync2Body.acceptedChangeIds, []);
+});
+
+test('prevents version lock-in by rejecting sync versions that jump too high', async () => {
+  const res = await employeeJoin('Emp One', 'EMP01');
+  const body = await res.json();
+  const token = body.session.accessToken;
+
+  const recordId = 'history-version-test';
+  const historyRecord = {
+    id: recordId,
+    nsx: '10/06/2026',
+    rawHsdDate: '25/06/2026',
+    rawHsdDays: 15,
+    formattedHsd: '25/06/2026',
+    result: '18/06/2026',
+    daysRemaining: 10,
+    alertClass: 'state-safe',
+    alertLabel: 'An toàn',
+    alertType: 'safe',
+    alertWeight: 3,
+    isShortProduct: false,
+    isExpiredProduct: false,
+    tenHang: 'Sữa Milo',
+    quantity: 5,
+    dvt: 'EA',
+    checkedAt: new Date().toISOString(),
+  };
+
+  // Sync initial version 1
+  await syncRequest(token, [{ id: 'change-v1', kind: 'history', record: { ...historyRecord, version: 1 } }]);
+
+  // Try to sync version 100 (jumps by 99, which is > 50)
+  const syncHuge = await syncRequest(token, [{ id: 'change-vhuge', kind: 'history', record: { ...historyRecord, version: 100 } }]);
+  assert.equal(syncHuge.status, 400);
+  const hugeBody = await syncHuge.json();
+  assert.match(hugeBody.error, /Phiên bản đồng bộ không hợp lệ/);
+});
+
+test('enforces defense-in-depth character length constraints on kph record creation', async () => {
+  const res = await employeeJoin('Emp One', 'EMP01');
+  const body = await res.json();
+  const token = body.session.accessToken;
+
+  const kphRecord = {
+    id: 'kph-len-test',
+    detectedDate: '21/07/2026',
+    detectedBy: 'Emp One',
+    sku: '123456',
+    productName: 'A'.repeat(257), // Exceeds max 256 characters for tenHang
+    unit: 'EA',
+    quantity: 10,
+    condition: 'Bình thường',
+    resolution: 'KHÁC',
+    resolutionText: 'Đổi trả',
+    resolutionDate: '22/07/2026',
+    tenHang: 'A'.repeat(257), // Match productName
+    version: 1,
+  };
+
+  const syncRes = await syncRequest(token, [{ id: 'change-kph-len', kind: 'kph', record: kphRecord }]);
+  assert.equal(syncRes.status, 400);
+  const syncResBody = await syncRes.json();
+  assert.match(syncResBody.error, /Tên hàng hóa không hợp lệ/);
+});
+
