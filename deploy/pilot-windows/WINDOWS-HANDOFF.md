@@ -21,25 +21,23 @@ Cài .NET 8 SDK, Inno Setup và một Node 24 dùng cho build. Clone source, sau
 
 ## 2. Tạo release bundle
 
-Sau khi có ba binary vendor, một lệnh tạo toàn bộ installer:
+Sau khi chuẩn bị đầy đủ ba binary vendor vào các thư mục tương ứng ở bước 1, thực hiện các lệnh sau để chạy test, build frontend, đóng gói runtime Windows, publish Control Center và đóng gói bộ cài đặt Inno Setup:
 
 ```powershell
-.\deploy\pilot-windows\build-release.ps1 `
-  -NodeExe C:\Downloads\node.exe `
-  -CloudflaredExe C:\Downloads\cloudflared.exe `
-  -WinSwExe C:\Downloads\WinSW-x64.exe
-```
-
-Script copy vendor vào thư mục gitignored, chạy test/build, stage runtime,
-publish Control Center và chạy Inno Setup. Dùng các lệnh dưới đây khi cần chẩn
-đoán từng bước:
-
-```powershell
+# Cài đặt thư viện và chạy kiểm thử
 npm ci
 npm test
+
+# Build ứng dụng frontend Vue 3
 npm run build
+
+# Đóng gói Windows runtime stage
 npm run pilot:windows:stage
+
+# Publish Control Center .NET
 dotnet publish .\pilot-control-center\CoopFoodPilot.ControlCenter.csproj -c Release -r win-x64 --self-contained true
+
+# Đóng gói bộ cài đặt (.exe) bằng Inno Setup compiler
 iscc .\deploy\pilot-windows\installer\CoopFoodPilot.iss
 ```
 

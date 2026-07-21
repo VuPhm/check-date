@@ -19,7 +19,7 @@ npm run build
 ```
 
 Trên máy build Windows có .NET 8 SDK, Inno Setup và ba binary vendor đã xác minh
-hash/chữ ký, chạy `deploy\pilot-windows\build-release.ps1`. Không nhận binary,
+hash/chữ ký, chạy các lệnh đóng gói thủ công (xem [WINDOWS-HANDOFF.md](../../deploy/pilot-windows/WINDOWS-HANDOFF.md)). Không nhận binary,
 tunnel token, `.env`, `runtime.json`, SQLite/WAL hay backup qua source repository.
 
 ## Kiểm soát chính
